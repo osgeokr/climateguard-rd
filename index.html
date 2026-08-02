@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="es-DO">
+<html lang="es-DO" translate="no">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#003876">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2201,7 +2202,7 @@ async function mapaHtml(){
       cant:r.cant,notas:r.notas||'',iucn:r.iucn||'',
       fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.mini)})}
   const datos=JSON.stringify(d).replace(/</g,'\\u003c');
-  return `<!DOCTYPE html><html lang="${idioma}"><head><meta charset="utf-8">
+  return `<!DOCTYPE html><html lang="${idioma}" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${t('tarjTit')} — ${d.length} ${t('tarjReg')}</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
