@@ -136,6 +136,8 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .heat-ctl.on{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
 .pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
+.pts-bump{display:inline-block;animation:ptsBump .85s ease}
+@keyframes ptsBump{0%{transform:scale(1)}25%{transform:scale(1.4);color:#1B7F5A}55%{transform:scale(1)}100%{transform:scale(1)}}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 
 .gal-ref{margin-top:13px;border-top:1px dashed var(--borde);padding-top:12px}
@@ -1505,8 +1507,8 @@ const DIC={
   gateNota:'Prototipo de demostracion. No valida credenciales ni existe cuenta real.',
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
-  faltan:'Faltan', paraNivel:'foto(s) para el proximo nivel',
-  maxNivel:'Nivel maximo alcanzado', comoPts:'10 por foto, +5 con ubicacion, +5 con especie',
+  faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
+  maxNivel:'Nivel maximo alcanzado', comoPts:'Fotos: 10 (+5 ubicacion, +5 especie) · Recorridos: 10 (+5 si >=200 m) · x2 al enviar',
   subiste:'Ascenso de nivel', seguir:'Continuar', nuevoRango:'Nuevo rango:',
   ganaste:'puntos',
   r1:'Aspirante', r2:'Observador', r3:'Explorador',
@@ -1587,8 +1589,8 @@ const DIC={
   gateNota:'Demo prototype. Credentials are not checked and no real account exists.',
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
-  faltan:'', paraNivel:'more photo(s) to the next level',
-  maxNivel:'Top level reached', comoPts:'10 per photo, +5 with location, +5 with species',
+  faltan:'', paraNivel:'points to the next level',
+  maxNivel:'Top level reached', comoPts:'Photos: 10 (+5 location, +5 species) · Tracks: 10 (+5 if >=200 m) · x2 on send',
   subiste:'Level up', seguir:'Continue', nuevoRango:'New rank:',
   ganaste:'points',
   r1:'Trainee', r2:'Observer', r3:'Explorer',
@@ -1951,29 +1953,35 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende del numero de fotos; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const NIVELES=[{min:0,k:'r1'},{min:5,k:'r2'},{min:15,k:'r3'},{min:30,k:'r4'},{min:50,k:'r5'}];
+const NIVELES=[{min:0,k:'r1'},{min:100,k:'r2'},{min:250,k:'r3'},{min:500,k:'r4'},{min:1000,k:'r5'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
+function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
 const CG_PTS_BONUS=2;
 function loadSent(){ try{ const v=JSON.parse(localStorage.getItem('cg_sent_ids')); if(Array.isArray(v)){ const m={}; v.forEach(k=>m[k]='1'); return m; } return v&&typeof v==='object'?v:{}; }catch(_){ return {}; } }
 function saveSent(m){ try{ localStorage.setItem('cg_sent_ids',JSON.stringify(m)); }catch(_){} }
-function loadLedger(){ try{ return JSON.parse(localStorage.getItem('cg_pts_ledger'))||{}; }catch(_){ return {}; } }
+function loadLedger(){ try{ const raw=JSON.parse(localStorage.getItem('cg_pts_ledger'))||{}; const m={}; for(const k in raw){ m[(k.indexOf(':')>=0?k:('p:'+k))]=raw[k]; } return m; }catch(_){ return {}; } }
 function saveLedger(m){ try{ localStorage.setItem('cg_pts_ledger',JSON.stringify(m)); }catch(_){} }
 function sigFoto(r){ return [r.especie||'',r.clase||'',r.iucn||'',r.cant||1,r.notas||'',r.lat,r.lng].join('|'); }
 function sigTrack(tr){ return [CGTracks.nombre(tr),tr.coords.length,tr.end||0].join('|'); }
 function sentTag(key,sig){ const m=loadSent(); if(!(key in m))return ''; return m[key]===sig?`<span class="pill enviado">${t('enviadoTag')}</span>`:`<span class="pill modificado">${t('modificadoTag')}</span>`; }
 /* Puntos certificados: al enviar se acreditan (con bono) y quedan aunque se borre la foto local */
-const totalPuntos=()=>{ const led=loadLedger(); let s=0; const seen={}; regs.forEach(r=>{ seen[r.id]=1; s+=(led[r.id]!=null?led[r.id]:puntosDe(r)); }); for(const id in led){ if(!seen[id]) s+=led[id]; } return s; };
+const totalPuntos=()=>{ const led=loadLedger(); let s=0; const seen={};
+  regs.forEach(r=>{ const k='p:'+r.id; seen[k]=1; s+=(led[k]!=null?led[k]:puntosDe(r)); });
+  const _tr=(typeof CGTracks!=='undefined'?CGTracks.all():[]);
+  _tr.forEach(tr=>{ if(!(tr.coords&&tr.coords.length>1))return; const k='t:'+tr.id; seen[k]=1; s+=(led[k]!=null?led[k]:puntosTrack(tr)); });
+  for(const k in led){ if(!seen[k]) s+=led[k]; } return s; };
 function nivelCount(){ const led=loadLedger(); const s={}; regs.forEach(r=>s[r.id]=1); for(const id in led)s[id]=1; return Object.keys(s).length; }
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
-let nivelActual=0;
+let nivelActual=0, _prevPts=null;
+function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
 
 function pintarPerfil(){
-  const nFotos=regs.length, n=nivelCount(), pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
+  const nFotos=regs.length, pts=totalPuntos(), i=nivelDe(pts), sig=NIVELES[i+1];
   const rango=t(NIVELES[i].k);
   const etq=`<u>${t('nivel')||'Niv.'} ${i+1}</u>${rango}`;
-  const pct=sig ? Math.min(100,(n-NIVELES[i].min)/(sig.min-NIVELES[i].min)*100) : 100;
+  const pct=sig ? Math.min(100,(pts-NIVELES[i].min)/(sig.min-NIVELES[i].min)*100) : 100;
   const meta=sig
-    ? `${t('faltan')} ${sig.min-n} ${t('paraNivel')}`.trim()
+    ? `${t('faltan')} ${sig.min-pts} ${t('paraNivel')}`.trim()
     : t('maxNivel');
 
   document.getElementById('tNivel').innerHTML=etq;
@@ -1990,6 +1998,8 @@ function pintarPerfil(){
     `<li class="${j<=i?'ok':''}"><i class="${j<=i?'ri-shield-check-fill':'ri-lock-line'}"></i>
      ${t('nivel')} ${j+1} · ${t(x.k)} <span style="margin-left:auto">${x.min}</span></li>`).join('');
 
+  if(_prevPts!=null && pts>_prevPts) destacarPts();
+  _prevPts=pts;
   if(i>nivelActual){ nivelActual=i; ascenso(i); } else nivelActual=i;
 }
 
@@ -2247,7 +2257,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$pe.classList.conta
 
 async function credencialPng(){
   await (document.fonts?.ready??Promise.resolve());
-  const n=nivelCount(), pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
+  const n=regs.length, pts=totalPuntos(), i=nivelDe(pts), sig=NIVELES[i+1];
   const W=780, H=1120, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
   const c=cv.getContext('2d');
@@ -2317,11 +2327,11 @@ async function credencialPng(){
     c.textAlign='left';});
   // Progreso
   const py=by+BH+34, ancho=W-2*M;
-  const pct=sig?Math.min(1,(n-NIVELES[i].min)/(sig.min-NIVELES[i].min)):1;
+  const pct=sig?Math.min(1,(pts-NIVELES[i].min)/(sig.min-NIVELES[i].min)):1;
   c.fillStyle='#EAEDF0'; c.fillRect(M,py,ancho,10);
   c.fillStyle='#003876'; c.fillRect(M,py,ancho*pct,10);
   c.textAlign='center'; c.font='400 14px "Open Sans", sans-serif'; c.fillStyle='#5C6670';
-  c.fillText(sig?`${t('faltan')} ${sig.min-n} ${t('paraNivel')}`.trim():t('maxNivel'),W/2,py+32);
+  c.fillText(sig?`${t('faltan')} ${sig.min-pts} ${t('paraNivel')}`.trim():t('maxNivel'),W/2,py+32);
   c.textAlign='left';
   // Aliados
   if(strip){ const sy=py+62;
@@ -2371,13 +2381,16 @@ async function mapaHtml(){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"><\/script>
 <style>
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,sans-serif;background:#003876}
-#b{height:6px;background:#001C3D}
-#h{color:#fff;padding:12px 16px;display:flex;align-items:flex-start;gap:10px}
-#h b{font-size:15px}
-#fl{width:26px;height:18px;flex:none;margin-top:2px;box-shadow:0 0 0 1px rgba(255,255,255,.4);
+#gob{background:#002D62;color:#fff;font-size:11.5px;padding:5px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#gob .pais{display:flex;align-items:center;gap:7px}
+#gob .pill{font-size:10px;font-weight:700;background:#0d2f5e;border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:1px 8px}
+#gob .lang{opacity:.85;letter-spacing:.5px}
+#fl{width:26px;height:17px;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.4);
 background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'%3E%3Crect width='30' height='20' fill='%23CE1126'/%3E%3Crect width='13.5' height='8.5' fill='%23002D62'/%3E%3Crect x='16.5' y='11.5' width='13.5' height='8.5' fill='%23002D62'/%3E%3Crect x='13.5' width='3' height='20' fill='%23fff'/%3E%3Crect y='8.5' width='30' height='3' fill='%23fff'/%3E%3C/svg%3E") center/cover no-repeat}
-#h span{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
-#m{height:calc(100% - 74px);background:#DDE3E8}
+#hd{background:#003876;color:#fff;padding:12px 16px 14px;display:flex;align-items:center;gap:11px}
+#hd b{font-size:17px;display:block;line-height:1.12}
+#hd span{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
+#m{height:calc(100% - 92px);background:#DDE3E8}
 .marca{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
 background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font:600 11px system-ui;color:#fff}
@@ -2392,8 +2405,8 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 .tp h4{margin:0 0 3px;font:600 13.5px system-ui}
 .tp small{font-size:11px;color:#5C6670}
 </style></head><body>
-<div id="b"></div>
-<div id="h"><span id="fl"></span><div><b>ClimateGuard Mobile</b>
+<div id="gob"><span class="pais"><span id="fl"></span> ${t('pais')} <span class="pill">Unofficial</span></span><span class="lang">ES / EN</span></div>
+<div id="hd"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="none" stroke="#fff" stroke-width="3" opacity=".45"></circle><circle cx="32" cy="32" r="16" fill="none" stroke="#fff" stroke-width="3"></circle><path d="M32 24 C39 29 39 38 32 43 C25 38 25 29 32 24 Z" fill="#fff"></path></svg><div><b>ClimateGuard Mobile</b>
 <span>${t('sub')} · ${d.length} ${t('fotos')} · ${ntrk} ${t('recorridosN')}</span></div></div>
 <div id="m"></div>
 <script>
@@ -2649,10 +2662,13 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     for(let i=0;i<nf.length;i++){ const r=nf[i]; if(r.mini){ try{ const du=await b64(r.mini); fotos.push({name:r.__fn||('foto_'+String(i+1).padStart(2,'0')+'.jpg'),mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){} } }
     /* proyeccion de puntos con bono (no persistir hasta que el envio se despache) */
     const led=loadLedger(); const ledNext=Object.assign({},led); let ganado=0;
-    nf.forEach(r=>{ const cr=puntosDe(r)*CG_PTS_BONUS; ganado+=(cr-(ledNext[r.id]||0)); ledNext[r.id]=cr; });
-    const projTotal=(()=>{ let s=0; const seen={}; regs.forEach(r=>{seen[r.id]=1; s+=(ledNext[r.id]!=null?ledNext[r.id]:puntosDe(r));}); for(const id in ledNext){if(!seen[id])s+=ledNext[id];} return s; })();
-    const projCount=(()=>{ const s={}; regs.forEach(r=>s[r.id]=1); for(const id in ledNext)s[id]=1; return Object.keys(s).length; })();
-    const perfil={usuario:(perfilNombre||'anonimo'),puntos:projTotal,nivel:nivelDe(projCount)+1,bono:CG_PTS_BONUS,ledger:ledNext};
+    nf.forEach(r=>{ const k='p:'+r.id; const cr=puntosDe(r)*CG_PTS_BONUS; ganado+=(cr-(ledNext[k]||0)); ledNext[k]=cr; });
+    nt.forEach(tr=>{ const k='t:'+tr.id; const cr=puntosTrack(tr)*CG_PTS_BONUS; ganado+=(cr-(ledNext[k]||0)); ledNext[k]=cr; });
+    const projTotal=(()=>{ let s=0; const seen={};
+      regs.forEach(r=>{const k='p:'+r.id;seen[k]=1;s+=(ledNext[k]!=null?ledNext[k]:puntosDe(r));});
+      trAll.forEach(tr=>{const k='t:'+tr.id;seen[k]=1;s+=(ledNext[k]!=null?ledNext[k]:puntosTrack(tr));});
+      for(const k in ledNext){if(!seen[k])s+=ledNext[k];} return s; })();
+    const perfil={usuario:(perfilNombre||'anonimo'),puntos:projTotal,nivel:nivelDe(projTotal)+1,bono:CG_PTS_BONUS,ledger:ledNext};
     const payload={token:CG_ENVIO_TOKEN,app:'ClimateGuard',schema:1,ver:'0.7',submissionId:uid(),usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos};
     await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     /* despachado: persistir firmas + puntos acreditados */
@@ -2862,7 +2878,12 @@ try{
   const at=document.createElement('meta');at.name='apple-mobile-web-app-title';at.content='ClimateGuard';document.head.appendChild(at);
   const ac=document.createElement('meta');ac.name='apple-mobile-web-app-capable';ac.content='yes';document.head.appendChild(ac);
   const asb=document.createElement('meta');asb.name='apple-mobile-web-app-status-bar-style';asb.content='black-translucent';document.head.appendChild(asb);
-  if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+  if('serviceWorker' in navigator){window.addEventListener('load',function(){
+    var hadCtrl=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(function(reg){ try{setInterval(function(){reg.update().catch(function(){});},1800000);}catch(_){} }).catch(function(){});
+    var _rf=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(_rf||!hadCtrl)return; _rf=true; try{location.reload();}catch(_){} });
+  });}
 }catch{}
 
 /* ── v11.2: banner para inducir la instalación (Android: prompt nativo; iOS: guía) ── */
