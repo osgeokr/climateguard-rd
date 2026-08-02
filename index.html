@@ -1004,6 +1004,8 @@ textarea{resize:vertical;min-height:66px}
   display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font-family:var(--tit);font-size:11px;font-weight:600;color:#fff}
 .marca.endemic{background:var(--verde)}.marca.invasive{background:var(--rojo)}
+.marca-trk{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:var(--rojo);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
+.marca-trk svg{transform:rotate(45deg)}
 .pop{width:196px;font-family:var(--cpo)}
 .pop img{width:100%;height:118px;object-fit:cover;border-radius:4px;display:block}
 .pop h4{font-family:var(--tit);font-size:14px;margin:8px 0 3px}
@@ -2418,6 +2420,8 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font:600 11px system-ui;color:#fff}
 .marca.endemic{background:#1B7F5A}.marca.invasive{background:#CE1126}
+.marca-trk{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:#CE1126;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
+.marca-trk svg{transform:rotate(45deg)}
 .p{width:196px}.p img{width:100%;height:120px;object-fit:cover;border-radius:4px;display:block}
 .p h4{margin:8px 0 3px;font-size:14px}.p em{color:#5C6670;font-weight:400}
 .p small{font-size:10.5px;color:#5C6670;line-height:1.65;display:block}
@@ -2495,6 +2499,7 @@ if(window.L&&(D.length||TR.length)){
     var _dkm=tk.d<1000?tk.d+' m':(tk.d/1000).toFixed(2)+' km';
     var _h='<div class="tp"><h4>'+String(tk.n).padStart(2,'0')+' \u00b7 '+tk.name+'</h4><small>'+tk.c.length+' pts \u00b7 '+_dkm+'</small><a class="dl" href="'+_href+'" download="'+_fn+'">\u2b07 '+SAVETRK+'</a></div>';
     L.polyline(tk.c,{color:'#CE1126',weight:5,opacity:.9}).addTo(g).bindPopup(_h,{minWidth:180});
+    L.marker(tk.c[Math.floor(tk.c.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 C6 13 12 14 12 9 C12 4 18 6 18 5"></path><circle cx="6" cy="18" r="1.7" fill="#fff" stroke="none"></circle><circle cx="18" cy="5" r="1.7" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(g).bindPopup(_h,{minWidth:180});
   });
   var PTS=D.map(function(d){return[d.lat,d.lng];});TR.forEach(function(tk){PTS=PTS.concat(tk.c);});
   if(PTS.length===1)m.setView(PTS[0],17);
@@ -2503,7 +2508,7 @@ if(window.L&&(D.length||TR.length)){
   document.getElementById('m').innerHTML='<div style="padding:20px;font:13px system-ui;color:#1A1A1A">'+
    ${JSON.stringify(t('htmlSin'))}+'<br><br>'+
    D.map(function(d){return d.n+'. '+d.grupo+(d.especie?' ('+d.especie+')':'')+(d.iucn?' — '+d.iucn:'')+' — '+
-   d.lat.toFixed(5)+', '+d.lng.toFixed(5)}).join('<br>')+'</div>';
+   d.lat.toFixed(5)+', '+d.lng.toFixed(5)}).join('<br>')+(TR&&TR.length?('<br><br>'+TR.map(function(tk){return String(tk.n).padStart(2,'0')+'. '+tk.name+' \u2014 '+tk.c.length+' pts';}).join('<br>')):'')+'</div>';
 }
 <\/script></body></html>`;
 }
@@ -2809,7 +2814,9 @@ var CGTracks = (function(){
     tracks.forEach(tr=>{if(tr.coords.length>1){
       let fch=''; try{fch=new Date(tr.start).toLocaleString(loc());}catch(_){}
       const ph=`<div class="trk-pop"><b>${esc(nombreDe(tr))}</b><br><span>${tr.coords.length} pts \u00b7 ${fmtD(dist(tr.coords))}</span><br><span>${fch}</span></div>`;
-      L.polyline(tr.coords.map(c=>[c[1],c[0]]),{color:'#CE1126',weight:5,opacity:.9}).addTo(trkLayer).bindPopup(ph);
+      const _cs=tr.coords.map(c=>[c[1],c[0]]);
+      L.polyline(_cs,{color:'#CE1126',weight:5,opacity:.9}).addTo(trkLayer).bindPopup(ph);
+      L.marker(_cs[Math.floor(_cs.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 C6 13 12 14 12 9 C12 4 18 6 18 5"></path><circle cx="6" cy="18" r="1.7" fill="#fff" stroke="none"></circle><circle cx="18" cy="5" r="1.7" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(trkLayer).bindPopup(ph);
     }});
     trkLayer.addTo(mapa);
   }
