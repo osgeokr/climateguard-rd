@@ -75,6 +75,13 @@ footer .marcas{margin-bottom:4px}
 .trk-row{display:flex;gap:9px}.trk-row .btn{flex:1}
 .trk-stat{margin-top:9px;font-size:12px;color:var(--txt-2);display:flex;align-items:center;gap:6px;min-height:16px}
 #trkBtn.rec{background:var(--rojo);color:#fff;border-color:var(--rojo)}
+.inst-banner{position:fixed;left:12px;right:12px;bottom:12px;z-index:1200;background:#fff;border:1px solid var(--borde);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:11px 12px;display:flex;align-items:center;gap:11px;max-width:520px;margin:0 auto;animation:instUp .25s ease}
+@keyframes instUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.inst-banner img{width:42px;height:42px;border-radius:10px;flex:none}
+.inst-banner .inst-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.inst-banner .inst-txt b{font-size:13.5px;color:var(--txt)}
+.inst-banner .inst-txt span{font-size:11.5px;color:var(--txt-2);line-height:1.45}
+.inst-banner .inst-x{flex:none;background:none;border:0;font-size:20px;line-height:1;color:var(--txt-2);cursor:pointer;padding:2px 4px;align-self:flex-start}
 .rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rojo);animation:pulseRec 1.2s infinite}
 @keyframes pulseRec{0%,100%{opacity:1}50%{opacity:.25}}
 
@@ -1450,6 +1457,7 @@ const DIC={
   tracking:'Recorrido (tracking)', trackStart:'Iniciar recorrido', trackStop:'Detener recorrido',
   trackExport:'Exportar GeoJSON', trackNone:'Sin recorridos guardados', trackCount:'guardado(s)',
   trackOk:'Recorrido guardado', trackAsunto:'Recorrido de campo - ClimateGuard',
+  instTitulo:'Instalar ClimateGuard', instTxt:'Añádela a tu pantalla de inicio para usarla como app (funciona sin conexión).', instBtn:'Instalar', instIOS:'En Safari: toca <b>Compartir</b> y luego <b>«Añadir a pantalla de inicio»</b>.', instCerrar:'Ahora no',
   g:{bird:'Ave',reptile:'Reptil',amphibian:'Anfibio',mammal:'Mamifero',
      fish:'Pez',insect:'Insecto',plant:'Planta',fungus:'Hongo',other:'Otro'},
   c:{native:'Nativa',endemic:'Endemica',invasive:'Invasora'}
@@ -1527,6 +1535,7 @@ const DIC={
   tracking:'Field track', trackStart:'Start track', trackStop:'Stop track',
   trackExport:'Export GeoJSON', trackNone:'No saved tracks', trackCount:'saved',
   trackOk:'Track saved', trackAsunto:'Field track - ClimateGuard',
+  instTitulo:'Install ClimateGuard', instTxt:'Add it to your home screen to use it like an app (works offline).', instBtn:'Install', instIOS:'In Safari: tap <b>Share</b>, then <b>“Add to Home Screen”</b>.', instCerrar:'Not now',
   g:{bird:'Bird',reptile:'Reptile',amphibian:'Amphibian',mammal:'Mammal',
      fish:'Fish',insect:'Insect',plant:'Plant',fungus:'Fungus',other:'Other'},
   c:{native:'Native',endemic:'Endemic',invasive:'Invasive'}
@@ -2482,6 +2491,33 @@ try{
   const asb=document.createElement('meta');asb.name='apple-mobile-web-app-status-bar-style';asb.content='black-translucent';document.head.appendChild(asb);
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 }catch{}
+
+/* ── v11.2: banner para inducir la instalación (Android: prompt nativo; iOS: guía) ── */
+(function(){
+  try{
+    const standalone = (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+    if(standalone) return;
+    let dismissed=false; try{dismissed=localStorage.getItem('cg_inst_dismiss')==='1';}catch(_){}
+    if(dismissed) return;
+    const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Mac/.test(navigator.platform)&&navigator.maxTouchPoints>1);
+    let deferred=null, shown=false;
+    function mostrar(iosMode){
+      if(shown||document.getElementById('instBanner')) return; shown=true;
+      const el=document.createElement('div'); el.className='inst-banner'; el.id='instBanner';
+      el.innerHTML='<img src="'+ICON192+'" alt="">'+
+        '<div class="inst-txt"><b>'+t('instTitulo')+'</b><span>'+(iosMode?t('instIOS'):t('instTxt'))+'</span></div>'+
+        (iosMode?'':'<button type="button" class="btn btn-1" id="instBtn">'+t('instBtn')+'</button>')+
+        '<button type="button" class="inst-x" id="instX" aria-label="'+t('instCerrar')+'">&times;</button>';
+      document.body.appendChild(el);
+      document.getElementById('instX').onclick=function(){el.remove(); try{localStorage.setItem('cg_inst_dismiss','1');}catch(_){}};
+      const ib=document.getElementById('instBtn');
+      if(ib) ib.onclick=async function(){ if(!deferred)return; deferred.prompt(); try{await deferred.userChoice;}catch(_){} deferred=null; el.remove(); };
+    }
+    window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; mostrar(false); });
+    window.addEventListener('appinstalled', function(){ const b=document.getElementById('instBanner'); if(b)b.remove(); try{localStorage.setItem('cg_inst_dismiss','1');}catch(_){} });
+    if(isIOS){ setTimeout(function(){ mostrar(true); }, 1500); }
+  }catch(_){}
+})();
 
 aplicarIdioma();
 </script>
