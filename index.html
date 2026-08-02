@@ -832,9 +832,9 @@ footer .marcas{margin-bottom:16px}
   --r:6px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow-x:hidden;overscroll-behavior-x:none}
+html,body{margin:0;height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{background:var(--fondo);color:var(--txt);font-family:var(--cpo);font-size:15px;
-  -webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+  -webkit-font-smoothing:antialiased}
 .app{max-width:560px;margin:0 auto;min-height:100%}
 h1,h2,h3{font-family:var(--tit);margin:0}
 
@@ -1933,13 +1933,17 @@ document.getElementById('aOk').onclick=()=>document.getElementById('ascenso').cl
 /* ── Acceso (demostracion) ── */
 document.getElementById('entrar').onclick=()=>{
   document.getElementById('gate').classList.add('oculto');
+  try{localStorage.setItem('cg_entered','1');}catch(_){}
   setTimeout(iniciarGPS,300);
 };
 document.getElementById('pwd').addEventListener('keydown',e=>{
   if(e.key==='Enter')document.getElementById('entrar').click()});
 document.getElementById('salir').onclick=()=>{
+  try{localStorage.removeItem('cg_entered');}catch(_){}
   document.getElementById('gate').classList.remove('oculto');
 };
+/* v11.10: recordar el acceso (demo) para no volver a la pantalla al recargar / atras */
+try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); } }catch(_){}
 
 /* ── Mapa: siempre inicia sobre la Republica Dominicana ── */
 let mapa=null,capa=null,ubicando=null,drCapa=null,heatCapa=null,heatOn=false;
@@ -2629,6 +2633,60 @@ try{
 })();
 
 aplicarIdioma();
+
+/* ── v11.10: registros de demostracion (2 tortugas marinas, P.N. Cotubanama) ── */
+function _tortuja(cv,esp,col){
+  const c=cv.getContext('2d'),W=cv.width,H=cv.height;
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a4d68');g.addColorStop(1,'#0a8a9a');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  c.globalAlpha=.07;c.fillStyle='#eaf6ff';
+  for(let i=0;i<5;i++){c.save();c.translate(W*0.2*i,0);c.rotate(0.15);c.fillRect(0,-H,W*0.07,H*2);c.restore();}
+  c.globalAlpha=1;c.fillStyle='rgba(255,255,255,.16)';
+  for(let i=0;i<16;i++){const x=(i*97)%W,y=(i*57)%H,r=3+(i%4)*3;c.beginPath();c.arc(x,y,r,0,7);c.fill();}
+  const cx=W/2,cy=H*0.44,s=Math.min(W,H)*0.0016;
+  c.save();c.translate(cx,cy);c.scale(s,s);
+  c.fillStyle=col.flip;
+  const fl=(a,dx,dy,sx,sy)=>{c.save();c.translate(dx,dy);c.rotate(a);c.beginPath();c.ellipse(0,0,sx,sy,0,0,7);c.fill();c.restore();};
+  fl(-0.6,-150,-70,95,46);fl(0.6,150,-70,95,46);fl(-2.4,-140,85,72,38);fl(2.4,140,85,72,38);
+  c.fillStyle=col.body;c.beginPath();c.ellipse(0,12,172,142,0,0,7);c.fill();
+  c.fillStyle=col.shell;c.beginPath();c.ellipse(0,0,140,120,0,0,7);c.fill();
+  c.strokeStyle=col.line;c.lineWidth=6;c.globalAlpha=.75;
+  c.beginPath();c.ellipse(0,0,72,60,0,0,7);c.stroke();
+  for(let a=0;a<6;a++){const an=a*Math.PI/3;c.beginPath();c.moveTo(Math.cos(an)*72,Math.sin(an)*60);c.lineTo(Math.cos(an)*140,Math.sin(an)*120);c.stroke();}
+  c.globalAlpha=1;
+  c.fillStyle=col.flip;c.beginPath();c.ellipse(0,-152,56,62,0,0,7);c.fill();
+  c.fillStyle='#0b2b22';c.beginPath();c.arc(-20,-168,7,0,7);c.arc(20,-168,7,0,7);c.fill();
+  c.restore();
+  c.fillStyle='rgba(0,28,61,.80)';c.fillRect(0,H-92,W,92);
+  c.textAlign='center';c.fillStyle='#fff';
+  c.font='bold '+Math.round(H*0.052)+'px system-ui,sans-serif';c.fillText(esp,W/2,H-50);
+  c.fillStyle='#cfe3f5';c.font=Math.round(H*0.032)+'px system-ui,sans-serif';
+  c.fillText('Parque Nacional Cotubanama · DEMO',W/2,H-18);
+}
+function _blob(cv){return new Promise(r=>cv.toBlob(r,'image/jpeg',0.85));}
+async function _imgDemo(esp,col){
+  const big=document.createElement('canvas');big.width=1000;big.height=750;_tortuja(big,esp,col);
+  const sm=document.createElement('canvas');sm.width=320;sm.height=240;sm.getContext('2d').drawImage(big,0,0,320,240);
+  return {foto:await _blob(big),mini:await _blob(sm)};
+}
+async function seedDemo(){
+  try{
+    if(localStorage.getItem('cg_demo_seeded'))return;
+    const cur=await almacen.all(); if(cur.length){localStorage.setItem('cg_demo_seeded','1');return;}
+    const now=Date.now();
+    const A=await _imgDemo('Eretmochelys imbricata',{body:'#7a5a2e',shell:'#9c7433',flip:'#6b4f28',line:'#4a3313'});
+    const B=await _imgDemo('Chelonia mydas',{body:'#2f6b3a',shell:'#3c8a4a',flip:'#285c33',line:'#173a20'});
+    await almacen.put({id:uid(),foto:A.foto,mini:A.mini,w:1000,h:750,origW:1000,origH:750,bytes:A.foto.size,tipo:'image/jpeg',q:85,
+      fecha:now-3*3600*1000,lat:18.1557,lng:-68.7206,accuracy:8,origen:'demo',clase:'Reptilia',iucn:'CR',
+      especie:'Eretmochelys imbricata',notas:'Tortuga carey — avistamiento de demostracion (Isla Saona).',cant:1});
+    await almacen.put({id:uid(),foto:B.foto,mini:B.mini,w:1000,h:750,origW:1000,origH:750,bytes:B.foto.size,tipo:'image/jpeg',q:85,
+      fecha:now-6*3600*1000,lat:18.3497,lng:-68.8360,accuracy:10,origen:'demo',clase:'Reptilia',iucn:'LC',
+      especie:'Chelonia mydas',notas:'Tortuga verde — avistamiento de demostracion (costa de Bayahibe).',cant:1});
+    localStorage.setItem('cg_demo_seeded','1');
+    pintar();
+  }catch(_){}
+}
+seedDemo();
 </script>
 </body>
 </html>
