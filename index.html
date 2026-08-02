@@ -126,13 +126,14 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 
 /* ══ v8 ══ */
 .mapa-wrap{position:relative}
-.base-sel{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:1px solid var(--borde);border-radius:6px;
+.base-sel{position:absolute;top:10px;right:10px;z-index:6;background:#fff;border:1px solid var(--borde);border-radius:6px;
   font-family:var(--cpo);font-size:12.5px;font-weight:600;color:var(--txt);padding:7px 28px 7px 11px;cursor:pointer;
   box-shadow:0 1px 5px rgba(0,0,0,.2);-webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23003876' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center}
-.heat-ctl{position:absolute;top:52px;right:10px;z-index:1000;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);font-size:17px;line-height:1;padding:0}
-.heat-ctl.on{background:var(--azul);border-color:var(--azul);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+.heat-ctl{position:absolute;top:52px;right:10px;z-index:6;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);color:var(--azul);padding:0}
+.heat-ctl.on{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+.pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 </style>
 <style>/* required styles */
@@ -965,7 +966,7 @@ textarea{resize:vertical;min-height:66px}
 .a-er{background:#FBE7E9;border-color:#EFC0C6;color:#A50D1E}
 
 /* Mapa */
-#mapa{height:min(54vh,420px);border:1px solid var(--borde);border-radius:var(--r);background:#DDE3E8}
+#mapa{height:min(54vh,420px);border:1px solid var(--borde);border-radius:var(--r);background:#DDE3E8;position:relative;z-index:0}
 #mapa.ubicando{border-color:var(--ambar);border-width:2px;cursor:crosshair}
 .plot{position:relative;height:min(54vh,420px);border:1px solid var(--borde);
   border-radius:var(--r);background:var(--blanco);overflow:hidden}
@@ -1266,7 +1267,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
    <div class="vista" id="vMap" role="tabpanel" hidden>
     <div class="mapa-wrap"><div id="mapa"></div>
       <select id="baseSel" class="base-sel" aria-label="Base"></select>
-      <button type="button" id="heatCtl" class="heat-ctl" aria-pressed="false" data-aria="heatmap"><span aria-hidden="true">🔥</span></button>
+      <button type="button" id="heatCtl" class="heat-ctl" aria-pressed="false" data-aria="heatmap"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" opacity=".33"></circle><circle cx="12" cy="12" r="5.4" opacity=".7"></circle><circle cx="12" cy="12" r="2.2" fill="#1B7F5A" stroke="none"></circle></svg></button>
     </div>
     <div class="compartir">
       <button type="button" class="btn btn-1" id="btnHtml" disabled>
@@ -1426,7 +1427,7 @@ const DIC={
   phGrupo:'Nombre del grupo', phEsp:'Ej. Amazona ventralis',
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
-  bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
+  enviadoTag:'enviado', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
   bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
   otro:'+ Otro', ind:'ind.', stObs:'Nueva observación', stTrk:'Recorrido', grpAuto:'Grupo ajustado a {g} según la especie',
@@ -1507,7 +1508,7 @@ const DIC={
   phGrupo:'Group name', phEsp:'e.g. Amazona ventralis',
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
-  bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
+  enviadoTag:'sent', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
   bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
   otro:'+ Other', ind:'ind.', stObs:'New observation', stTrk:'Field track', grpAuto:'Group set to {g} from the species',
@@ -1817,6 +1818,7 @@ var subActivo='obs';
 async function pintar(anim=false){
   regs=await almacen.all();
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
+  const _sent=new Set((()=>{try{return JSON.parse(localStorage.getItem('cg_sent_ids'))||[]}catch(_){return[]}})());
   const items=[];
   regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
   trks.forEach((tr,ti)=>items.push({k:'t',t:tr.start,tr,n:ti+1}));
@@ -1839,7 +1841,7 @@ async function pintar(anim=false){
         <div class="info">
           <h3>${String(n).padStart(2,'0')}${r.clase?` · ${esc(r.clase)}`:''}
             ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
-          <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}
+          <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}${_sent.has('p:'+r.id)?`<span class="pill enviado">${t('enviadoTag')}</span>`:''}
           <p>${esc(r.notas||'')}</p>
           <small>${r.lat!=null
             ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
@@ -1865,7 +1867,7 @@ async function pintar(anim=false){
         <div class="trk-ic"><i class="ri-map-2-line"></i></div>
         <div class="info">
           <h3>${String(it.n).padStart(2,'0')} · ${esc(CGTracks.nombre(tr))}</h3>
-          <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>
+          <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>${_sent.has('t:'+tr.id)?`<span class="pill enviado">${t('enviadoTag')}</span>`:''}
           <p></p>
           <small>${fecha}</small>
           <button type="button" class="mini trk-ren">${t('trackRen')}</button>
@@ -2313,7 +2315,7 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 .p h4{margin:8px 0 3px;font-size:14px}.p em{color:#5C6670;font-weight:400}
 .p small{font-size:10.5px;color:#5C6670;line-height:1.65;display:block}
 .iucn{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;vertical-align:middle;border:1px solid rgba(0,0,0,.15)}
-.dl{display:inline-block;margin-top:9px;font:600 12px system-ui;color:#003876;text-decoration:none;border:1px solid #003876;border-radius:6px;padding:6px 10px}
+.dl{display:inline-block;margin-top:9px;font:600 12px system-ui;color:#003876;background:#fff;cursor:pointer;text-decoration:none;border:1px solid #003876;border-radius:6px;padding:6px 10px}
 .p .hint{display:block;margin-top:6px;font-size:10px;color:#8A929B}
 .tp{width:190px}
 .tp h4{margin:0 0 3px;font:600 13.5px system-ui}
@@ -2326,6 +2328,44 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 <script>
 var D=${datos},TR=${trk},IND=${JSON.stringify(t('indiv'))},SN=${JSON.stringify(t('sinNotas'))};
 var SAVE=${JSON.stringify(t('guardarFoto'))},HINT=${JSON.stringify(t('guardarHint'))},SAVETRK=${JSON.stringify(t('guardarTrk'))};
+window.guardarFoto=function(n){
+  var d=null,i; for(i=0;i<D.length;i++){ if(D[i].n===n){d=D[i];break;} } if(!d)return;
+  var im=new Image();
+  im.onload=function(){
+    var W=im.naturalWidth||im.width, H=im.naturalHeight||im.height;
+    var band=Math.max(70, Math.round(W*0.11));
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=H+band;
+    var c=cv.getContext('2d');
+    c.drawImage(im,0,0,W,H);
+    c.fillStyle='#003876'; c.fillRect(0,H,W,band);
+    c.fillStyle='#C77700'; c.fillRect(0,H,W,Math.max(3,Math.round(band*0.05)));
+    var pad=Math.round(W*0.03);
+    var r=band*0.30, cx=pad+r, cy=H+band*0.5;
+    c.strokeStyle='rgba(255,255,255,.55)'; c.lineWidth=Math.max(1.5,r*0.12);
+    c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
+    c.beginPath(); c.arc(cx,cy,r*0.58,0,7); c.stroke();
+    c.fillStyle='#1B7F5A';
+    c.beginPath(); c.moveTo(cx,cy-r*0.5);
+    c.bezierCurveTo(cx+r*0.5,cy-r*0.1,cx+r*0.5,cy+r*0.45,cx,cy+r*0.6);
+    c.bezierCurveTo(cx-r*0.5,cy+r*0.45,cx-r*0.5,cy-r*0.1,cx,cy-r*0.5); c.fill();
+    var tx=cx+r+pad*0.7;
+    var f1=Math.round(band*0.26), f2=Math.round(band*0.185), f3=Math.round(band*0.16);
+    c.textBaseline='alphabetic';
+    c.fillStyle='#fff'; c.font='700 '+f1+'px system-ui,sans-serif';
+    c.fillText('ClimateGuard Mobile', tx, H+band*0.40);
+    c.fillStyle='#DCE7F5'; c.font='italic 600 '+f2+'px system-ui,sans-serif';
+    c.fillText((d.especie?d.especie+'  ':'')+(d.grupo||''), tx, H+band*0.64);
+    c.fillStyle='#9FB6D6'; c.font='400 '+f3+'px system-ui,sans-serif';
+    var l3=(d.iucn?d.iucn+' · ':'')+(d.cant?d.cant+' ind · ':'')+d.fecha+' · '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);
+    c.fillText(l3, tx, H+band*0.86);
+    cv.toBlob(function(bl){ var a=document.createElement('a'); a.href=URL.createObjectURL(bl);
+      a.download='ClimateGuard_'+((d.especie||'foto').split(' ').join('_'))+'_'+('0'+d.n).slice(-2)+'.jpg';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
+    },'image/jpeg',0.9);
+  };
+  im.src=d.img;
+};
 var IC={EX:'#000',CR:'#d81e05',EN:'#fc7f3f',VU:'#f9e814',NT:'#cce226','LR/nt':'#cce226',LC:'#60c659',DD:'#d1d1c6'};
 var ID2=['VU','NT','LR/nt','LC','DD'];
 function ib(k){if(!k||!IC[k])return '';return '<span class="iucn" style="background:'+IC[k]+';color:'+(ID2.indexOf(k)>=0?'#1a1a1a':'#fff')+'">'+k+'</span>';}
@@ -2339,7 +2379,7 @@ if(window.L&&(D.length||TR.length)){
      .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
        (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
        '<br>'+(d.notas||SN)+'<br>'+d.lat.toFixed(5)+', '+d.lng.toFixed(5)+'<br>'+d.fecha+
-       '</small><a class="dl" href="'+d.img+'" download="ClimateGuard_foto_'+String(d.n).padStart(2,'0')+'.jpg">\u2b07 '+SAVE+'</a><span class="hint">'+HINT+'</span></div>',{minWidth:196}).addTo(g);
+       '</small><button type="button" class="dl" onclick="guardarFoto('+d.n+')">\u2b07 '+SAVE+'</button><span class="hint">'+HINT+'</span></div>',{minWidth:196}).addTo(g);
   });
   TR.forEach(function(tk){
     var _g={type:'FeatureCollection',features:[{type:'Feature',properties:{name:tk.name},geometry:{type:'LineString',coordinates:tk.c.map(function(p){return [p[1],p[0]];})}}]};
@@ -2454,14 +2494,18 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     const nt=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1 && !sent.has('t:'+x.id));
     if(!nf.length && !nt.length){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
-    const obs={type:'FeatureCollection',features:nf.map(r=>({type:'Feature',properties:{especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',fecha:new Date(r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}}))};
-    const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString()},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
+    const obs={type:'FeatureCollection',features:nf.map((r,i)=>{
+      const fn='foto_'+String(i+1).padStart(2,'0')+(r.especie?'_'+r.especie.replace(/[^\w-]+/g,'_'):'')+'.jpg'; r.__fn=fn;
+      return {type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',fecha:new Date(r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}};
+    })};
+    const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString()},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
     const fotos=[];
-    for(let i=0;i<nf.length;i++){ const r=nf[i]; if(r.mini){ try{ const du=await b64(r.mini); fotos.push({name:'foto_'+String(i+1).padStart(2,'0')+'.jpg',mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){} } }
+    for(let i=0;i<nf.length;i++){ const r=nf[i]; if(r.mini){ try{ const du=await b64(r.mini); fotos.push({name:r.__fn||('foto_'+String(i+1).padStart(2,'0')+'.jpg'),mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){} } }
     const payload={token:CG_ENVIO_TOKEN,usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),observaciones:obs,recorridos:rec,fotos:fotos};
     await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     nf.forEach(r=>sent.add('p:'+r.id)); nt.forEach(tr=>sent.add('t:'+tr.id));
     try{localStorage.setItem(CG_SENT_KEY,JSON.stringify([...sent]));}catch(_){}
+    try{pintar();}catch(_){}
     aviso('a-ok','ri-check-line',`${t('envOk')} (${nf.length}+${nt.length})`);
   }catch(e){ aviso('a-er','ri-error-warning-line',t('envErr')); }
   b.disabled=false;
