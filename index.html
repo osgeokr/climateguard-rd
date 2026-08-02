@@ -1462,7 +1462,7 @@ const DIC={
   phGrupo:'Nombre del grupo', phEsp:'Ej. Amazona ventralis',
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
-  enviadoTag:'enviado', modificadoTag:'modificado', editar:'Editar', editando:'Editando registro', actualizado:'Registro actualizado', recorridosN:'recorridos', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
+  salirDe:'Presiona atras otra vez para salir', enviadoTag:'enviado', modificadoTag:'modificado', editar:'Editar', editando:'Editando registro', actualizado:'Registro actualizado', recorridosN:'recorridos', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
   refFotos:'Fotos de referencia', refRD:'Rep. Dominicana', refGlobal:'global', refCap:'Toca una foto para ampliar · Fuente: iNaturalist (CC)', refNone:'Sin fotos de referencia para esta especie.', refOffline:'Fotos de referencia: requiere conexión a internet.', refErr:'No se pudieron cargar las fotos.', refVer:'Ver en iNaturalist ↗',
   bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
@@ -1544,7 +1544,7 @@ const DIC={
   phGrupo:'Group name', phEsp:'e.g. Amazona ventralis',
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
-  enviadoTag:'sent', modificadoTag:'edited', editar:'Edit', editando:'Editing record', actualizado:'Record updated', recorridosN:'tracks', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
+  salirDe:'Press back again to exit', enviadoTag:'sent', modificadoTag:'edited', editar:'Edit', editando:'Editing record', actualizado:'Record updated', recorridosN:'tracks', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
   refFotos:'Reference photos', refRD:'Dominican Rep.', refGlobal:'global', refCap:'Tap a photo to enlarge · Source: iNaturalist (CC)', refNone:'No reference photos for this species.', refOffline:'Reference photos: needs an internet connection.', refErr:'Could not load photos.', refVer:'View on iNaturalist ↗',
   bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
@@ -2023,6 +2023,7 @@ document.getElementById('entrar').onclick=()=>{
   document.getElementById('gate').classList.add('oculto');
   try{localStorage.setItem('cg_entered','1');}catch(_){}
   setTimeout(iniciarGPS,300);
+  armarBack();
 };
 document.getElementById('pwd').addEventListener('keydown',e=>{
   if(e.key==='Enter')document.getElementById('entrar').click()});
@@ -2031,7 +2032,29 @@ document.getElementById('salir').onclick=()=>{
   document.getElementById('gate').classList.remove('oculto');
 };
 /* v11.10: recordar el acceso (demo) para no volver a la pantalla al recargar / atras */
-try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); } }catch(_){}
+try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); armarBack(); } }catch(_){}
+/* ── v0.11: boton atras del telefono — cierra un overlay o "pulsa de nuevo para salir"
+   (asi no se vuelve a la pantalla de acceso al presionar atras) ── */
+function armarBack(){ try{ history.pushState({cg:1},'',location.href); }catch(_){} }
+(function(){
+  var armed=false, tmr=null;
+  function overlayAbierto(){
+    var lb=document.getElementById('galLb'); if(lb && !lb.hidden){ var x=document.getElementById('galLbX'); if(x)x.click(); else lb.hidden=true; return true; }
+    var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal'];
+    for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el && el.classList.contains('on')){ el.classList.remove('on'); return true; } }
+    return false;
+  }
+  window.addEventListener('popstate',function(){
+    var gate=document.getElementById('gate');
+    var logueado = gate && gate.classList.contains('oculto');
+    if(!logueado){ return; }
+    if(overlayAbierto()){ armarBack(); return; }
+    if(armed){ armed=false; try{history.back();}catch(_){} return; }
+    armed=true; armarBack();
+    try{flash(t('salirDe'));}catch(_){}
+    clearTimeout(tmr); tmr=setTimeout(function(){armed=false;},2000);
+  });
+})();
 
 /* ── Mapa: siempre inicia sobre la Republica Dominicana ── */
 let mapa=null,capa=null,ubicando=null,drCapa=null,heatCapa=null,heatOn=false;
