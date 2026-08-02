@@ -90,6 +90,12 @@ footer .marcas{margin-bottom:4px}
 .trk-item .ti-info small{font-size:11px;color:var(--txt-2)}
 .trk-item .trk-del{flex:none;background:none;border:0;color:var(--rojo);font-size:17px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:6px}
 .trk-item .trk-del:hover{background:#FBE7E9}
+.reg-trk{align-items:flex-start;border-left-color:#CE1126}
+.reg-trk .trk-ic{width:58px;height:58px;border-radius:4px;flex:none;background:#EAF0F7;display:grid;place-items:center;color:#003876;font-size:26px}
+.reg-trk .mini.trk-ren{margin-top:8px;background:#EAF0F7;border:0;color:#003876;font-weight:600;font-size:12px;padding:5px 10px;border-radius:6px;cursor:pointer}
+.mm-input{width:100%;box-sizing:border-box;margin:10px 0 4px;padding:9px 11px;border:1px solid var(--borde);border-radius:8px;font-size:14px;font-family:var(--cpo)}
+#trkPause.on{background:var(--ambar);color:#fff;border-color:var(--ambar)}
+.pausa-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ambar);vertical-align:middle}
 .rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rojo);animation:pulseRec 1.2s infinite}
 @keyframes pulseRec{0%,100%{opacity:1}50%{opacity:.25}}
 
@@ -1205,10 +1211,10 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       <div class="trk-head" data-i18n="tracking"></div>
       <div class="trk-row">
         <button type="button" class="btn btn-2" id="trkBtn"><span data-i18n="trackStart"></span></button>
+        <button type="button" class="btn btn-2" id="trkPause" hidden><span data-i18n="trackPause"></span></button>
         <button type="button" class="btn btn-3" id="trkExport" disabled data-i18n="trackExport"></button>
       </div>
       <div class="trk-stat" id="trkStat"></div>
-      <div class="trk-list" id="trkList"></div>
     </div>
 
     <section class="tarjeta oculta" id="form">
@@ -1344,6 +1350,18 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
   </div>
 </div>
 
+<div class="mini-modal" id="trkNameModal" role="dialog" aria-modal="true">
+  <div class="mm-card">
+    <i class="ri-map-2-line mm-ic"></i>
+    <h3 data-i18n="trackNombreT"></h3>
+    <input type="text" id="trkNameInput" class="mm-input" maxlength="40" autocapitalize="sentences">
+    <div class="mm-btns">
+      <button type="button" class="btn btn-3" id="trkNameCancel" data-i18n="cerrar"></button>
+      <button type="button" class="btn btn-1" id="trkNameSave" data-i18n="bGuardarN"></button>
+    </div>
+  </div>
+</div>
+
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
 
 <div class="ascenso" id="ascenso" role="dialog" aria-modal="true" aria-labelledby="aTit">
@@ -1467,6 +1485,7 @@ const DIC={
   trackExport:'Exportar GeoJSON', trackNone:'Sin recorridos guardados', trackCount:'guardado(s)',
   trackOk:'Recorrido guardado', trackAsunto:'Recorrido de campo - ClimateGuard',
   trackUno:'Recorrido', trackDelA:'Eliminar recorrido',
+  trackPause:'Pausar', trackResume:'Reanudar', trackPausado:'En pausa', trackRen:'Renombrar', trackNombreT:'Nombre del recorrido', bGuardarN:'Guardar',
   instTitulo:'Instalar ClimateGuard', instTxt:'Añádela a tu pantalla de inicio para usarla como app (funciona sin conexión).', instBtn:'Instalar', instIOS:'En Safari: toca <b>Compartir</b> y luego <b>«Añadir a pantalla de inicio»</b>.', instCerrar:'Ahora no',
   g:{bird:'Ave',reptile:'Reptil',amphibian:'Anfibio',mammal:'Mamifero',
      fish:'Pez',insect:'Insecto',plant:'Planta',fungus:'Hongo',other:'Otro'},
@@ -1546,6 +1565,7 @@ const DIC={
   trackExport:'Export GeoJSON', trackNone:'No saved tracks', trackCount:'saved',
   trackOk:'Track saved', trackAsunto:'Field track - ClimateGuard',
   trackUno:'Track', trackDelA:'Delete track',
+  trackPause:'Pause', trackResume:'Resume', trackPausado:'Paused', trackRen:'Rename', trackNombreT:'Track name', bGuardarN:'Save',
   instTitulo:'Install ClimateGuard', instTxt:'Add it to your home screen to use it like an app (works offline).', instBtn:'Install', instIOS:'In Safari: tap <b>Share</b>, then <b>“Add to Home Screen”</b>.', instCerrar:'Not now',
   g:{bird:'Bird',reptile:'Reptile',amphibian:'Amphibian',mammal:'Mammal',
      fish:'Fish',insect:'Insect',plant:'Plant',fungus:'Fungus',other:'Other'},
@@ -1794,40 +1814,73 @@ let regs=[];
 
 async function pintar(anim=false){
   regs=await almacen.all();
+  const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
+  const items=[];
+  regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
+  trks.forEach(tr=>items.push({k:'t',t:tr.start,tr}));
+  items.sort((a,b)=>b.t-a.t);
   $lista.innerHTML='';
-  if(!regs.length)
+  if(!items.length)
     $lista.innerHTML=`<li class="vacio"><i class="ri-leaf-line"></i>
       <b>${t('vacioT')}</b>${t('vacioP')}</li>`;
-  regs.forEach((r,i)=>{
-    const li=document.createElement('li');
-    li.className='reg'+(r.lat==null?' sin-ubi':'')+(anim&&i===0?' nuevo-item':'');
-    if(r.lat!=null && r.iucn && IUCN_COL[r.iucn]) li.style.borderLeftColor=IUCN_COL[r.iucn];
-    li.innerHTML=`
-      <img src="${mu(r)}" alt="${t('fotoA')} ${i+1}">
-      <div class="info">
-        <h3>${String(i+1).padStart(2,'0')} · ${esc(ng(r.grupo))}
-          ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
-        <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}
-        <p>${esc(r.notas||'')}</p>
-        <small>${r.lat!=null
-          ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
-          : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
-        ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
-      </div>`;
-    const ub=li.querySelector('.mini');
-    if(ub)ub.onclick=()=>{ubicando=r.id;tab(true);
-      aviso('a-av','ri-cursor-line',`${t('toque')} <b>${String(i+1).padStart(2,'0')}</b>. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
-    const x=document.createElement('button');
-    x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
-    x.setAttribute('aria-label',`${t('borrarA')} ${i+1}`);
-    x.onclick=async()=>{URL.revokeObjectURL(urls.get(r.id));urls.delete(r.id);
-      await almacen.del(r.id);pintar()};
-    li.appendChild(x);$lista.appendChild(li);
+  items.forEach((it,i)=>{
+    if(it.k==='p'){
+      const r=it.r, n=it.n;
+      const li=document.createElement('li');
+      li.className='reg'+(r.lat==null?' sin-ubi':'')+(anim&&i===0?' nuevo-item':'');
+      if(r.lat!=null && r.iucn && IUCN_COL[r.iucn]) li.style.borderLeftColor=IUCN_COL[r.iucn];
+      if(r.lat!=null) li.style.cursor='pointer';
+      li.innerHTML=`
+        <img src="${mu(r)}" alt="${t('fotoA')} ${n}">
+        <div class="info">
+          <h3>${String(n).padStart(2,'0')} · ${esc(ng(r.grupo))}
+            ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
+          <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}
+          <p>${esc(r.notas||'')}</p>
+          <small>${r.lat!=null
+            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
+            : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
+          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
+        </div>`;
+      if(r.lat!=null) li.onclick=()=>focusFoto(r);
+      const ub=li.querySelector('.mini');
+      if(ub)ub.onclick=(e)=>{e.stopPropagation();ubicando=r.id;tab(true);
+        aviso('a-av','ri-cursor-line',`${t('toque')} <b>${String(n).padStart(2,'0')}</b>. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
+      const x=document.createElement('button');
+      x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
+      x.setAttribute('aria-label',`${t('borrarA')} ${n}`);
+      x.onclick=async(e)=>{e.stopPropagation();URL.revokeObjectURL(urls.get(r.id));urls.delete(r.id);
+        await almacen.del(r.id);pintar()};
+      li.appendChild(x);$lista.appendChild(li);
+    } else {
+      const tr=it.tr;
+      const li=document.createElement('li');
+      li.className='reg reg-trk';li.style.cursor='pointer';
+      const d=CGTracks.dist(tr.coords); let fecha=''; try{fecha=new Date(tr.start).toLocaleString(loc());}catch(_){}
+      li.innerHTML=`
+        <div class="trk-ic"><i class="ri-map-2-line"></i></div>
+        <div class="info">
+          <h3>${esc(CGTracks.nombre(tr))}</h3>
+          <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>
+          <p></p>
+          <small>${fecha}</small>
+          <button type="button" class="mini trk-ren">${t('trackRen')}</button>
+        </div>`;
+      li.onclick=()=>CGTracks.focus(tr.id);
+      const ren=li.querySelector('.trk-ren'); if(ren)ren.onclick=(e)=>{e.stopPropagation();CGTracks.rename(tr.id);};
+      const x=document.createElement('button');
+      x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
+      x.setAttribute('aria-label',t('trackDelA'));
+      x.onclick=(e)=>{e.stopPropagation();CGTracks.del(tr.id);};
+      li.appendChild(x);$lista.appendChild(li);
+    }
   });
   document.getElementById('btnHtml').disabled=!regs.some(r=>r.lat!=null);
   pintarPerfil();
   if(!document.getElementById('vMap').hidden)dibujarMapa();
 }
+function focusFoto(r){ if(r.lat==null)return; tab(true);
+  setTimeout(()=>{ if(!mapa)return; try{mapa.invalidateSize();mapa.setView([r.lat,r.lng],18);}catch(_){}} ,350); }
 
 /* ── Puntos y niveles ───────────────────────────────────────
    Todo se deriva de los registros, no de un contador guardado:
@@ -2431,14 +2484,13 @@ document.addEventListener('click',e=>{
   };
 })();
 
-/* ── v5: recorrido (tracking) → GeoJSON ── */
-(function(){
-  const btn=document.getElementById('trkBtn'), exp=document.getElementById('trkExport'), stat=document.getElementById('trkStat');
-  const trkList=document.getElementById('trkList');
-  if(!btn) return;
+/* ── v11.5: recorrido (tracking) con pausa + nombre; lista unificada ── */
+var CGTracks = (function(){
+  const btn=document.getElementById('trkBtn'), pauseBtn=document.getElementById('trkPause'),
+        exp=document.getElementById('trkExport'), stat=document.getElementById('trkStat');
   const KEY='cg_tracks_rd';
   let tracks=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return []}})();
-  let rec=null, watchId=null, trkLayer=null, liveLine=null;
+  let rec=null, watchId=null, trkLayer=null, liveLine=null, paused=false;
   const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(tracks));}catch{}};
   function hav(a,b){const R=6371000,toR=x=>x*Math.PI/180;
     const dLat=toR(b[1]-a[1]),dLng=toR(b[0]-a[0]);
@@ -2446,6 +2498,9 @@ document.addEventListener('click',e=>{
     return 2*R*Math.asin(Math.sqrt(s));}
   function dist(c){let d=0;for(let i=1;i<c.length;i++)d+=hav(c[i-1],c[i]);return d;}
   const fmtD=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(2)+' km';
+  function autoNombre(ms){ let f=''; try{f=new Date(ms).toLocaleString(loc(),{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(_){f='';} return t('trackUno')+' '+f; }
+  function nombreDe(tr){ return (tr.name&&tr.name.trim())?tr.name:autoNombre(tr.start); }
+
   function drawSaved(){ if(!mapa||!window.L)return;
     if(trkLayer)mapa.removeLayer(trkLayer);
     trkLayer=L.layerGroup();
@@ -2453,60 +2508,76 @@ document.addEventListener('click',e=>{
     trkLayer.addTo(mapa);
   }
   window.dibujarTracks=drawSaved;
-  function upd(){
-    if(rec){stat.innerHTML=`<span class="rec-dot"></span> ${rec.coords.length} pts · ${fmtD(dist(rec.coords))}`;}
-    else{stat.textContent=tracks.length?`${tracks.length} ${t('trackCount')}`:t('trackNone');}
+
+  function statLive(){
+    if(rec){ stat.innerHTML=(paused?('<span class="pausa-dot"></span> '+t('trackPausado')+' · '):'<span class="rec-dot"></span> ')+rec.coords.length+' pts · '+fmtD(dist(rec.coords)); }
+    else { stat.textContent=''; }
     exp.disabled=!(tracks.length||(rec&&rec.coords.length>1));
-  }
-  function renderList(){
-    if(!trkList)return;
-    trkList.innerHTML='';
-    tracks.forEach((tr,i)=>{
-      const it=document.createElement('div'); it.className='trk-item';
-      const d=dist(tr.coords); let fecha=''; try{fecha=new Date(tr.start).toLocaleString(loc());}catch(_){}
-      it.innerHTML='<div class="ti-info"><b>'+t('trackUno')+' '+(i+1)+'</b><small>'+fecha+' \u00b7 '+tr.coords.length+' pts \u00b7 '+fmtD(d)+'</small></div>'+
-        '<button type="button" class="trk-del" aria-label="'+t('trackDelA')+'"><i class="ri-close-line"></i></button>';
-      it.querySelector('.trk-del').onclick=()=>{
-        const idx=tracks.findIndex(x=>x.id===tr.id);
-        if(idx>=0){tracks.splice(idx,1);save();drawSaved();renderList();upd();}
-      };
-      trkList.appendChild(it);
-    });
   }
   function start(){
     if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
-    rec={id:uid(),start:Date.now(),coords:[]};
+    rec={id:uid(),start:Date.now(),coords:[],name:''}; paused=false;
     if(mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
     watchId=navigator.geolocation.watchPosition(p=>{
+      if(paused){statLive();return;}
       const c=[p.coords.longitude,p.coords.latitude,Date.now(),Math.round(p.coords.accuracy||0)];
       const last=rec.coords[rec.coords.length-1];
       if(!last||hav(last,c)>=3){rec.coords.push(c);
         if(liveLine)liveLine.setLatLngs(rec.coords.map(x=>[x[1],x[0]]));
         if(mapa&&rec.coords.length===1)mapa.setView([c[1],c[0]],16);}
-      upd();
+      statLive();
     },e=>{aviso('a-av','ri-map-pin-off-line',t(e.code===1?'denegado':'sinsenal'));},
     {enableHighAccuracy:true,maximumAge:1000,timeout:20000});
-    btn.classList.add('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStop'); upd();
+    btn.classList.add('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStop');
+    pauseBtn.hidden=false; pauseBtn.classList.remove('on'); const psp=pauseBtn.querySelector('span'); if(psp)psp.textContent=t('trackPause');
+    statLive();
   }
+  function togglePause(){ if(!rec)return; paused=!paused;
+    const psp=pauseBtn.querySelector('span'); if(psp)psp.textContent=t(paused?'trackResume':'trackPause');
+    pauseBtn.classList.toggle('on',paused); statLive(); }
+  function finalize(r,nombre){ r.end=Date.now(); r.name=(nombre||'').trim(); tracks.push(r); save(); drawSaved(); pintar(); aviso('a-ok','ri-check-line',t('trackOk')); }
   function stop(){
     if(watchId!=null)navigator.geolocation.clearWatch(watchId); watchId=null;
     if(liveLine&&mapa)mapa.removeLayer(liveLine); liveLine=null;
-    if(rec&&rec.coords.length>1){rec.end=Date.now();tracks.push(rec);save();drawSaved();renderList();aviso('a-ok','ri-check-line',t('trackOk'));}
-    rec=null; btn.classList.remove('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStart'); upd();
+    const r=rec; rec=null; paused=false;
+    btn.classList.remove('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStart');
+    pauseBtn.hidden=true; pauseBtn.classList.remove('on'); statLive();
+    if(r&&r.coords.length>1){ abrirNombre(autoNombre(r.start),(v)=>finalize(r,v),()=>finalize(r,'')); }
+    else { aviso('a-info','ri-information-line',t('trackNone')); }
   }
   btn.onclick=()=>{rec?stop():start();};
+  pauseBtn.onclick=togglePause;
   exp.onclick=async()=>{
     const all=[...tracks]; if(rec&&rec.coords.length>1)all.push(rec);
     if(!all.length){aviso('a-info','ri-information-line',t('trackNone'));return;}
     const feats=all.map((tr,i)=>({type:'Feature',
-      properties:{name:'track_'+(i+1),start:new Date(tr.start).toISOString(),
+      properties:{name:nombreDe(tr),start:new Date(tr.start).toISOString(),
         end:tr.end?new Date(tr.end).toISOString():null,points:tr.coords.length,distance_m:Math.round(dist(tr.coords))},
       geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}));
     const fc={type:'FeatureCollection',features:feats};
     await entregar(new File([JSON.stringify(fc)],`ClimateGuard_Recorrido_${sello()}.geojson`,{type:'application/geo+json'}),t('trackAsunto'));
   };
-  renderList();
-  upd();
+
+  const nameModal=document.getElementById('trkNameModal'), nameInput=document.getElementById('trkNameInput');
+  let nameOnSave=null, nameOnCancel=null;
+  function abrirNombre(def,onSave,onCancel){ nameOnSave=onSave; nameOnCancel=onCancel||null; nameInput.value=def||'';
+    nameModal.classList.add('on'); setTimeout(()=>{try{nameInput.focus();nameInput.select();}catch(_){}} ,60); }
+  function cerrarNombre(){ nameModal.classList.remove('on'); }
+  document.getElementById('trkNameSave').onclick=()=>{ const v=nameInput.value.trim(); const f=nameOnSave; nameOnSave=nameOnCancel=null; cerrarNombre(); if(f)f(v); };
+  document.getElementById('trkNameCancel').onclick=()=>{ const f=nameOnCancel; nameOnSave=nameOnCancel=null; cerrarNombre(); if(f)f(); };
+  nameModal.addEventListener('click',e=>{ if(e.target===nameModal){ const f=nameOnCancel; nameOnSave=nameOnCancel=null; cerrarNombre(); if(f)f(); } });
+
+  setTimeout(()=>{try{pintar();}catch(_){}} ,0);
+
+  return {
+    all:()=>tracks, nombre:nombreDe, dist:dist, fmtD:fmtD,
+    del(id){ const i=tracks.findIndex(x=>x.id===id); if(i>=0){tracks.splice(i,1);save();drawSaved();statLive();pintar();} },
+    rename(id){ const tr=tracks.find(x=>x.id===id); if(!tr)return; abrirNombre(nombreDe(tr),(v)=>{tr.name=(v||'').trim();save();pintar();},null); },
+    focus(id){ const tr=tracks.find(x=>x.id===id); if(!tr||!tr.coords.length)return; tab(true);
+      setTimeout(()=>{ if(!mapa)return; try{ mapa.invalidateSize();
+        if(tr.coords.length>1){ mapa.fitBounds(L.latLngBounds(tr.coords.map(c=>[c[1],c[0]])).pad(.25),{maxZoom:17}); }
+        else { mapa.setView([tr.coords[0][1],tr.coords[0][0]],16); } }catch(_){}} ,350); }
+  };
 })();
 
 /* ── v2: instalable (añadir a pantalla de inicio) + datos locales ── */
