@@ -131,6 +131,8 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
   box-shadow:0 1px 5px rgba(0,0,0,.2);-webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23003876' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center}
+.heat-ctl{position:absolute;top:52px;right:10px;z-index:1000;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);font-size:17px;line-height:1;padding:0}
+.heat-ctl.on{background:var(--azul);border-color:var(--azul);box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 </style>
 <style>/* required styles */
@@ -1264,11 +1266,12 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
    <div class="vista" id="vMap" role="tabpanel" hidden>
     <div class="mapa-wrap"><div id="mapa"></div>
       <select id="baseSel" class="base-sel" aria-label="Base"></select>
+      <button type="button" id="heatCtl" class="heat-ctl" aria-pressed="false" data-aria="heatmap"><span aria-hidden="true">🔥</span></button>
     </div>
     <div class="compartir">
       <button type="button" class="btn btn-1" id="btnHtml" disabled>
         <i class="ri-map-2-line"></i><span data-i18n="bMapa"></span></button>
-      <button type="button" class="btn btn-2" id="btnHeat" aria-pressed="false"><span data-i18n="heatmap"></span></button>
+      <button type="button" class="btn btn-2" id="btnEnviar"><span data-i18n="bEnviar"></span></button>
     </div>
     <div id="avisos"></div>
     <button type="button" class="probar" id="probar" data-i18n="bPrueba"></button>
@@ -1423,6 +1426,7 @@ const DIC={
   phGrupo:'Nombre del grupo', phEsp:'Ej. Amazona ventralis',
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
+  bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
   bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
   otro:'+ Otro', ind:'ind.', stObs:'Nueva observación', stTrk:'Recorrido', grpAuto:'Grupo ajustado a {g} según la especie',
@@ -1503,6 +1507,7 @@ const DIC={
   phGrupo:'Group name', phEsp:'e.g. Amazona ventralis',
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
+  bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
   bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
   otro:'+ Other', ind:'ind.', stObs:'New observation', stTrk:'Field track', grpAuto:'Group set to {g} from the species',
@@ -2433,8 +2438,34 @@ const SPECIES=[["Lutjanus cyanopterus","Cubera","Cubera Snapper","Actinopterygii
 })();
 
 /* ── v4: heatmap toggle ── */
-(function(){const b=document.getElementById('btnHeat');if(!b)return;
+(function(){const b=document.getElementById('heatCtl');if(!b)return;
   b.onclick=()=>{heatOn=!heatOn;b.setAttribute('aria-pressed',heatOn);b.classList.toggle('on',heatOn);dibujarMapa();};})();
+
+/* ── v0.3: envio de datos al Drive (Apps Script Web App) ── */
+const CG_ENVIO_URL='https://script.google.com/macros/s/AKfycbxLthzg2zo6Wqw3RaU0xtyosK8qA9jYlCn2YP5xPK7ed7Ms7b-E_rzTGFi2V5MGr4fJ/exec';
+const CG_ENVIO_TOKEN='cg-kLVvRhNatYBkOTphQmCOx585YIiM';
+const CG_SENT_KEY='cg_sent_ids';
+document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').onclick=async()=>{
+  const b=document.getElementById('btnEnviar'); b.disabled=true;
+  try{
+    let sentArr=[]; try{sentArr=JSON.parse(localStorage.getItem(CG_SENT_KEY))||[];}catch(_){}
+    const sent=new Set(sentArr);
+    const nf=regs.filter(r=>r.lat!=null && !sent.has('p:'+r.id));
+    const nt=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1 && !sent.has('t:'+x.id));
+    if(!nf.length && !nt.length){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
+    aviso('a-info','ri-loader-4-line',t('envEnviando'));
+    const obs={type:'FeatureCollection',features:nf.map(r=>({type:'Feature',properties:{especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',fecha:new Date(r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}}))};
+    const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString()},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
+    const fotos=[];
+    for(let i=0;i<nf.length;i++){ const r=nf[i]; if(r.mini){ try{ const du=await b64(r.mini); fotos.push({name:'foto_'+String(i+1).padStart(2,'0')+'.jpg',mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){} } }
+    const payload={token:CG_ENVIO_TOKEN,usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),observaciones:obs,recorridos:rec,fotos:fotos};
+    await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    nf.forEach(r=>sent.add('p:'+r.id)); nt.forEach(tr=>sent.add('t:'+tr.id));
+    try{localStorage.setItem(CG_SENT_KEY,JSON.stringify([...sent]));}catch(_){}
+    aviso('a-ok','ri-check-line',`${t('envOk')} (${nf.length}+${nt.length})`);
+  }catch(e){ aviso('a-er','ri-error-warning-line',t('envErr')); }
+  b.disabled=false;
+});
 
 /* ── v4: reubicar desde el marcador / cancelar ── */
 document.addEventListener('click',e=>{

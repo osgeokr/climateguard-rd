@@ -3,7 +3,7 @@
    iconos, datos IUCN) esta embebido en index.html, asi que basta con
    cachear los archivos locales. Los mosaicos de mapa (OSM/Esri) son de
    otro origen: se intentan por red y, si ya se visitaron, salen de cache. */
-const CACHE = 'climateguard-v0.2';
+const CACHE = 'climateguard-v0.3';
 const ASSETS = [
   './',
   './index.html',
