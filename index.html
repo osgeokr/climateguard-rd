@@ -1269,7 +1269,6 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       <button type="button" class="btn btn-1" id="btnHtml" disabled>
         <i class="ri-map-2-line"></i><span data-i18n="bMapa"></span></button>
       <button type="button" class="btn btn-2" id="btnHeat" aria-pressed="false"><span data-i18n="heatmap"></span></button>
-      <button type="button" class="btn btn-3" id="btnDatos" data-i18n="bDatos"></button>
     </div>
     <div id="avisos"></div>
     <button type="button" class="probar" id="probar" data-i18n="bPrueba"></button>
@@ -1424,7 +1423,7 @@ const DIC={
   phGrupo:'Nombre del grupo', phEsp:'Ej. Amazona ventralis',
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
-  bMapa:'Compartir mapa', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
+  bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
   otro:'+ Otro', ind:'ind.', stObs:'Nueva observación', stTrk:'Recorrido', grpAuto:'Grupo ajustado a {g} según la especie',
   pie1:'Interfaz basada en el Sistema de Diseno Dominicano (SDD) - OGTIC',
@@ -1504,7 +1503,7 @@ const DIC={
   phGrupo:'Group name', phEsp:'e.g. Amazona ventralis',
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
-  bMapa:'Share map', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
+  bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
   otro:'+ Other', ind:'ind.', stObs:'New observation', stTrk:'Field track', grpAuto:'Group set to {g} from the species',
   pie1:'Interface based on the Dominican Design System (SDD) - OGTIC',
@@ -1815,7 +1814,7 @@ async function pintar(anim=false){
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
   const items=[];
   regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
-  trks.forEach(tr=>items.push({k:'t',t:tr.start,tr}));
+  trks.forEach((tr,ti)=>items.push({k:'t',t:tr.start,tr,n:ti+1}));
   const vis=items.filter(it=>subActivo==='trk'?it.k==='t':it.k==='p');
   vis.sort((a,b)=>b.t-a.t);
   $lista.innerHTML='';
@@ -1860,7 +1859,7 @@ async function pintar(anim=false){
       li.innerHTML=`
         <div class="trk-ic"><i class="ri-map-2-line"></i></div>
         <div class="info">
-          <h3>${esc(CGTracks.nombre(tr))}</h3>
+          <h3>${String(it.n).padStart(2,'0')} · ${esc(CGTracks.nombre(tr))}</h3>
           <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>
           <p></p>
           <small>${fecha}</small>
@@ -2115,7 +2114,14 @@ document.addEventListener('keydown',e=>{
 document.getElementById('cGuardar').onclick=async()=>{
   if(!carnetBlob)return;
   const b=document.getElementById('cGuardar'); b.disabled=true;
-  descargar(new File([carnetBlob],`ClimateGuard_Credencial_${sello()}.png`,{type:'image/png'}));
+  const file=new File([carnetBlob],`ClimateGuard_Credencial_${sello()}.png`,{type:'image/png'});
+  /* v0.1: en movil usa la hoja de compartir (Guardar imagen) para NO navegar
+     al blob (eso recargaba la app y volvia al acceso en iOS); escritorio descarga. */
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); msgCarnet('a-ok','ri-check-line',t('guardado')); b.disabled=false; return; }
+    catch(e){ if(e&&e.name==='AbortError'){ b.disabled=false; return; } }
+  }
+  descargar(file);
   msgCarnet('a-ok','ri-download-2-line',t('guardado'));
   b.disabled=false;
 };
@@ -2277,7 +2283,7 @@ async function mapaHtml(){
   for(const r of regs){n++;if(r.lat==null)continue;
     d.push({n,lat:r.lat,lng:r.lng,grupo:r.clase||'',especie:r.especie||'',
       cant:r.cant,notas:r.notas||'',iucn:r.iucn||'',
-      fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.mini)})}
+      fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.foto)})}
   const datos=JSON.stringify(d).replace(/</g,'\\u003c');
   const trk=JSON.stringify((typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1).map(x=>({name:CGTracks.nombre(x),c:x.coords.map(p=>[p[1],p[0]])})));
   return `<!DOCTYPE html><html lang="${idioma}" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate">
@@ -2302,6 +2308,9 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 .p h4{margin:8px 0 3px;font-size:14px}.p em{color:#5C6670;font-weight:400}
 .p small{font-size:10.5px;color:#5C6670;line-height:1.65;display:block}
 .iucn{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;vertical-align:middle;border:1px solid rgba(0,0,0,.15)}
+.p .dl{display:inline-block;margin-top:9px;font:600 12px system-ui;color:#003876;text-decoration:none;border:1px solid #003876;border-radius:6px;padding:6px 10px}
+.p .hint{display:block;margin-top:6px;font-size:10px;color:#8A929B}
+.dltrk{position:fixed;right:12px;bottom:12px;z-index:1000;background:#003876;color:#fff;font:600 13px system-ui;padding:11px 15px;border-radius:9px;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 </style></head><body>
 <div id="b"></div>
 <div id="h"><span id="fl"></span><div><b>${t('tarjTit')}</b>
@@ -2309,6 +2318,7 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 <div id="m"></div>
 <script>
 var D=${datos},TR=${trk},IND=${JSON.stringify(t('indiv'))},SN=${JSON.stringify(t('sinNotas'))};
+var SAVE=${JSON.stringify(t('guardarFoto'))},HINT=${JSON.stringify(t('guardarHint'))},SAVETRK=${JSON.stringify(t('guardarTrk'))};
 var IC={EX:'#000',CR:'#d81e05',EN:'#fc7f3f',VU:'#f9e814',NT:'#cce226','LR/nt':'#cce226',LC:'#60c659',DD:'#d1d1c6'};
 var ID2=['VU','NT','LR/nt','LC','DD'];
 function ib(k){if(!k||!IC[k])return '';return '<span class="iucn" style="background:'+IC[k]+';color:'+(ID2.indexOf(k)>=0?'#1a1a1a':'#fff')+'">'+k+'</span>';}
@@ -2322,7 +2332,7 @@ if(window.L&&(D.length||TR.length)){
      .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
        (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
        '<br>'+(d.notas||SN)+'<br>'+d.lat.toFixed(5)+', '+d.lng.toFixed(5)+'<br>'+d.fecha+
-       '</small></div>',{minWidth:196}).addTo(g);
+       '</small><a class="dl" href="'+d.img+'" download="ClimateGuard_foto_'+String(d.n).padStart(2,'0')+'.jpg">\u2b07 '+SAVE+'</a><span class="hint">'+HINT+'</span></div>',{minWidth:196}).addTo(g);
   });
   TR.forEach(function(tk){L.polyline(tk.c,{color:'#CE1126',weight:4,opacity:.85}).addTo(g).bindPopup(tk.name);});
   var PTS=D.map(function(d){return[d.lat,d.lng];});TR.forEach(function(tk){PTS=PTS.concat(tk.c);});
@@ -2333,6 +2343,11 @@ if(window.L&&(D.length||TR.length)){
    ${JSON.stringify(t('htmlSin'))}+'<br><br>'+
    D.map(function(d){return d.n+'. '+d.grupo+(d.especie?' ('+d.especie+')':'')+(d.iucn?' — '+d.iucn:'')+' — '+
    d.lat.toFixed(5)+', '+d.lng.toFixed(5)}).join('<br>')+'</div>';
+}
+if(TR&&TR.length){
+  var _geo={type:'FeatureCollection',features:TR.map(function(tk){return {type:'Feature',properties:{name:tk.name},geometry:{type:'LineString',coordinates:tk.c.map(function(p){return [p[1],p[0]];})}};})};
+  var _a=document.createElement('a');_a.href=URL.createObjectURL(new Blob([JSON.stringify(_geo)],{type:'application/geo+json'}));
+  _a.download='ClimateGuard_Recorridos.geojson';_a.className='dltrk';_a.textContent='\u2b07 '+SAVETRK;document.body.appendChild(_a);
 }
 <\/script></body></html>`;
 }
@@ -2349,30 +2364,6 @@ async function entregar(file,texto,ntf=aviso){
   setTimeout(()=>URL.revokeObjectURL(u),4000);
   ntf('a-av','ri-download-2-line',`${t('noComp')} <b>${file.name}</b>. ${t('adjunte')}`);
 }
-async function entregarVarios(files,texto,ntf=aviso){
-  if(navigator.canShare&&navigator.canShare({files:files})){
-    try{await navigator.share({files:files,text:texto});ntf('a-ok','ri-check-line',t('datosOk'));return;}
-    catch(e){if(e&&e.name==='AbortError'){ntf('a-info','ri-information-line',t('cancelado'));return;}}
-  }
-  for(const f of files){descargar(f);await new Promise(r=>setTimeout(r,450));}
-  ntf('a-av','ri-download-2-line',`${t('noComp')} ${files.map(f=>f.name).join(', ')}`);
-}
-document.getElementById('btnDatos')&&(document.getElementById('btnDatos').onclick=async()=>{
-  const b=document.getElementById('btnDatos');b.disabled=true;
-  try{
-    const pts=regs.filter(r=>r.lat!=null).map((r,i)=>({type:'Feature',
-      properties:{n:i+1,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',fecha:new Date(r.fecha).toISOString()},
-      geometry:{type:'Point',coordinates:[r.lng,r.lat]}}));
-    const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1);
-    if(!pts.length&&!trAll.length){aviso('a-info','ri-information-line',t('sinDatos'));b.disabled=false;return;}
-    const files=[];
-    if(pts.length)files.push(new File([JSON.stringify({type:'FeatureCollection',features:pts},null,1)],`ClimateGuard_Fotos_${sello()}.geojson`,{type:'application/geo+json'}));
-    if(trAll.length){const tf=trAll.map(tr=>({type:'Feature',properties:{name:CGTracks.nombre(tr),start:new Date(tr.start).toISOString(),end:tr.end?new Date(tr.end).toISOString():null,points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords))},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}));
-      files.push(new File([JSON.stringify({type:'FeatureCollection',features:tf},null,1)],`ClimateGuard_Recorridos_${sello()}.geojson`,{type:'application/geo+json'}));}
-    await entregarVarios(files,`${t('asunto')} · ${pts.length}+${trAll.length}`);
-  }catch(e){aviso('a-er','ri-error-warning-line',t('errGenMapa'));}
-  b.disabled=false;
-});
 function descargar(file){const u=URL.createObjectURL(file);const a=document.createElement('a');
   a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(u),4000);}
