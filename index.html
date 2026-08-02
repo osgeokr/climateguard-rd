@@ -1486,7 +1486,7 @@ const DIC={
   gpsInsecure:'⚠ La ubicación del navegador solo funciona en una dirección segura <b>https://</b> (o instalando la app en la pantalla de inicio). Al abrir el archivo directamente, el GPS queda desactivado.',
   guardado:'Imagen guardada en el dispositivo.', crHint:'Pellizca para acercar · arrastra para mover',
   tracking:'Recorrido (tracking)', trackStart:'Iniciar recorrido', trackStop:'Detener recorrido',
-  trackExport:'Exportar GeoJSON', trackNone:'Sin recorridos guardados', trackCount:'guardado(s)',
+  trackExport:'Exportar GeoJSON', trackNone:'Sin recorridos guardados', trkVacioP:'Inicia un recorrido para registrar tu ruta de campo.', trackCount:'guardado(s)',
   trackOk:'Recorrido guardado', trackAsunto:'Recorrido de campo - ClimateGuard',
   trackUno:'Recorrido', trackDelA:'Eliminar recorrido',
   trackPause:'Pausar', trackResume:'Reanudar', trackPausado:'En pausa', trackRen:'Renombrar', trackNombreT:'Nombre del recorrido', bGuardarN:'Guardar',
@@ -1566,7 +1566,7 @@ const DIC={
   gpsInsecure:'⚠ Browser location only works on a secure <b>https://</b> address (or after installing the app to your home screen). Opening the file directly disables GPS.',
   guardado:'Image saved to your device.', crHint:'Pinch to zoom · drag to move',
   tracking:'Field track', trackStart:'Start track', trackStop:'Stop track',
-  trackExport:'Export GeoJSON', trackNone:'No saved tracks', trackCount:'saved',
+  trackExport:'Export GeoJSON', trackNone:'No saved tracks', trkVacioP:'Start a track to record your field route.', trackCount:'saved',
   trackOk:'Track saved', trackAsunto:'Field track - ClimateGuard',
   trackUno:'Track', trackDelA:'Delete track',
   trackPause:'Pause', trackResume:'Resume', trackPausado:'Paused', trackRen:'Rename', trackNombreT:'Track name', bGuardarN:'Save',
@@ -1809,18 +1809,21 @@ const urls=new Map();
 const mu=r=>{if(!urls.has(r.id))urls.set(r.id,URL.createObjectURL(r.mini));return urls.get(r.id)};
 let regs=[];
 
+var subActivo='obs';
 async function pintar(anim=false){
   regs=await almacen.all();
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
   const items=[];
   regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
   trks.forEach(tr=>items.push({k:'t',t:tr.start,tr}));
-  items.sort((a,b)=>b.t-a.t);
+  const vis=items.filter(it=>subActivo==='trk'?it.k==='t':it.k==='p');
+  vis.sort((a,b)=>b.t-a.t);
   $lista.innerHTML='';
-  if(!items.length)
-    $lista.innerHTML=`<li class="vacio"><i class="ri-leaf-line"></i>
-      <b>${t('vacioT')}</b>${t('vacioP')}</li>`;
-  items.forEach((it,i)=>{
+  if(!vis.length)
+    $lista.innerHTML=subActivo==='trk'
+      ? `<li class="vacio"><i class="ri-map-2-line"></i><b>${t('trackNone')}</b>${t('trkVacioP')}</li>`
+      : `<li class="vacio"><i class="ri-leaf-line"></i><b>${t('vacioT')}</b>${t('vacioP')}</li>`;
+  vis.forEach((it,i)=>{
     if(it.k==='p'){
       const r=it.r, n=it.n;
       const li=document.createElement('li');
@@ -2031,7 +2034,8 @@ $tM.onclick=()=>tab(true);
   const paneObs=document.getElementById('paneObs'), paneTrk=document.getElementById('paneTrk');
   if(!stObs||!stTrk||!paneObs||!paneTrk)return;
   function sel(obs){ paneObs.hidden=!obs; paneTrk.hidden=obs;
-    stObs.setAttribute('aria-selected',obs); stTrk.setAttribute('aria-selected',!obs); }
+    stObs.setAttribute('aria-selected',obs); stTrk.setAttribute('aria-selected',!obs);
+    subActivo=obs?'obs':'trk'; try{pintar();}catch(_){} }
   stObs.onclick=()=>sel(true); stTrk.onclick=()=>sel(false); sel(true);
 })();
 
