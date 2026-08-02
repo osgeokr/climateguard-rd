@@ -2425,7 +2425,7 @@ document.addEventListener('click',e=>{
     return 2*R*Math.asin(Math.sqrt(s));}
   function dist(c){let d=0;for(let i=1;i<c.length;i++)d+=hav(c[i-1],c[i]);return d;}
   const fmtD=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(2)+' km';
-  function drawSaved(){ if(!window.mapa||!window.L)return;
+  function drawSaved(){ if(!mapa||!window.L)return;
     if(trkLayer)mapa.removeLayer(trkLayer);
     trkLayer=L.layerGroup();
     tracks.forEach(tr=>{if(tr.coords.length>1)L.polyline(tr.coords.map(c=>[c[1],c[0]]),{color:'#CE1126',weight:4,opacity:.85}).addTo(trkLayer);});
@@ -2440,13 +2440,13 @@ document.addEventListener('click',e=>{
   function start(){
     if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
     rec={id:uid(),start:Date.now(),coords:[]};
-    if(window.mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
+    if(mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
     watchId=navigator.geolocation.watchPosition(p=>{
       const c=[p.coords.longitude,p.coords.latitude,Date.now(),Math.round(p.coords.accuracy||0)];
       const last=rec.coords[rec.coords.length-1];
       if(!last||hav(last,c)>=3){rec.coords.push(c);
         if(liveLine)liveLine.setLatLngs(rec.coords.map(x=>[x[1],x[0]]));
-        if(window.mapa&&rec.coords.length===1)mapa.setView([c[1],c[0]],16);}
+        if(mapa&&rec.coords.length===1)mapa.setView([c[1],c[0]],16);}
       upd();
     },e=>{aviso('a-av','ri-map-pin-off-line',t(e.code===1?'denegado':'sinsenal'));},
     {enableHighAccuracy:true,maximumAge:1000,timeout:20000});
@@ -2454,7 +2454,7 @@ document.addEventListener('click',e=>{
   }
   function stop(){
     if(watchId!=null)navigator.geolocation.clearWatch(watchId); watchId=null;
-    if(liveLine&&window.mapa)mapa.removeLayer(liveLine); liveLine=null;
+    if(liveLine&&mapa)mapa.removeLayer(liveLine); liveLine=null;
     if(rec&&rec.coords.length>1){rec.end=Date.now();tracks.push(rec);save();drawSaved();aviso('a-ok','ri-check-line',t('trackOk'));}
     rec=null; btn.classList.remove('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStart'); upd();
   }
