@@ -83,6 +83,13 @@ footer .marcas{margin-bottom:4px}
 .inst-banner .inst-txt b{font-size:13.5px;color:var(--txt)}
 .inst-banner .inst-txt span{font-size:11.5px;color:var(--txt-2);line-height:1.45}
 .inst-banner .inst-x{flex:none;background:none;border:0;font-size:20px;line-height:1;color:var(--txt-2);cursor:pointer;padding:2px 4px;align-self:flex-start}
+.trk-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.trk-item{display:flex;align-items:center;gap:10px;background:#F5F7F9;border:1px solid var(--borde);border-radius:8px;padding:7px 4px 7px 11px}
+.trk-item .ti-info{flex:1;min-width:0}
+.trk-item .ti-info b{font-size:12.5px;color:var(--txt);display:block}
+.trk-item .ti-info small{font-size:11px;color:var(--txt-2)}
+.trk-item .trk-del{flex:none;background:none;border:0;color:var(--rojo);font-size:17px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:6px}
+.trk-item .trk-del:hover{background:#FBE7E9}
 .rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rojo);animation:pulseRec 1.2s infinite}
 @keyframes pulseRec{0%,100%{opacity:1}50%{opacity:.25}}
 
@@ -1201,6 +1208,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
         <button type="button" class="btn btn-3" id="trkExport" disabled data-i18n="trackExport"></button>
       </div>
       <div class="trk-stat" id="trkStat"></div>
+      <div class="trk-list" id="trkList"></div>
     </div>
 
     <section class="tarjeta oculta" id="form">
@@ -1458,6 +1466,7 @@ const DIC={
   tracking:'Recorrido (tracking)', trackStart:'Iniciar recorrido', trackStop:'Detener recorrido',
   trackExport:'Exportar GeoJSON', trackNone:'Sin recorridos guardados', trackCount:'guardado(s)',
   trackOk:'Recorrido guardado', trackAsunto:'Recorrido de campo - ClimateGuard',
+  trackUno:'Recorrido', trackDelA:'Eliminar recorrido',
   instTitulo:'Instalar ClimateGuard', instTxt:'Añádela a tu pantalla de inicio para usarla como app (funciona sin conexión).', instBtn:'Instalar', instIOS:'En Safari: toca <b>Compartir</b> y luego <b>«Añadir a pantalla de inicio»</b>.', instCerrar:'Ahora no',
   g:{bird:'Ave',reptile:'Reptil',amphibian:'Anfibio',mammal:'Mamifero',
      fish:'Pez',insect:'Insecto',plant:'Planta',fungus:'Hongo',other:'Otro'},
@@ -1536,6 +1545,7 @@ const DIC={
   tracking:'Field track', trackStart:'Start track', trackStop:'Stop track',
   trackExport:'Export GeoJSON', trackNone:'No saved tracks', trackCount:'saved',
   trackOk:'Track saved', trackAsunto:'Field track - ClimateGuard',
+  trackUno:'Track', trackDelA:'Delete track',
   instTitulo:'Install ClimateGuard', instTxt:'Add it to your home screen to use it like an app (works offline).', instBtn:'Install', instIOS:'In Safari: tap <b>Share</b>, then <b>“Add to Home Screen”</b>.', instCerrar:'Not now',
   g:{bird:'Bird',reptile:'Reptile',amphibian:'Amphibian',mammal:'Mammal',
      fish:'Fish',insect:'Insect',plant:'Plant',fungus:'Fungus',other:'Other'},
@@ -2424,6 +2434,7 @@ document.addEventListener('click',e=>{
 /* ── v5: recorrido (tracking) → GeoJSON ── */
 (function(){
   const btn=document.getElementById('trkBtn'), exp=document.getElementById('trkExport'), stat=document.getElementById('trkStat');
+  const trkList=document.getElementById('trkList');
   if(!btn) return;
   const KEY='cg_tracks_rd';
   let tracks=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return []}})();
@@ -2447,6 +2458,21 @@ document.addEventListener('click',e=>{
     else{stat.textContent=tracks.length?`${tracks.length} ${t('trackCount')}`:t('trackNone');}
     exp.disabled=!(tracks.length||(rec&&rec.coords.length>1));
   }
+  function renderList(){
+    if(!trkList)return;
+    trkList.innerHTML='';
+    tracks.forEach((tr,i)=>{
+      const it=document.createElement('div'); it.className='trk-item';
+      const d=dist(tr.coords); let fecha=''; try{fecha=new Date(tr.start).toLocaleString(loc());}catch(_){}
+      it.innerHTML='<div class="ti-info"><b>'+t('trackUno')+' '+(i+1)+'</b><small>'+fecha+' \u00b7 '+tr.coords.length+' pts \u00b7 '+fmtD(d)+'</small></div>'+
+        '<button type="button" class="trk-del" aria-label="'+t('trackDelA')+'"><i class="ri-close-line"></i></button>';
+      it.querySelector('.trk-del').onclick=()=>{
+        const idx=tracks.findIndex(x=>x.id===tr.id);
+        if(idx>=0){tracks.splice(idx,1);save();drawSaved();renderList();upd();}
+      };
+      trkList.appendChild(it);
+    });
+  }
   function start(){
     if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
     rec={id:uid(),start:Date.now(),coords:[]};
@@ -2465,7 +2491,7 @@ document.addEventListener('click',e=>{
   function stop(){
     if(watchId!=null)navigator.geolocation.clearWatch(watchId); watchId=null;
     if(liveLine&&mapa)mapa.removeLayer(liveLine); liveLine=null;
-    if(rec&&rec.coords.length>1){rec.end=Date.now();tracks.push(rec);save();drawSaved();aviso('a-ok','ri-check-line',t('trackOk'));}
+    if(rec&&rec.coords.length>1){rec.end=Date.now();tracks.push(rec);save();drawSaved();renderList();aviso('a-ok','ri-check-line',t('trackOk'));}
     rec=null; btn.classList.remove('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStart'); upd();
   }
   btn.onclick=()=>{rec?stop():start();};
@@ -2479,6 +2505,7 @@ document.addEventListener('click',e=>{
     const fc={type:'FeatureCollection',features:feats};
     await entregar(new File([JSON.stringify(fc)],`ClimateGuard_Recorrido_${sello()}.geojson`,{type:'application/geo+json'}),t('trackAsunto'));
   };
+  renderList();
   upd();
 })();
 
