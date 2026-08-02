@@ -134,6 +134,7 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .heat-ctl{position:absolute;top:52px;right:10px;z-index:6;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);color:var(--azul);padding:0}
 .heat-ctl.on{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
+.pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 </style>
 <style>/* required styles */
@@ -1429,7 +1430,7 @@ const DIC={
   phGrupo:'Nombre del grupo', phEsp:'Ej. Amazona ventralis',
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
-  enviadoTag:'enviado', editar:'Editar', editando:'Editando registro', actualizado:'Registro actualizado', recorridosN:'recorridos', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
+  enviadoTag:'enviado', modificadoTag:'modificado', editar:'Editar', editando:'Editando registro', actualizado:'Registro actualizado', recorridosN:'recorridos', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
   bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
   otro:'+ Otro', ind:'ind.', stObs:'Nueva observación', stTrk:'Recorrido', grpAuto:'Grupo ajustado a {g} según la especie',
@@ -1510,7 +1511,7 @@ const DIC={
   phGrupo:'Group name', phEsp:'e.g. Amazona ventralis',
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
-  enviadoTag:'sent', editar:'Edit', editando:'Editing record', actualizado:'Record updated', recorridosN:'tracks', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
+  enviadoTag:'sent', modificadoTag:'edited', editar:'Edit', editando:'Editing record', actualizado:'Record updated', recorridosN:'tracks', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
   bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
   otro:'+ Other', ind:'ind.', stObs:'New observation', stTrk:'Field track', grpAuto:'Group set to {g} from the species',
@@ -1799,7 +1800,7 @@ function limpiar(){editando=null;document.getElementById('esp').value='';iucnSel
   document.getElementById('notas').value='';document.getElementById('cant').value='1'}
 $guardar.onclick=async()=>{
   if(editando){
-    await almacen.patch(editando.id,{clase:claseSel,iucn:iucnSel||null,especie:document.getElementById('esp').value.trim(),notas:document.getElementById('notas').value.trim(),cant:Math.max(1,parseInt(document.getElementById('cant').value)||1)});
+    await almacen.patch(editando.id,{clase:claseSel,iucn:iucnSel||null,especie:document.getElementById('esp').value.trim(),notas:document.getElementById('notas').value.trim(),cant:Math.max(1,parseInt(document.getElementById('cant').value)||1),updated:Date.now()});
     editando=null;$form.classList.add('oculta');limpiar();
     await pintar();
     flash(t('actualizado'));
@@ -1841,7 +1842,6 @@ var subActivo='obs';
 async function pintar(anim=false){
   regs=await almacen.all();
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
-  const _sent=new Set((()=>{try{return JSON.parse(localStorage.getItem('cg_sent_ids'))||[]}catch(_){return[]}})());
   const items=[];
   regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
   trks.forEach((tr,ti)=>items.push({k:'t',t:tr.start,tr,n:ti+1}));
@@ -1864,7 +1864,7 @@ async function pintar(anim=false){
         <div class="info">
           <h3>${String(n).padStart(2,'0')}${r.clase?` · ${esc(r.clase)}`:''}
             ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
-          <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}${_sent.has('p:'+r.id)?`<span class="pill enviado">${t('enviadoTag')}</span>`:''}
+          <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}${sentTag('p:'+r.id,sigFoto(r))}
           <p>${esc(r.notas||'')}</p>
           <button type="button" class="mini editar-btn">${t('editar')}</button>
           <small>${r.lat!=null
@@ -1892,7 +1892,7 @@ async function pintar(anim=false){
         <div class="trk-ic"><i class="ri-map-2-line"></i></div>
         <div class="info">
           <h3>${String(it.n).padStart(2,'0')} · ${esc(CGTracks.nombre(tr))}</h3>
-          <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>${_sent.has('t:'+tr.id)?`<span class="pill enviado">${t('enviadoTag')}</span>`:''}
+          <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>${sentTag('t:'+tr.id,sigTrack(tr))}
           <p></p>
           <small>${fecha}</small>
           <button type="button" class="mini trk-ren">${t('trackRen')}</button>
@@ -1920,12 +1920,22 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    calidad del dato (ubicacion verificada y especie identificada). */
 const NIVELES=[{min:0,k:'r1'},{min:5,k:'r2'},{min:15,k:'r3'},{min:30,k:'r4'},{min:50,k:'r5'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
-const totalPuntos=()=>regs.reduce((s,r)=>s+puntosDe(r),0);
+const CG_PTS_BONUS=2;
+function loadSent(){ try{ const v=JSON.parse(localStorage.getItem('cg_sent_ids')); if(Array.isArray(v)){ const m={}; v.forEach(k=>m[k]='1'); return m; } return v&&typeof v==='object'?v:{}; }catch(_){ return {}; } }
+function saveSent(m){ try{ localStorage.setItem('cg_sent_ids',JSON.stringify(m)); }catch(_){} }
+function loadLedger(){ try{ return JSON.parse(localStorage.getItem('cg_pts_ledger'))||{}; }catch(_){ return {}; } }
+function saveLedger(m){ try{ localStorage.setItem('cg_pts_ledger',JSON.stringify(m)); }catch(_){} }
+function sigFoto(r){ return [r.especie||'',r.clase||'',r.iucn||'',r.cant||1,r.notas||'',r.lat,r.lng].join('|'); }
+function sigTrack(tr){ return [CGTracks.nombre(tr),tr.coords.length,tr.end||0].join('|'); }
+function sentTag(key,sig){ const m=loadSent(); if(!(key in m))return ''; return m[key]===sig?`<span class="pill enviado">${t('enviadoTag')}</span>`:`<span class="pill modificado">${t('modificadoTag')}</span>`; }
+/* Puntos certificados: al enviar se acreditan (con bono) y quedan aunque se borre la foto local */
+const totalPuntos=()=>{ const led=loadLedger(); let s=0; const seen={}; regs.forEach(r=>{ seen[r.id]=1; s+=(led[r.id]!=null?led[r.id]:puntosDe(r)); }); for(const id in led){ if(!seen[id]) s+=led[id]; } return s; };
+function nivelCount(){ const led=loadLedger(); const s={}; regs.forEach(r=>s[r.id]=1); for(const id in led)s[id]=1; return Object.keys(s).length; }
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
 let nivelActual=0;
 
 function pintarPerfil(){
-  const n=regs.length, pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
+  const nFotos=regs.length, n=nivelCount(), pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
   const rango=t(NIVELES[i].k);
   const etq=`<u>${t('nivel')||'Niv.'} ${i+1}</u>${rango}`;
   const pct=sig ? Math.min(100,(n-NIVELES[i].min)/(sig.min-NIVELES[i].min)*100) : 100;
@@ -1938,7 +1948,7 @@ function pintarPerfil(){
   document.getElementById('tBarra').style.width=pct+'%';
   document.getElementById('tMeta').textContent=meta;
 
-  document.getElementById('pFotos').textContent=n;
+  document.getElementById('pFotos').textContent=nFotos;
   document.getElementById('pPts').textContent=pts;
   document.getElementById('pNivel').innerHTML=etq;
   document.getElementById('pBarra').style.width=pct+'%';
@@ -2127,7 +2137,7 @@ async function abrirCarnet(){
     carnetBlob=await credencialPng();
     if(carnetUrl)URL.revokeObjectURL(carnetUrl);
     carnetUrl=URL.createObjectURL(carnetBlob);
-    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(regs.length)].k)}`;
+    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(nivelCount())].k)}`;
     $cImg.hidden=false; $cCarga.hidden=true;
     document.getElementById('cGuardar').disabled=false;
   }catch{
@@ -2204,7 +2214,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$pe.classList.conta
 
 async function credencialPng(){
   await (document.fonts?.ready??Promise.resolve());
-  const n=regs.length, pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
+  const n=nivelCount(), pts=totalPuntos(), i=nivelDe(n), sig=NIVELES[i+1];
   const W=780, H=1120, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
   const c=cv.getContext('2d');
@@ -2516,25 +2526,32 @@ const CG_SENT_KEY='cg_sent_ids';
 document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').onclick=async()=>{
   const b=document.getElementById('btnEnviar'); b.disabled=true;
   try{
-    let sentArr=[]; try{sentArr=JSON.parse(localStorage.getItem(CG_SENT_KEY))||[];}catch(_){}
-    const sent=new Set(sentArr);
-    const nf=regs.filter(r=>r.lat!=null && !sent.has('p:'+r.id));
-    const nt=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1 && !sent.has('t:'+x.id));
+    const sentMap=loadSent();
+    const nf=regs.filter(r=>r.lat!=null && sentMap['p:'+r.id]!==sigFoto(r));
+    const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1);
+    const nt=trAll.filter(tr=>sentMap['t:'+tr.id]!==sigTrack(tr));
     if(!nf.length && !nt.length){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
     const obs={type:'FeatureCollection',features:nf.map((r,i)=>{
       const fn='foto_'+String(i+1).padStart(2,'0')+(r.especie?'_'+r.especie.replace(/[^\w-]+/g,'_'):'')+'.jpg'; r.__fn=fn;
-      return {type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',fecha:new Date(r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}};
+      return {type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',accuracy:(r.accuracy!=null?r.accuracy:null),fecha:new Date(r.fecha).toISOString(),updated_at:new Date(r.updated||r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}};
     })};
-    const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString()},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
+    const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString(),end:tr.end?new Date(tr.end).toISOString():null},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
     const fotos=[];
     for(let i=0;i<nf.length;i++){ const r=nf[i]; if(r.mini){ try{ const du=await b64(r.mini); fotos.push({name:r.__fn||('foto_'+String(i+1).padStart(2,'0')+'.jpg'),mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){} } }
-    const payload={token:CG_ENVIO_TOKEN,usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),observaciones:obs,recorridos:rec,fotos:fotos};
+    /* proyeccion de puntos con bono (no persistir hasta que el envio se despache) */
+    const led=loadLedger(); const ledNext=Object.assign({},led); let ganado=0;
+    nf.forEach(r=>{ const cr=puntosDe(r)*CG_PTS_BONUS; ganado+=(cr-(ledNext[r.id]||0)); ledNext[r.id]=cr; });
+    const projTotal=(()=>{ let s=0; const seen={}; regs.forEach(r=>{seen[r.id]=1; s+=(ledNext[r.id]!=null?ledNext[r.id]:puntosDe(r));}); for(const id in ledNext){if(!seen[id])s+=ledNext[id];} return s; })();
+    const projCount=(()=>{ const s={}; regs.forEach(r=>s[r.id]=1); for(const id in ledNext)s[id]=1; return Object.keys(s).length; })();
+    const perfil={usuario:(perfilNombre||'anonimo'),puntos:projTotal,nivel:nivelDe(projCount)+1,bono:CG_PTS_BONUS,ledger:ledNext};
+    const payload={token:CG_ENVIO_TOKEN,app:'ClimateGuard',schema:1,ver:'0.7',submissionId:uid(),usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos};
     await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    nf.forEach(r=>sent.add('p:'+r.id)); nt.forEach(tr=>sent.add('t:'+tr.id));
-    try{localStorage.setItem(CG_SENT_KEY,JSON.stringify([...sent]));}catch(_){}
+    /* despachado: persistir firmas + puntos acreditados */
+    nf.forEach(r=>{ sentMap['p:'+r.id]=sigFoto(r); }); nt.forEach(tr=>{ sentMap['t:'+tr.id]=sigTrack(tr); });
+    saveSent(sentMap); saveLedger(ledNext);
     try{pintar();}catch(_){}
-    aviso('a-ok','ri-check-line',`${t('envOk')}: ${nf.length} ${t('fotos')}, ${nt.length} ${t('recorridosN')}`);
+    aviso('a-ok','ri-check-line',`${t('envOk')}: ${nf.length} ${t('fotos')}, ${nt.length} ${t('recorridosN')}${ganado>0?` \u00b7 +${ganado} ${t('pts')}`:''}`);
   }catch(e){ aviso('a-er','ri-error-warning-line',t('envErr')); }
   b.disabled=false;
 });
