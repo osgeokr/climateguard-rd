@@ -1,0 +1,19 @@
+{
+  "name": "ClimateGuard Mobile",
+  "short_name": "ClimateGuard",
+  "description": "Levantamiento de flora y fauna - Republica Dominicana (IUCN Lista Roja)",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#003876",
+  "theme_color": "#003876",
+  "lang": "es-DO",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
