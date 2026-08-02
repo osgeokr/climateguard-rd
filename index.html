@@ -104,6 +104,7 @@ footer .marcas{margin-bottom:4px}
 .hrow h1 .logo{flex:none;margin-top:1px}
 .gate h2.lockup{display:flex;align-items:center;justify-content:center;gap:8px}
 .gate h2.lockup .logo{flex:none}
+.gate h2.lockup .lk-txt{line-height:1.14;text-align:left}
 footer .logo-cg{display:block;margin:0 auto 10px}
 footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-size:10px;font-weight:600;
   letter-spacing:.12em;text-transform:uppercase;color:var(--txt-2);margin:0 0 14px}
@@ -136,6 +137,29 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
 .pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
+
+.gal-ref{margin-top:13px;border-top:1px dashed var(--borde);padding-top:12px}
+.gr-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.gr-h b{font-size:12.5px;color:var(--azul);display:flex;align-items:center;gap:6px}
+.gr-badge{font-size:10px;font-weight:700;color:#5C6670;background:#EEF2F7;border:1px solid var(--borde);border-radius:20px;padding:2px 8px}
+.gr-badge.rd{color:#003876;background:#E7EEF7;border-color:#CBDCEF}
+.gr-strip{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.gr-th{width:66px;height:66px;flex:none;border-radius:9px;border:1px solid var(--borde);background:#e9edf2;background-position:center;background-size:cover;background-repeat:no-repeat;position:relative;cursor:pointer;padding:0}
+.gr-more{position:absolute;inset:0;background:rgba(0,28,61,.55);color:#fff;font-weight:700;display:grid;place-items:center;border-radius:8px;font-size:14px}
+.gr-sk{width:66px;height:66px;flex:none;border-radius:9px;background:linear-gradient(90deg,#e9edf2,#f6f8fb,#e9edf2);background-size:200% 100%;animation:grsh 1.1s linear infinite}
+@keyframes grsh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.gr-cap{font-size:10.5px;color:var(--txt-2,#5C6670);margin:8px 2px 0}
+.gal-lb{position:fixed;inset:0;z-index:1300;background:#06101d;display:flex;flex-direction:column}
+.gal-lb[hidden]{display:none}
+.gal-lb-top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;color:#fff;font-size:13px}
+.gal-lb-top button{background:rgba(255,255,255,.14);border:0;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer}
+.gal-lb-img{flex:1;position:relative;display:grid;place-items:center;min-height:0}
+.gal-lb-img img{max-width:100%;max-height:100%;object-fit:contain}
+.gal-ar{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.45);border:0;color:#fff;font-size:20px;cursor:pointer}
+.gal-ar.l{left:10px}.gal-ar.r{right:10px}
+.gal-lb-info{padding:12px 16px calc(env(safe-area-inset-bottom) + 16px);color:#cfe0f2}
+.gal-lb-info .atr{font-size:11.5px;color:#9fb6d6}
+.gal-lb-info a{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:7px 11px;text-decoration:none}
 </style>
 <style>/* required styles */
 
@@ -1121,7 +1145,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
         <circle cx="32" cy="32" r="28" fill="none" stroke="#003876" stroke-width="3" opacity=".4"></circle>
         <circle cx="32" cy="32" r="16" fill="none" stroke="#003876" stroke-width="3"></circle>
         <path d="M32 24 C39 29 39 38 32 43 C25 38 25 29 32 24 Z" fill="#1B7F5A"></path>
-      </svg>ClimateGuard Mobile</h2>
+      </svg><span class="lk-txt">ClimateGuard<br>Mobile</span></h2>
       <span class="pill-piloto" data-i18n="piloto"></span>
       <p class="rol" data-i18n="gateSub"></p>
       <div class="f">
@@ -1234,6 +1258,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
           <div class="esp-sug" id="espSug" hidden></div>
         </div>
         <small class="esp-hint" id="espHint"></small>
+        <div class="gal-ref" id="galRef" hidden></div>
       </div>
 
       <div class="campo">
@@ -1385,6 +1410,11 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
   </div>
 </div>
 
+<div class="gal-lb" id="galLb" hidden role="dialog" aria-modal="true">
+  <div class="gal-lb-top"><span id="galLbCap"></span><button type="button" id="galLbX" aria-label="Cerrar">✕</button></div>
+  <div class="gal-lb-img"><button type="button" class="gal-ar l" id="galPrev" aria-label="Anterior">‹</button><img id="galLbImg" alt=""><button type="button" class="gal-ar r" id="galNext" aria-label="Siguiente">›</button></div>
+  <div class="gal-lb-info"><div class="atr" id="galLbAtr"></div><a id="galLbLink" target="_blank" rel="noopener"></a></div>
+</div>
 <canvas id="lienzo" class="oculto"></canvas>
 <script>/*
  (c) 2014, Vladimir Agafonkin
@@ -1431,6 +1461,7 @@ const DIC={
   phNotas:'Habitat, comportamiento, condiciones del sitio...',
   bAgregar:'Agregar', bDescartar:'Descartar', bGuardar:'Guardar registro',
   enviadoTag:'enviado', modificadoTag:'modificado', editar:'Editar', editando:'Editando registro', actualizado:'Registro actualizado', recorridosN:'recorridos', bEnviar:'Enviar', envNada:'No hay datos nuevos para enviar.', envEnviando:'Enviando datos...', envOk:'Datos enviados al servidor', envErr:'No se pudo enviar. Revisa tu conexion e intenta de nuevo.',
+  refFotos:'Fotos de referencia', refRD:'Rep. Dominicana', refGlobal:'global', refCap:'Toca una foto para ampliar · Fuente: iNaturalist (CC)', refNone:'Sin fotos de referencia para esta especie.', refOffline:'Fotos de referencia: requiere conexión a internet.', refErr:'No se pudieron cargar las fotos.', refVer:'Ver en iNaturalist ↗',
   bMapa:'Compartir mapa', guardarFoto:'Guardar imagen', guardarTrk:'Guardar recorridos (GeoJSON)', guardarHint:'En iPhone, manten pulsada la foto para guardarla.', bDatos:'Fotos + recorridos (GeoJSON)', sinDatos:'No hay datos para exportar.', datosOk:'Datos exportados',
   bPrueba:'Cargar coordenadas de prueba (para verificar el mapa sin GPS)',
   otro:'+ Otro', ind:'ind.', stObs:'Nueva observación', stTrk:'Recorrido', grpAuto:'Grupo ajustado a {g} según la especie',
@@ -1512,6 +1543,7 @@ const DIC={
   phNotas:'Habitat, behaviour, site conditions...',
   bAgregar:'Add', bDescartar:'Discard', bGuardar:'Save record',
   enviadoTag:'sent', modificadoTag:'edited', editar:'Edit', editando:'Editing record', actualizado:'Record updated', recorridosN:'tracks', bEnviar:'Send', envNada:'No new data to send.', envEnviando:'Sending data...', envOk:'Data sent to the server', envErr:'Could not send. Check your connection and try again.',
+  refFotos:'Reference photos', refRD:'Dominican Rep.', refGlobal:'global', refCap:'Tap a photo to enlarge · Source: iNaturalist (CC)', refNone:'No reference photos for this species.', refOffline:'Reference photos: needs an internet connection.', refErr:'Could not load photos.', refVer:'View on iNaturalist ↗',
   bMapa:'Share map', guardarFoto:'Save image', guardarTrk:'Save tracks (GeoJSON)', guardarHint:'On iPhone, long-press the photo to save it.', bDatos:'Photos + tracks (GeoJSON)', sinDatos:'No data to export.', datosOk:'Data exported',
   bPrueba:'Load test coordinates (to check the map without GPS)',
   otro:'+ Other', ind:'ind.', stObs:'New observation', stTrk:'Field track', grpAuto:'Group set to {g} from the species',
@@ -1796,7 +1828,7 @@ const _onPick=e=>{const f=e.target.files?.[0];e.target.value='';procesarArchivo(
 $cam.addEventListener('change',_onPick);
 document.getElementById('galeria').addEventListener('change',_onPick);
 document.getElementById('cancelar').onclick=()=>{borrador=null;editando=null;$form.classList.add('oculta');limpiar()};
-function limpiar(){editando=null;document.getElementById('esp').value='';iucnSel=null;claseSel='';{const h=document.getElementById('espHint');if(h){h.textContent='';h.classList.remove('hint-iucn');}}
+function limpiar(){editando=null;document.getElementById('esp').value='';iucnSel=null;claseSel='';try{window.CGgaleriaLimpiar&&window.CGgaleriaLimpiar();}catch(_){}{const h=document.getElementById('espHint');if(h){h.textContent='';h.classList.remove('hint-iucn');}}
   document.getElementById('notas').value='';document.getElementById('cant').value='1'}
 $guardar.onclick=async()=>{
   if(editando){
@@ -1829,6 +1861,7 @@ function abrirEdicion(r){
   const hint=document.getElementById('espHint');
   if(hint){ if(r.clase||r.iucn){ hint.innerHTML=(r.clase?esc(r.clase):'')+(r.iucn?' &middot; '+iucnBadge(r.iucn)+' '+iucnNom(r.iucn):''); hint.classList.add('hint-iucn'); } else { hint.textContent=''; hint.classList.remove('hint-iucn'); } }
   $datos.innerHTML=`<b>${t('editando')}</b><br>`+(r.especie?`<em>${esc(r.especie)}</em><br>`:'')+(r.lat!=null?`<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}<br>`:'')+`${new Date(r.fecha).toLocaleString(loc())}`;
+  try{ if(r.especie&&window.CGgaleria)window.CGgaleria(r.especie); else if(window.CGgaleriaLimpiar)window.CGgaleriaLimpiar(); }catch(_){}
   $guardar.disabled=false;
   try{$form.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}
 }
@@ -2498,8 +2531,8 @@ const SPECIES=[["Lutjanus cyanopterus","Cubera","Cubera Snapper","Actinopterygii
     inp.value=sci; sug.hidden=true; iucnSel=iucn||null; claseSel=clase||'';
     const com=es||en||(idioma==='es'?'sin nombre común registrado':'no common name on record');
     hint.innerHTML='<em>'+com+'</em>'+(clase?' &middot; '+esc(clase):'')+(iucn?' &middot; '+iucnBadge(iucn)+' '+iucnNom(iucn):'');
-    hint.classList.add('hint-iucn'); }
-  inp.addEventListener('input',()=>{ hint.textContent=''; hint.classList.remove('hint-iucn'); iucnSel=null; claseSel='';
+    hint.classList.add('hint-iucn'); try{window.CGgaleria&&window.CGgaleria(sci);}catch(_){} }
+  inp.addEventListener('input',()=>{ hint.textContent=''; hint.classList.remove('hint-iucn'); iucnSel=null; claseSel=''; try{window.CGgaleriaLimpiar&&window.CGgaleriaLimpiar();}catch(_){}
     const q=norm(inp.value.trim());
     if(q.length<2){sug.hidden=true;return;}
     const hits=[];
@@ -2513,6 +2546,78 @@ const SPECIES=[["Lutjanus cyanopterus","Cubera","Cubera Snapper","Actinopterygii
       b.onclick=()=>pick(s); sug.appendChild(b);});
     sug.hidden=false; });
   inp.addEventListener('blur',()=>setTimeout(()=>sug.hidden=true,180));
+})();
+
+/* ── v0.9: galeria de fotos de referencia (iNaturalist) — RD primero, luego global ── */
+(function(){
+  const cont=document.getElementById('galRef');
+  const lb=document.getElementById('galLb');
+  if(!cont||!lb) return;
+  const lbImg=document.getElementById('galLbImg'), lbCap=document.getElementById('galLbCap'),
+        lbAtr=document.getElementById('galLbAtr'), lbLink=document.getElementById('galLbLink');
+  const INAT='https://api.inaturalist.org/v1';
+  let galFotos=[], galIdx=0, galToken=0, drPlace=null;
+  window.CGgaleriaLimpiar=function(){ cont.hidden=true; cont.innerHTML=''; galToken++; };
+  async function placeDR(){
+    if(drPlace!==null) return drPlace;
+    try{ const r=await fetch(INAT+'/places/autocomplete?q='+encodeURIComponent('Dominican Republic'));
+      const j=await r.json(); const a=(j.results||[]);
+      const hit=a.find(p=>p.admin_level===0)||a.find(p=>/dominican|dominicana/i.test(p.name||''))||a[0];
+      drPlace=hit?hit.id:0;
+    }catch(_){ drPlace=0; }
+    return drPlace;
+  }
+  function normObs(results){ const out=[];
+    (results||[]).forEach(o=>{ (o.photos||[]).forEach(ph=>{ if(!ph.url)return;
+      out.push({ thumb:ph.url.replace('square','small'), full:ph.url.replace('square','large'),
+        atr:ph.attribution||'', link:o.uri||('https://www.inaturalist.org/observations/'+o.id) }); }); });
+    return out; }
+  function normTaxa(res){ const out=[]; const tp=(res&&res.taxon_photos)||[];
+    tp.forEach(x=>{ const ph=x.photo||{}; const u=ph.medium_url||ph.url; if(!u)return;
+      out.push({ thumb:u, full:ph.large_url||ph.medium_url||ph.url, atr:ph.attribution||'',
+        link:res.id?('https://www.inaturalist.org/taxa/'+res.id):'https://www.inaturalist.org' }); });
+    return out; }
+  function render(state,ambito,fotos){
+    const leaf='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#003876" stroke-width="2"><circle cx="12" cy="12" r="9" opacity=".35"></circle><circle cx="12" cy="12" r="5" opacity=".7"></circle><circle cx="12" cy="12" r="2" fill="#1B7F5A" stroke="none"></circle></svg>';
+    const badge = state==='ok' ? `<span class="gr-badge ${ambito==='rd'?'rd':''}">${ambito==='rd'?t('refRD'):t('refGlobal')}</span>` : '';
+    const head = `<div class="gr-h"><b>${leaf} ${t('refFotos')}</b>${badge}</div>`;
+    if(state==='load') return head+`<div class="gr-strip">${'<div class="gr-sk"></div>'.repeat(4)}</div>`;
+    if(state==='off')  return head+`<p class="gr-cap">${t('refOffline')}</p>`;
+    if(state==='none') return head+`<p class="gr-cap">${t('refNone')}</p>`;
+    if(state==='err')  return head+`<p class="gr-cap">${t('refErr')}</p>`;
+    const N=6, show=fotos.slice(0,N);
+    const th = show.map((f,i)=>{ const more=(i===N-1&&fotos.length>N)?`<span class="gr-more">+${fotos.length-N}</span>`:'';
+      return `<button type="button" class="gr-th" style="background-image:url('${f.thumb}')">${more}</button>`; }).join('');
+    return head+`<div class="gr-strip">${th}</div><p class="gr-cap">${t('refCap')}</p>`;
+  }
+  window.CGgaleria=async function(sci){
+    if(!sci){ CGgaleriaLimpiar(); return; }
+    const my=++galToken; cont.hidden=false;
+    if(!navigator.onLine){ cont.innerHTML=render('off'); return; }
+    cont.innerHTML=render('load');
+    let fotos=[], ambito='global';
+    try{
+      const pid=await placeDR();
+      if(pid){ const r=await fetch(INAT+'/observations?taxon_name='+encodeURIComponent(sci)+'&place_id='+pid+'&photos=true&per_page=9&order_by=votes&quality_grade=research');
+        const j=await r.json(); fotos=normObs(j.results); if(fotos.length) ambito='rd'; }
+      if(!fotos.length){ const r=await fetch(INAT+'/taxa?q='+encodeURIComponent(sci)+'&per_page=1');
+        const j=await r.json(); fotos=normTaxa((j.results||[])[0]); ambito='global'; }
+    }catch(_){ if(my===galToken) cont.innerHTML=render('err'); return; }
+    if(my!==galToken) return;
+    galFotos=fotos;
+    cont.innerHTML = fotos.length ? render('ok',ambito,fotos) : render('none');
+    if(fotos.length){ Array.prototype.forEach.call(cont.querySelectorAll('.gr-th'),(el,i)=>el.onclick=()=>abrirLb(i)); }
+  };
+  function abrirLb(i){ galIdx=i; pintarLb(); lb.hidden=false; }
+  function pintarLb(){ const f=galFotos[galIdx]; if(!f)return; lbImg.src=f.full||f.thumb;
+    lbCap.textContent=(galIdx+1)+' / '+galFotos.length; lbAtr.textContent=f.atr||'';
+    lbLink.href=f.link||'#'; lbLink.textContent=t('refVer'); }
+  function cerrarLb(){ lb.hidden=true; lbImg.removeAttribute('src'); }
+  document.getElementById('galLbX').onclick=cerrarLb;
+  document.getElementById('galPrev').onclick=()=>{ if(!galFotos.length)return; galIdx=(galIdx-1+galFotos.length)%galFotos.length; pintarLb(); };
+  document.getElementById('galNext').onclick=()=>{ if(!galFotos.length)return; galIdx=(galIdx+1)%galFotos.length; pintarLb(); };
+  lb.addEventListener('click',e=>{ if(e.target===lb)cerrarLb(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!lb.hidden)cerrarLb(); });
 })();
 
 /* ── v4: heatmap toggle ── */
