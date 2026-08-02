@@ -1671,7 +1671,7 @@ async function enHilo(file){
 }
 
 /* ── Ubicacion 1: GPS en vivo ── */
-let gps=null,motivo='';
+let gps=null,motivo='',gpsTs=0;
 const $ubic=document.getElementById('ubic');
 function verUbic(){
   $ubic.innerHTML = gps
@@ -1685,10 +1685,29 @@ function iniciarGPS(){
   if(!window.isSecureContext){motivo='https';verUbic();return;}
   if(!navigator.geolocation){motivo='nodisp';verUbic();return;}
   gpsIniciado=true; motivo='buscando'; verUbic();
-  navigator.geolocation.watchPosition(
-    p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};motivo='';verUbic()},
-    e=>{motivo=e.code===1?'denegado':e.code===3?'tiempo':'sinsenal';gps=null;verUbic()},
-    {enableHighAccuracy:true,maximumAge:10000,timeout:20000});
+  refinarGPS();   /* v11.9: una lectura de alta precisión y luego apaga el GNSS (ahorro de batería) */
+}
+/* v11.9: obtiene un fix de alta precisión en una ráfaga corta y detiene el GNSS */
+function refinarGPS(opts){
+  const target=(opts&&opts.target)||18, maxMs=(opts&&opts.maxMs)||8000;
+  return new Promise(resolve=>{
+    if(!navigator.geolocation){motivo='nodisp';verUbic();resolve(null);return;}
+    let best=null,id=null,fin=false;
+    const finish=()=>{ if(fin)return; fin=true; if(id!=null)navigator.geolocation.clearWatch(id);
+      if(best){gps={lat:best.coords.latitude,lng:best.coords.longitude,accuracy:best.coords.accuracy};gpsTs=Date.now();motivo='';verUbic();}
+      resolve(best?gps:gps); };
+    id=navigator.geolocation.watchPosition(p=>{
+      if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
+      if(p.coords.accuracy<=target)finish();
+    },e=>{ if(!best){motivo=e.code===1?'denegado':e.code===3?'tiempo':'sinsenal';gps=null;verUbic();} finish(); },
+    {enableHighAccuracy:true,maximumAge:0,timeout:maxMs});
+    setTimeout(finish,maxMs+300);
+  });
+}
+/* v11.9: reutiliza el fix en caché si es reciente (<12s); si no, toma uno nuevo */
+async function ensureGps(){
+  if(gps && gpsTs && (Date.now()-gpsTs)<12000) return gps;
+  return await refinarGPS();
 }
 
 /* ── Ubicacion 2: GPS incrustado en el EXIF (solo JPEG) ── */
@@ -1742,14 +1761,14 @@ async function procesarArchivo(file){
   $vistaImg.removeAttribute('src');$datos.innerHTML=`<b>${t('optim')}</b>`;
   try{
     const t0=performance.now();
-    const [{orig,foto,mini},exif]=await Promise.all([comprimir(file),gpsExif(file)]);
+    const [{orig,foto,mini},exif,fresh]=await Promise.all([comprimir(file),gpsExif(file),ensureGps()]);
     const ms=Math.round(performance.now()-t0);
     const baja=Math.round((1-foto.blob.size/file.size)*100);
-    const pos=gps??exif??{lat:null,lng:null,accuracy:null};
+    const pos=fresh??exif??{lat:null,lng:null,accuracy:null};
     borrador={id:uid(),foto:foto.blob,mini:mini.blob,w:foto.w,h:foto.h,
       origW:orig.w,origH:orig.h,bytes:file.size,tipo:foto.type,q:foto.q,
       fecha:Date.now(),lat:pos.lat,lng:pos.lng,accuracy:pos.accuracy,
-      origen:gps?'gps':exif?'exif':null};
+      origen:fresh?'gps':exif?'exif':null};
     $vistaImg.src=URL.createObjectURL(mini.blob);
     $datos.innerHTML=
       `${orig.w}×${orig.h} · ${kb(file.size)}<br>`+
@@ -2499,12 +2518,9 @@ var CGTracks = (function(){
     else { stat.textContent=''; }
     exp.disabled=!(tracks.length||(rec&&rec.coords.length>1));
   }
-  function start(){
-    if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
-    rec={id:uid(),start:Date.now(),coords:[],name:''}; paused=false;
-    if(mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
+  function iniciarWatch(){
     watchId=navigator.geolocation.watchPosition(p=>{
-      if(paused){statLive();return;}
+      if(paused){return;}
       const c=[p.coords.longitude,p.coords.latitude,Date.now(),Math.round(p.coords.accuracy||0)];
       const last=rec.coords[rec.coords.length-1];
       if(!last||hav(last,c)>=3){rec.coords.push(c);
@@ -2513,16 +2529,25 @@ var CGTracks = (function(){
       statLive();
     },e=>{aviso('a-av','ri-map-pin-off-line',t(e.code===1?'denegado':'sinsenal'));},
     {enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+  }
+  function detenerWatch(){ if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;} }
+  function start(){
+    if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
+    rec={id:uid(),start:Date.now(),coords:[],name:''}; paused=false;
+    if(mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
+    iniciarWatch();
     btn.classList.add('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStop');
     pauseBtn.hidden=false; pauseBtn.classList.remove('on'); const psp=pauseBtn.querySelector('span'); if(psp)psp.textContent=t('trackPause');
     statLive();
   }
+  /* v11.9: en pausa apaga el GNSS (clearWatch); al reanudar lo reactiva → ahorro real de batería */
   function togglePause(){ if(!rec)return; paused=!paused;
+    if(paused){ detenerWatch(); } else { iniciarWatch(); }
     const psp=pauseBtn.querySelector('span'); if(psp)psp.textContent=t(paused?'trackResume':'trackPause');
     pauseBtn.classList.toggle('on',paused); statLive(); }
   function finalize(r,nombre){ r.end=Date.now(); r.name=(nombre||'').trim(); tracks.push(r); save(); drawSaved(); pintar(); aviso('a-ok','ri-check-line',t('trackOk')); }
   function stop(){
-    if(watchId!=null)navigator.geolocation.clearWatch(watchId); watchId=null;
+    detenerWatch();
     if(liveLine&&mapa)mapa.removeLayer(liveLine); liveLine=null;
     const r=rec; rec=null; paused=false;
     btn.classList.remove('rec'); const sp=btn.querySelector('span'); if(sp)sp.textContent=t('trackStart');
