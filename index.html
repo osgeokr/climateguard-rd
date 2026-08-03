@@ -31,6 +31,8 @@
   line-height:16px;text-align:center;background:var(--azul);color:#fff;border-radius:50%;box-shadow:0 0 0 2px #fff}
 #perfilEdit .pe-cuerpo{flex:1;display:flex;flex-direction:column;justify-content:center;padding:18px;min-height:0}
 #perfilEdit .pe-card{background:#fff;border-radius:10px;padding:22px 20px;max-width:360px;margin:0 auto;width:100%}
+#perfilEdit .pe-salir{display:block;width:100%;margin-top:16px;background:none;border:1px solid var(--borde);border-radius:8px;color:var(--txt-2);font-family:var(--cpo);font-size:12.5px;padding:10px;cursor:pointer}
+#perfilEdit .pe-salir:hover{border-color:var(--rojo);color:var(--rojo)}
 #peAv{width:96px;height:96px;margin:0 auto 10px}
 .pe-foto{text-align:center;margin-bottom:18px}
 .pe-campo{margin-bottom:18px}
@@ -1380,6 +1382,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       </div>
       <button type="button" class="btn btn-1" id="peGuardar" data-i18n="bOk"></button>
       <p id="peMsg"></p>
+      <button type="button" class="pe-salir" id="peSalir" data-i18n="salir"></button>
     </div>
   </div>
 </div>
@@ -1972,7 +1975,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.2.1';
+const APP_VER='1.2.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2052,10 +2055,13 @@ document.getElementById('entrar').onclick=()=>{
 };
 document.getElementById('pwd').addEventListener('keydown',e=>{
   if(e.key==='Enter')document.getElementById('entrar').click()});
-document.getElementById('salir').onclick=()=>{
+function cerrarSesion(){
   try{localStorage.removeItem('cg_entered');}catch(_){}
+  try{cerrarPerfil();}catch(_){}
   document.getElementById('gate').classList.remove('oculto');
-};
+}
+var _sBtn=document.getElementById('salir'); if(_sBtn)_sBtn.onclick=cerrarSesion;
+var _peSalir=document.getElementById('peSalir'); if(_peSalir)_peSalir.onclick=cerrarSesion;
 /* v11.10: recordar el acceso (demo) para no volver a la pantalla al recargar / atras */
 try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); armarBack(); } }catch(_){}
 /* ── v0.11: boton atras del telefono — cierra un overlay o "pulsa de nuevo para salir"
