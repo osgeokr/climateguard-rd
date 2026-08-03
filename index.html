@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+<!-- ClimateGuard Mobile · (c) 2026 Byeong-Hyeok Yu · SPDX-License-Identifier: MIT
+     Datos de biodiversidad: iNaturalist (fotos con licencia por autor, CC) y
+     GBIF (taxonomia CC BY 4.0). Librerias de terceros conservan su propia licencia. -->
 <html lang="es-DO" translate="no">
 <head>
 <meta charset="utf-8">
@@ -1958,7 +1961,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.1.1';
+const APP_VER='1.1.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2599,10 +2602,23 @@ const SPECIES=[["Lutjanus cyanopterus","Cubera","Cubera Snapper","Actinopterygii
   inp.addEventListener('input',()=>{ hint.textContent=''; hint.classList.remove('hint-iucn'); iucnSel=null; claseSel=''; try{window.CGgaleriaLimpiar&&window.CGgaleriaLimpiar();}catch(_){}
     const q=norm(inp.value.trim());
     if(q.length<2){sug.hidden=true;return;}
-    const hits=[];
-    for(let i=0;i<SPECIES.length && hits.length<10;i++){const s=SPECIES[i];
-      if(norm(s[0]).includes(q)||norm(s[1]).includes(q)||norm(s[2]).includes(q))hits.push(s);}
-    if(!hits.length){sug.hidden=true;return;}
+    /* indice normalizado (una sola vez) para buscar rapido en las 3.258 especies */
+    if(!window._SPX){ try{ window._SPX=SPECIES.map(s=>[norm(s[0]),norm(s[1]),norm(s[2])]); }catch(_){ window._SPX=null; } }
+    const NX=window._SPX; const scored=[];
+    for(let i=0;i<SPECIES.length;i++){ const nx=NX?NX[i]:[norm(SPECIES[i][0]),norm(SPECIES[i][1]),norm(SPECIES[i][2])];
+      let best=99;
+      for(let f=0;f<3;f++){ const v=nx[f]; if(!v)continue; let sc;
+        if(v===q)sc=0; else if(v.indexOf(q)===0)sc=1; else{ const p=v.indexOf(q); sc=p<0?99:((p>0&&v.charAt(p-1)===' ')?2:3); }
+        if(sc<best)best=sc; }
+      if(best<99)scored.push([best,i]); }
+    if(!scored.length){sug.hidden=true;return;}
+    /* orden por relevancia: exacto > prefijo > inicio de palabra > contiene; luego alfabetico.
+       Antes se cortaba a los primeros 10 en el orden del dataset, por eso 'swallow' no
+       mostraba 'Golden Swallow' (aparecia tras otras 12 coincidencias). */
+    scored.sort((a,b)=>{ if(a[0]!==b[0])return a[0]-b[0];
+      const na=SPECIES[a[1]], nb=SPECIES[b[1]];
+      return (na[2]||na[1]||na[0]).localeCompare(nb[2]||nb[1]||nb[0]); });
+    const hits=scored.slice(0,12).map(x=>SPECIES[x[1]]);
     sug.innerHTML='';
     hits.forEach(s=>{const b=document.createElement('button');b.type='button';
       const nom=s[1]||s[2]; const com=nom?'<span class="com">'+nom+'</span>':'';
