@@ -1113,7 +1113,7 @@ canvas.oculto{display:none}
 .carnet .cmsg{font-size:11.5px;line-height:1.6;color:#CBD8E8;text-align:center;
   margin:11px 0 0;min-height:17px}
 .carnet .cmsg i{margin-right:4px}
-.flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:150;
+.flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:210;
   background:var(--verde);color:#fff;font-family:var(--tit);font-size:13.5px;font-weight:600;
   padding:11px 20px;border-radius:22px;box-shadow:0 6px 18px rgba(0,0,0,.25);
   opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
@@ -1958,7 +1958,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.1';
+const APP_VER='1.1.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2046,24 +2046,34 @@ document.getElementById('salir').onclick=()=>{
 try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); armarBack(); } }catch(_){}
 /* ── v0.11: boton atras del telefono — cierra un overlay o "pulsa de nuevo para salir"
    (asi no se vuelve a la pantalla de acceso al presionar atras) ── */
-function armarBack(){ try{ history.pushState({cg:1},'',location.href); }catch(_){} }
+/* estado compartido de la trampa de historial para el boton atras */
+var _cgTrap={armed:false, tmr:null, set:false};
+function armarBack(){ try{ history.pushState({cg:1},'',location.href); _cgTrap.set=true; }catch(_){} }
 (function(){
-  var armed=false, tmr=null;
+  function logueado(){ var g=document.getElementById('gate'); return g && g.classList.contains('oculto'); }
+  /* Crear la trampa SOLO deja un estado fiable cuando hay activacion del
+     usuario (Android/Chrome puede ignorar un pushState previo a cualquier
+     gesto). Por eso la re-aseguramos en el primer toque/tecla y al reanudar
+     la app (PWA), asi el boton atras SIEMPRE tiene algo que descartar antes
+     de salir — sin importar si se esta en Registros o en Mapa. */
+  function asegurar(){ if(!_cgTrap.set && logueado()) armarBack(); }
   function overlayAbierto(){
     var lb=document.getElementById('galLb'); if(lb && !lb.hidden){ var x=document.getElementById('galLbX'); if(x)x.click(); else lb.hidden=true; return true; }
     var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal'];
     for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el && el.classList.contains('on')){ el.classList.remove('on'); return true; } }
     return false;
   }
-  window.addEventListener('popstate',function(){
-    var gate=document.getElementById('gate');
-    var logueado = gate && gate.classList.contains('oculto');
-    if(!logueado){ return; }
+  ['pointerdown','keydown','touchstart'].forEach(function(ev){ window.addEventListener(ev, asegurar, true); });
+  window.addEventListener('pageshow', asegurar);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) asegurar(); });
+  window.addEventListener('popstate', function(){
+    if(!logueado()){ return; }
+    _cgTrap.set=false;                 /* el estado trampa fue consumido */
     if(overlayAbierto()){ armarBack(); return; }
-    if(armed){ armed=false; try{history.back();}catch(_){} return; }
-    armed=true; armarBack();
+    if(_cgTrap.armed){ _cgTrap.armed=false; try{history.back();}catch(_){} return; }
+    _cgTrap.armed=true; armarBack();
     try{flash(t('salirDe'));}catch(_){}
-    clearTimeout(tmr); tmr=setTimeout(function(){armed=false;},2000);
+    clearTimeout(_cgTrap.tmr); _cgTrap.tmr=setTimeout(function(){_cgTrap.armed=false;},2000);
   });
 })();
 
