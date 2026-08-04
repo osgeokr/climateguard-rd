@@ -1903,8 +1903,10 @@ async function pintar(anim=false){
   regs=await almacen.all();
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
   const items=[];
-  regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:regs.length-ri}));
-  trks.forEach((tr,ti)=>items.push({k:'t',t:tr.start,tr,n:ti+1}));
+  const _obsRank=regs.slice().sort((a,b)=>(a.fecha||0)-(b.fecha||0));
+  const _trkRank=trks.slice().sort((a,b)=>(a.start||0)-(b.start||0));
+  regs.forEach(r=>items.push({k:'p',t:r.fecha,r,n:_obsRank.indexOf(r)+1}));
+  trks.forEach(tr=>items.push({k:'t',t:tr.start,tr,n:_trkRank.indexOf(tr)+1}));
   const vis=items.filter(it=>subActivo==='trk'?it.k==='t':it.k==='p');
   vis.sort((a,b)=>b.t-a.t);
   $lista.innerHTML='';
@@ -1978,7 +1980,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.1';
+const APP_VER='1.4.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2473,7 +2475,8 @@ async function mapaHtml(){
       fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.foto)})}
   const datos=JSON.stringify(d).replace(/</g,'\\u003c');
   const _trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1&&x.coords.some(p=>_en(p[1],p[0])));
-  const trk=JSON.stringify(_trAll.map((x,i)=>({name:CGTracks.nombre(x),c:x.coords.map(p=>[p[1],p[0]]),d:Math.round(CGTracks.dist(x.coords)),n:i+1})));
+  const _teRank=_trAll.slice().sort((a,b)=>(a.start||0)-(b.start||0));
+  const trk=JSON.stringify(_trAll.map(x=>({name:CGTracks.nombre(x),c:x.coords.map(p=>[p[1],p[0]]),d:Math.round(CGTracks.dist(x.coords)),n:_teRank.indexOf(x)+1})));
   const ntrk=_trAll.length;
   const bgA=JSON.stringify(DR_ADMIN);
   const bgW=JSON.stringify(DR_WDPA);
