@@ -1740,6 +1740,8 @@ async function enHilo(file){
 let gps=null,motivo='',gpsTs=0;
 const $ubic=document.getElementById('ubic');
 const ALTIC='<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px" aria-hidden="true"><path d="M3 20 L9 8 L12.5 14 L16 7 L21 20 Z"></path></svg>';
+const PTIC='<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="#1B7F5A"></circle></svg>';
+const LNIC='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#CE1126" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M4 18 L9.5 8.5 L14 14.5 L20 6"></path></svg>';
 function verUbic(){
   $ubic.innerHTML = gps
     ? `<i class="ri-map-pin-fill"></i> <b>${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}</b>`
@@ -1922,9 +1924,9 @@ async function pintar(anim=false){
       if(r.lat!=null && r.iucn && IUCN_COL[r.iucn]) li.style.borderLeftColor=IUCN_COL[r.iucn];
       if(r.lat!=null) li.style.cursor='pointer';
       li.innerHTML=`
-        <img src="${mu(r)}" alt="${t('fotoA')} ${n}">
+        <img src="${mu(r)}" alt="${t('fotoA')}">
         <div class="info">
-          <h3>${String(n).padStart(2,'0')}${r.clase?` · ${esc(r.clase)}`:''}
+          <h3>${PTIC}${r.clase?` ${esc(r.clase)}`:''}
             ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
           <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}${sentTag('p:'+r.id,sigFoto(r))}
           <p>${esc(r.notas||'')}</p>
@@ -1938,10 +1940,10 @@ async function pintar(anim=false){
       {const ed=li.querySelector('.editar-btn'); if(ed)ed.onclick=(e)=>{e.stopPropagation();abrirEdicion(r);};}
       const ub=li.querySelector('.ubicar-btn');
       if(ub)ub.onclick=(e)=>{e.stopPropagation();ubicando=r.id;tab(true);
-        aviso('a-av','ri-cursor-line',`${t('toque')} <b>${String(n).padStart(2,'0')}</b>. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
+        aviso('a-av','ri-cursor-line',`${t('toque')}. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
       const x=document.createElement('button');
       x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
-      x.setAttribute('aria-label',`${t('borrarA')} ${n}`);
+      x.setAttribute('aria-label',t('borrarA'));
       x.onclick=async(e)=>{e.stopPropagation();URL.revokeObjectURL(urls.get(r.id));urls.delete(r.id);
         await almacen.del(r.id);pintar()};
       li.appendChild(x);$lista.appendChild(li);
@@ -1953,7 +1955,7 @@ async function pintar(anim=false){
       li.innerHTML=`
         <div class="trk-ic"><i class="ri-map-2-line"></i></div>
         <div class="info">
-          <h3>${String(it.n).padStart(2,'0')} · ${esc(CGTracks.nombre(tr))}</h3>
+          <h3>${LNIC} ${esc(CGTracks.nombre(tr))}</h3>
           <span class="pill">${tr.coords.length} pts</span><span class="pill">${CGTracks.fmtD(d)}</span>${sentTag('t:'+tr.id,sigTrack(tr))}
           <p></p>
           <small>${fecha}</small>
@@ -1980,7 +1982,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.2';
+const APP_VER='1.4.3';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2167,7 +2169,7 @@ function dibujarMapa(){
   if(!navigator.onLine&&!mapa._off){mapa._off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));}
   pts.forEach(r=>{
     L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"><span style="color:${iucnMark(r.iucn).fg}">${String(r.n).padStart(2,'0')}</span></div>`})})
+      html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"></div>`})})
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
        <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
        <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>
@@ -2196,8 +2198,7 @@ function respaldo(pts){
   const la=pts.map(p=>p.lat),ln=pts.map(p=>p.lng);
   const y0=Math.min(...la),y1=Math.max(...la),x0=Math.min(...ln),x1=Math.max(...ln);
   const nx=v=>x1===x0?50:12+(v-x0)/(x1-x0)*76,ny=v=>y1===y0?50:12+(y1-v)/(y1-y0)*76;
-  el.innerHTML=pts.map(r=>`<div class="marca" style="left:${nx(r.lng)}%;top:${ny(r.lat)}%;background:${iucnMark(r.iucn).bg}"
-    ><span style="color:${iucnMark(r.iucn).fg}">${String(r.n).padStart(2,'0')}</span></div>`).join('');
+  el.innerHTML=pts.map(r=>`<div class="marca" style="left:${nx(r.lng)}%;top:${ny(r.lat)}%;background:${iucnMark(r.iucn).bg}"></div>`).join('');
   aviso('a-av','ri-wifi-off-line',t('sinMosaicos'));
 }
 
