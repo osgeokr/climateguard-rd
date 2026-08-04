@@ -1982,7 +1982,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.3';
+const APP_VER='1.4.4';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2578,7 +2578,7 @@ if(window.L&&(D.length||TR.length)){
   var _lg=L.control({position:'bottomleft'});_lg.onAdd=function(){var el=L.DomUtil.create('div','wlg');el.innerHTML='<b>'+WTIT+'</b><div><span class="s ter"></span>'+WTER+'</div><div><span class="s mar"></span>'+WMAR+'</div>';return el;};_lg.addTo(m);
   D.forEach(function(d){
     L.marker([d.lat,d.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"><span style="color:'+mk(d.iucn).fg+'">'+String(d.n).padStart(2,'0')+'</span></div>'})})
+      html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"></div>'})})
      .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
        (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
        '<br>'+(d.notas||SN)+'<br>'+d.lat.toFixed(5)+', '+d.lng.toFixed(5)+'<br>'+d.fecha+
@@ -2587,9 +2587,9 @@ if(window.L&&(D.length||TR.length)){
   TR.forEach(function(tk){
     var _g={type:'FeatureCollection',features:[{type:'Feature',properties:{name:tk.name},geometry:{type:'LineString',coordinates:tk.c.map(function(p){return [p[1],p[0]];})}}]};
     var _href='data:application/geo+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(_g));
-    var _fn='ClimateGuard_recorrido_'+String(tk.n).padStart(2,'0')+'.geojson';
+    var _fn='ClimateGuard_recorrido_'+(tk.name?tk.name.replace(/[^A-Za-z0-9]+/g,'_'):'track')+'.geojson';
     var _dkm=tk.d<1000?tk.d+' m':(tk.d/1000).toFixed(2)+' km';
-    var _h='<div class="tp"><h4>'+String(tk.n).padStart(2,'0')+' \u00b7 '+tk.name+'</h4><small>'+tk.c.length+' pts \u00b7 '+_dkm+'</small><a class="dl" href="'+_href+'" download="'+_fn+'">\u2b07 '+SAVETRK+'</a></div>';
+    var _h='<div class="tp"><h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CE1126" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4 18 L9.5 8.5 L14 14.5 L20 6"></path></svg> '+tk.name+'</h4><small>'+tk.c.length+' pts \u00b7 '+_dkm+'</small><a class="dl" href="'+_href+'" download="'+_fn+'">\u2b07 '+SAVETRK+'</a></div>';
     L.polyline(tk.c,{color:'#CE1126',weight:5,opacity:.9}).addTo(g).bindPopup(_h,{minWidth:180});
     L.marker(tk.c[Math.floor(tk.c.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 C6 13 12 14 12 9 C12 4 18 6 18 5"></path><circle cx="6" cy="18" r="1.7" fill="#fff" stroke="none"></circle><circle cx="18" cy="5" r="1.7" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(g).bindPopup(_h,{minWidth:180});
   });
@@ -2599,8 +2599,8 @@ if(window.L&&(D.length||TR.length)){
 }else{
   document.getElementById('m').innerHTML='<div style="padding:20px;font:13px system-ui;color:#1A1A1A">'+
    ${JSON.stringify(t('htmlSin'))}+'<br><br>'+
-   D.map(function(d){return d.n+'. '+d.grupo+(d.especie?' ('+d.especie+')':'')+(d.iucn?' — '+d.iucn:'')+' — '+
-   d.lat.toFixed(5)+', '+d.lng.toFixed(5)}).join('<br>')+(TR&&TR.length?('<br><br>'+TR.map(function(tk){return String(tk.n).padStart(2,'0')+'. '+tk.name+' \u2014 '+tk.c.length+' pts';}).join('<br>')):'')+'</div>';
+   D.map(function(d){return '<span style="color:#1B7F5A">\u25CF</span> '+d.grupo+(d.especie?' ('+d.especie+')':'')+(d.iucn?' — '+d.iucn:'')+' — '+
+   d.lat.toFixed(5)+', '+d.lng.toFixed(5)}).join('<br>')+(TR&&TR.length?('<br><br>'+TR.map(function(tk){return '<span style="color:#CE1126">\u2571</span> '+tk.name+' \u2014 '+tk.c.length+' pts';}).join('<br>')):'')+'</div>';
 }
 <\/script></body></html>`;
 }
