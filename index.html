@@ -140,11 +140,15 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
   background-repeat:no-repeat;background-position:right 10px center}
 .heat-ctl{position:absolute;top:52px;right:10px;z-index:6;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);color:var(--azul);padding:0}
 .heat-ctl.on{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4)}
-.wdpa-leg{background:rgba(255,255,255,.94);border:1px solid var(--borde);border-radius:7px;padding:7px 9px;font-family:var(--cpo);font-size:10.5px;line-height:1.5;color:var(--txt);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:190px}
-.wdpa-leg b{display:block;font-family:var(--tit);font-size:10.5px;margin-bottom:4px;color:var(--azul)}
-.wdpa-leg>div{display:flex;align-items:center;gap:6px}
-.wdpa-leg i{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
-.wdpa-leg i.ter{background:#37A24A}.wdpa-leg i.mar{background:#1F72E6}
+.wdpa-leg{background:rgba(255,255,255,.94);border:1px solid var(--borde);border-radius:7px;padding:6px 9px;font-family:var(--cpo);font-size:10.5px;line-height:1.5;color:var(--txt);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:200px}
+.wdpa-leg .wl-h{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;margin:0;cursor:pointer;font-family:var(--tit);font-size:10.5px;font-weight:600;color:var(--azul)}
+.wdpa-leg .wl-h span{flex:1;text-align:left}
+.wdpa-leg .wl-ar{font-size:9px;opacity:.75}
+.wdpa-leg .wl-body{margin-top:5px}
+.wdpa-leg.collapsed .wl-body{display:none}
+.wdpa-leg .wl-body>div{display:flex;align-items:center;gap:6px}
+.wdpa-leg .wl-body i{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
+.wdpa-leg .wl-body i.ter{background:#37A24A}.wdpa-leg .wl-body i.mar{background:#1F72E6}
 .pop-wdpa{font-family:var(--cpo);font-size:12px;line-height:1.5}
 .wdpa-tag{display:inline-block;margin-top:4px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;color:#fff}
 .wdpa-tag.ter{background:#1E7A34}.wdpa-tag.mar{background:#0B57D0}
@@ -1975,7 +1979,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.2.2';
+const APP_VER='1.3';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2132,8 +2136,11 @@ function dibujarMapa(){
     }}).addTo(mapa);
     /* leyenda */
     const _leg=L.control({position:'bottomleft'});
-    _leg.onAdd=function(){const d=L.DomUtil.create('div','wdpa-leg');
-      d.innerHTML='<b>'+t('wdpaTit')+'</b><div><i class="ter"></i>'+t('wdpaTer')+'</div><div><i class="mar"></i>'+t('wdpaMar')+'</div>';
+    _leg.onAdd=function(){const d=L.DomUtil.create('div','wdpa-leg collapsed');
+      d.innerHTML='<button type="button" class="wl-h"><span>'+t('wdpaTit')+'</span><span class="wl-ar">▸</span></button><div class="wl-body"><div><i class="ter"></i>'+t('wdpaTer')+'</div><div><i class="mar"></i>'+t('wdpaMar')+'</div></div>';
+      try{L.DomEvent.disableClickPropagation(d);}catch(_){}
+      var _b=d.querySelector('.wl-h'), _ar=d.querySelector('.wl-ar');
+      _b.onclick=function(){ d.classList.toggle('collapsed'); _ar.textContent=d.classList.contains('collapsed')?'▸':'▾'; };
       return d;};
     _leg.addTo(mapa);
     let off=false;const mo=()=>{if(off)return;off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));};
@@ -2453,13 +2460,18 @@ const b64=blob=>new Promise((ok,no)=>{const r=new FileReader();
 
 async function mapaHtml(){
   const d=[];let n=0;
-  for(const r of regs){n++;if(r.lat==null)continue;
+  const _B=(mapa&&mapa.getBounds)?mapa.getBounds():null;
+  const _en=(la,ln)=>!_B||_B.contains([la,ln]);
+  for(const r of regs){n++;if(r.lat==null)continue;if(!_en(r.lat,r.lng))continue;
     d.push({n,lat:r.lat,lng:r.lng,grupo:r.clase||'',especie:r.especie||'',
       cant:r.cant,notas:r.notas||'',iucn:r.iucn||'',
       fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.foto)})}
   const datos=JSON.stringify(d).replace(/</g,'\\u003c');
-  const trk=JSON.stringify((typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1).map((x,i)=>({name:CGTracks.nombre(x),c:x.coords.map(p=>[p[1],p[0]]),d:Math.round(CGTracks.dist(x.coords)),n:i+1})));
-  const ntrk=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1).length;
+  const _trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1&&x.coords.some(p=>_en(p[1],p[0])));
+  const trk=JSON.stringify(_trAll.map((x,i)=>({name:CGTracks.nombre(x),c:x.coords.map(p=>[p[1],p[0]]),d:Math.round(CGTracks.dist(x.coords)),n:i+1})));
+  const ntrk=_trAll.length;
+  const bgA=JSON.stringify(DR_ADMIN);
+  const bgW=JSON.stringify(DR_WDPA);
   return `<!DOCTYPE html><html lang="${idioma}" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ClimateGuard Mobile — ${t('sub')}</title>
@@ -2477,6 +2489,11 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 #hd b{font-size:17px;display:block;line-height:1.12}
 #hd span{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
 #m{height:calc(100% - 92px);background:#DDE3E8}
+.wlg{background:rgba(255,255,255,.94);border:1px solid #cfd6dd;border-radius:7px;padding:7px 9px;font:600 10.5px system-ui,sans-serif;color:#1A1A1A;box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:200px;line-height:1.5}
+.wlg b{display:block;color:#003876;margin-bottom:4px}
+.wlg div{display:flex;align-items:center;gap:6px}
+.wlg .s{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
+.wlg .s.ter{background:#37A24A}.wlg .s.mar{background:#1F72E6}
 .marca{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
 background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font:600 11px system-ui;color:#fff}
@@ -2498,7 +2515,7 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 <span>${t('sub')} · ${d.length} ${t('fotos')} · ${ntrk} ${t('recorridosN')}</span></div></div>
 <div id="m"></div>
 <script>
-var D=${datos},TR=${trk},IND=${JSON.stringify(t('indiv'))},SN=${JSON.stringify(t('sinNotas'))};
+var D=${datos},TR=${trk},BG_A=${bgA},BG_W=${bgW},IND=${JSON.stringify(t('indiv'))},SN=${JSON.stringify(t('sinNotas'))},WTIT=${JSON.stringify(t('wdpaTit'))},WTER=${JSON.stringify(t('wdpaTer'))},WMAR=${JSON.stringify(t('wdpaMar'))};
 var SAVE=${JSON.stringify(t('guardarFoto'))},HINT=${JSON.stringify(t('guardarHint'))},SAVETRK=${JSON.stringify(t('guardarTrk'))};
 window.guardarFoto=function(n){
   var d=null,i; for(i=0;i<D.length;i++){ if(D[i].n===n){d=D[i];break;} } if(!d)return;
@@ -2546,6 +2563,10 @@ function mk(k){return {bg:(k&&IC[k])||'#003876', fg:(k&&ID2.indexOf(k)>=0)?'#1a1
 if(window.L&&(D.length||TR.length)){
   var m=L.map('m'),g=L.layerGroup().addTo(m);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m);
+  m.createPane('wp');m.getPane('wp').style.zIndex=250;
+  try{L.geoJSON(BG_A,{interactive:false,style:{color:'#5C6B7C',weight:1.3,fill:false}}).addTo(m);}catch(e){}
+  try{L.geoJSON(BG_W,{pane:'wp',style:function(f){return f.properties.k==='M'?{color:'#0B57D0',weight:1,fillColor:'#1F72E6',fillOpacity:.26}:{color:'#1E7A34',weight:1,fillColor:'#37A24A',fillOpacity:.28};},onEachFeature:function(f,l){var p=f.properties;l.bindPopup('<div class="tp"><b>'+(p.n||'')+'</b>'+(p.d?'<br>'+p.d:'')+(p.c?' · '+p.c:'')+'</div>');}}).addTo(m);}catch(e){}
+  var _lg=L.control({position:'bottomleft'});_lg.onAdd=function(){var el=L.DomUtil.create('div','wlg');el.innerHTML='<b>'+WTIT+'</b><div><span class="s ter"></span>'+WTER+'</div><div><span class="s mar"></span>'+WMAR+'</div>';return el;};_lg.addTo(m);
   D.forEach(function(d){
     L.marker([d.lat,d.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
       html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"><span style="color:'+mk(d.iucn).fg+'">'+String(d.n).padStart(2,'0')+'</span></div>'})})
