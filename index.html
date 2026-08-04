@@ -1499,7 +1499,7 @@ const DIC={
   denegado:'Permiso denegado', tiempo:'Tiempo agotado', sinsenal:'Sin senal',
   optim:'Optimizando imagen...', errImg:'No se pudo leer la imagen.',
   errImg2:'Intente con otra fotografia.',
-  sinUbi:'Sin ubicacion', ubicar:'Ubicar en el mapa', sinNotas:'Sin notas',
+  sinUbi:'Sin ubicacion', ubicar:'Ubicar en el mapa', sinNotas:'Sin notas', altit:'Alt.',
   vacioT:'Sin registros', vacioP:'Tome una fotografia para iniciar el levantamiento.',
   borrarA:'Eliminar registro', fotoA:'Fotografia del registro',
   toque:'Toque el mapa para ubicar el registro',
@@ -1581,7 +1581,7 @@ const DIC={
   denegado:'Permission denied', tiempo:'Timed out', sinsenal:'No signal',
   optim:'Optimising image...', errImg:'The image could not be read.',
   errImg2:'Please try another photo.',
-  sinUbi:'No location', ubicar:'Place on map', sinNotas:'No notes',
+  sinUbi:'No location', ubicar:'Place on map', sinNotas:'No notes', altit:'Alt.',
   vacioT:'No records', vacioP:'Take a photo to start the survey.',
   borrarA:'Delete record', fotoA:'Photo of record',
   toque:'Tap the map to place record',
@@ -1746,6 +1746,7 @@ function verUbic(){
   $ubic.innerHTML = gps
     ? `<i class="ri-map-pin-fill"></i> <b>${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}</b>`
       +(gps.accuracy?`<br>±${Math.round(gps.accuracy)} m`:'')
+      +(gps.alt!=null?('<br>'+t('altit')+' '+Math.round(gps.alt)+' m'+(gps.altAcc!=null?(' ±'+Math.round(gps.altAcc)+' m'):'')):'')
     : `<i class="ri-map-pin-off-line"></i> ${t(motivo||'sinsenal')}`;
 }
 let gpsIniciado=false;
@@ -1763,7 +1764,7 @@ function refinarGPS(opts){
     if(!navigator.geolocation){motivo='nodisp';verUbic();resolve(null);return;}
     let best=null,id=null,fin=false;
     const finish=()=>{ if(fin)return; fin=true; if(id!=null)navigator.geolocation.clearWatch(id);
-      if(best){gps={lat:best.coords.latitude,lng:best.coords.longitude,accuracy:best.coords.accuracy};gpsTs=Date.now();motivo='';verUbic();}
+      if(best){gps={lat:best.coords.latitude,lng:best.coords.longitude,accuracy:best.coords.accuracy,alt:best.coords.altitude,altAcc:best.coords.altitudeAccuracy};gpsTs=Date.now();motivo='';verUbic();}
       resolve(best?gps:gps); };
     id=navigator.geolocation.watchPosition(p=>{
       if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
@@ -1833,10 +1834,10 @@ async function procesarArchivo(file){
     const [{orig,foto,mini},exif,fresh]=await Promise.all([comprimir(file),gpsExif(file),ensureGps()]);
     const ms=Math.round(performance.now()-t0);
     const baja=Math.round((1-foto.blob.size/file.size)*100);
-    const pos=fresh??exif??{lat:null,lng:null,accuracy:null};
+    const pos=fresh??exif??{lat:null,lng:null,accuracy:null,alt:null,altAcc:null};
     borrador={id:uid(),foto:foto.blob,mini:mini.blob,w:foto.w,h:foto.h,
       origW:orig.w,origH:orig.h,bytes:file.size,tipo:foto.type,q:foto.q,
-      fecha:Date.now(),lat:pos.lat,lng:pos.lng,accuracy:pos.accuracy,
+      fecha:Date.now(),lat:pos.lat,lng:pos.lng,accuracy:pos.accuracy,alt:(pos.alt!=null?pos.alt:null),altAcc:(pos.altAcc!=null?pos.altAcc:null),
       origen:fresh?'gps':exif?'exif':null};
     $vistaImg.src=URL.createObjectURL(mini.blob);
     $datos.innerHTML=
@@ -1929,7 +1930,7 @@ async function pintar(anim=false){
           <p>${esc(r.notas||'')}</p>
           <button type="button" class="mini editar-btn">${t('editar')}</button>
           <small>${r.lat!=null
-            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
+            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+t('altit')+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
             : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
           ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
         </div>`;
@@ -1979,7 +1980,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.3';
+const APP_VER='1.3.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2163,7 +2164,7 @@ function dibujarMapa(){
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
        <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
        <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>${esc(r.notas||t('sinNotas'))}<br>
-       ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}<br>${new Date(r.fecha).toLocaleString(loc())}</small>
+       ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.alt!=null?(' · '+t('altit')+' '+Math.round(r.alt)+' m'):''}<br>${new Date(r.fecha).toLocaleString(loc())}</small>
        <button type="button" class="pop-mover" data-id="${r.id}"><i class="ri-cursor-line"></i> ${t('mover')}</button></div>`,{minWidth:200})
      .addTo(capa);
   });
@@ -2779,7 +2780,7 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
     const obs={type:'FeatureCollection',features:nf.map((r,i)=>{
       const fn='foto_'+String(i+1).padStart(2,'0')+(r.especie?'_'+r.especie.replace(/[^\w-]+/g,'_'):'')+'.jpg'; r.__fn=fn;
-      return {type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',accuracy:(r.accuracy!=null?r.accuracy:null),fecha:new Date(r.fecha).toISOString(),updated_at:new Date(r.updated||r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}};
+      return {type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',accuracy:(r.accuracy!=null?r.accuracy:null),altitude:(r.alt!=null?r.alt:null),alt_accuracy:(r.altAcc!=null?r.altAcc:null),fecha:new Date(r.fecha).toISOString(),updated_at:new Date(r.updated||r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}};
     })};
     const rec={type:'FeatureCollection',features:nt.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString(),end:tr.end?new Date(tr.end).toISOString():null},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
     const fotos=[];
@@ -2881,7 +2882,7 @@ document.addEventListener('click',e=>{
     if(!navigator.geolocation){msg.textContent=t('nodisp');return;}
     msg.textContent='…';
     navigator.geolocation.getCurrentPosition(
-      p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};motivo='';verUbic();cerrar();flash(t('gpsOk'));},
+      p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,alt:p.coords.altitude,altAcc:p.coords.altitudeAccuracy};motivo='';verUbic();cerrar();flash(t('gpsOk'));},
       e=>{msg.innerHTML = e.code===1? pasos(): t('gpsPrompt');},
       {enableHighAccuracy:true,timeout:15000,maximumAge:0});
   };
