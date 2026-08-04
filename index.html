@@ -140,12 +140,9 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
   background-repeat:no-repeat;background-position:right 10px center}
 .heat-ctl{position:absolute;top:52px;right:10px;z-index:6;width:38px;height:38px;background:#fff;border:1px solid var(--borde);border-radius:6px;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2);color:var(--azul);padding:0}
 .heat-ctl.on{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4)}
-.wdpa-leg{background:rgba(255,255,255,.94);border:1px solid var(--borde);border-radius:7px;padding:6px 9px;font-family:var(--cpo);font-size:10.5px;line-height:1.5;color:var(--txt);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:200px}
-.wdpa-leg .wl-h{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;margin:0;cursor:pointer;font-family:var(--tit);font-size:10.5px;font-weight:600;color:var(--azul)}
-.wdpa-leg .wl-h span{flex:1;text-align:left}
-.wdpa-leg .wl-ar{font-size:9px;opacity:.75}
-.wdpa-leg .wl-body{margin-top:5px}
-.wdpa-leg.collapsed .wl-body{display:none}
+.mi-ubic{width:14px;height:14px;border-radius:50%;background:#1F72E6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(31,114,230,.5),0 1px 4px rgba(0,0,0,.45)}
+.wdpa-leg{background:rgba(255,255,255,.94);border:1px solid var(--borde);border-radius:7px;padding:6px 9px;font-family:var(--cpo);font-size:10.5px;line-height:1.5;color:var(--txt);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:220px}
+.wdpa-leg b{display:block;font-family:var(--tit);font-size:10.5px;font-weight:600;margin-bottom:4px;color:var(--azul)}
 .wdpa-leg .wl-body>div{display:flex;align-items:center;gap:6px}
 .wdpa-leg .wl-body i{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
 .wdpa-leg .wl-body i.ter{background:#37A24A}.wdpa-leg .wl-body i.mar{background:#1F72E6}
@@ -155,6 +152,7 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
 .pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
 .pts-bump{display:inline-block;animation:ptsBump .85s ease}
+.pts-pend{opacity:.42;font-weight:600;font-size:.82em;margin-left:2px}
 @keyframes ptsBump{0%{transform:scale(1)}25%{transform:scale(1.4);color:#1B7F5A}55%{transform:scale(1)}100%{transform:scale(1)}}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 
@@ -1320,7 +1318,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
    <div class="vista" id="vMap" role="tabpanel" hidden>
     <div class="mapa-wrap"><div id="mapa"></div>
       <select id="baseSel" class="base-sel" aria-label="Base"></select>
-      <button type="button" id="heatCtl" class="heat-ctl" aria-pressed="false" data-aria="heatmap"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" opacity=".33"></circle><circle cx="12" cy="12" r="5.4" opacity=".7"></circle><circle cx="12" cy="12" r="2.2" fill="#1B7F5A" stroke="none"></circle></svg></button>
+      <button type="button" id="heatCtl" class="heat-ctl" data-aria="miUbic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"></circle><line x1="12" y1="2.5" x2="12" y2="5.5"></line><line x1="12" y1="18.5" x2="12" y2="21.5"></line><line x1="2.5" y1="12" x2="5.5" y2="12"></line><line x1="18.5" y1="12" x2="21.5" y2="12"></line></svg></button>
     </div>
     <div class="compartir">
       <button type="button" class="btn btn-1" id="btnHtml" disabled>
@@ -1534,15 +1532,15 @@ const DIC={
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
   faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
-  maxNivel:'Nivel maximo alcanzado', comoPts:'Fotos: 10 (+5 ubicacion, +5 especie) · Recorridos: 10 (+5 si >=200 m) · x2 al enviar',
+  maxNivel:'Nivel maximo alcanzado', comoPts:'Fotos: 10 (+5 ubicacion, +5 especie) · Recorridos: 10 (+5 si >=200 m) · se acreditan al enviar', porSubir:'Pendiente de enviar',
   subiste:'Ascenso de nivel', seguir:'Continuar', nuevoRango:'Nuevo rango:',
   ganaste:'puntos',
   r1:'Aspirante', r2:'Observador', r3:'Explorador',
   r4:'Naturalista', r5:'Maestro Naturalista',
   bTomar:'Tomar foto', bGaleria:'Elegir de galería', bCambiarFoto:'Cambiar foto',
-  offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas (WDPA)', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
+  offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
   piloto:'Unofficial', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
-  mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor',
+  mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor', miUbic:'Mi ubicación',
   sinNombre:'Sin nombre', recortar:'Ajustar foto', bConfirmar:'Confirmar',
   gpsTitulo:'Ubicación desactivada', reintentar:'Reintentar', cerrar:'Cerrar', gpsOk:'Ubicación activada.',
   gpsPrompt:'Activa el GPS y permite el acceso a la ubicación para guardar coordenadas automáticamente.',
@@ -1616,15 +1614,15 @@ const DIC={
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
   faltan:'', paraNivel:'points to the next level',
-  maxNivel:'Top level reached', comoPts:'Photos: 10 (+5 location, +5 species) · Tracks: 10 (+5 if >=200 m) · x2 on send',
+  maxNivel:'Top level reached', comoPts:'Photos: 10 (+5 location, +5 species) · Tracks: 10 (+5 if >=200 m) · credited on upload', porSubir:'Pending upload',
   subiste:'Level up', seguir:'Continue', nuevoRango:'New rank:',
   ganaste:'points',
   r1:'Trainee', r2:'Observer', r3:'Explorer',
   r4:'Naturalist', r5:'Master Naturalist',
   bTomar:'Take photo', bGaleria:'Choose from gallery', bCambiarFoto:'Change photo',
-  offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected Areas (WDPA)', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
+  offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected areas', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
   piloto:'Unofficial', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
-  mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap',
+  mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap', miUbic:'My location',
   sinNombre:'No name', recortar:'Adjust photo', bConfirmar:'Confirm',
   gpsTitulo:'Location is off', reintentar:'Retry', cerrar:'Close', gpsOk:'Location enabled.',
   gpsPrompt:'Turn on GPS and allow location access to save coordinates automatically.',
@@ -1905,7 +1903,7 @@ async function pintar(anim=false){
   regs=await almacen.all();
   const trks=(typeof CGTracks!=='undefined'&&CGTracks)?CGTracks.all().slice():[];
   const items=[];
-  regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:ri+1}));
+  regs.forEach((r,ri)=>items.push({k:'p',t:r.fecha,r,n:regs.length-ri}));
   trks.forEach((tr,ti)=>items.push({k:'t',t:tr.start,tr,n:ti+1}));
   const vis=items.filter(it=>subActivo==='trk'?it.k==='t':it.k==='p');
   vis.sort((a,b)=>b.t-a.t);
@@ -1980,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.3.1';
+const APP_VER='1.4';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -1998,12 +1996,21 @@ const totalPuntos=()=>{ const led=loadLedger(); let s=0; const seen={};
   const _tr=(typeof CGTracks!=='undefined'?CGTracks.all():[]);
   _tr.forEach(tr=>{ if(!(tr.coords&&tr.coords.length>1))return; const k='t:'+tr.id; seen[k]=1; s+=(led[k]!=null?led[k]:puntosTrack(tr)); });
   for(const k in led){ if(!seen[k]) s+=led[k]; } return s; };
+function itemsPuntos(){ const led=loadLedger(), sent=loadSent(); let conf=0,pend=0; const seen={};
+  regs.forEach(r=>{ const k='p:'+r.id; seen[k]=1;
+    if(sent[k]!==undefined && sent[k]===sigFoto(r)) conf+=(led[k]!=null?led[k]:puntosDe(r)); else pend+=puntosDe(r); });
+  const _tr=(typeof CGTracks!=='undefined'?CGTracks.all():[]);
+  _tr.forEach(tr=>{ if(!(tr.coords&&tr.coords.length>1))return; const k='t:'+tr.id; seen[k]=1;
+    if(sent[k]!==undefined && sent[k]===sigTrack(tr)) conf+=(led[k]!=null?led[k]:puntosTrack(tr)); else pend+=puntosTrack(tr); });
+  for(const k in led){ if(!seen[k]) conf+=led[k]; }
+  return {conf:conf,pend:pend}; }
+const puntosConfirmados=()=>itemsPuntos().conf;
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
 let nivelActual=0, _prevPts=null;
 function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
 
 function pintarPerfil(){
-  const nFotos=regs.length, pts=totalPuntos(), i=nivelDe(pts), sig=NIVELES[i+1];
+  const nFotos=regs.length, _ip=itemsPuntos(), pts=_ip.conf, pend=_ip.pend, i=nivelDe(pts), sig=NIVELES[i+1];
   const rango=t(NIVELES[i].k);
   const _th=NIVELES[i];
   const etq=`<u style="background:${_th.col}">${t('nivel')||'Niv.'} ${i+1}</u><i class="${_th.ic}" style="color:${_th.col};margin:0 2px 0 5px;font-size:12px;vertical-align:-1px"></i>${rango}`;
@@ -2013,12 +2020,12 @@ function pintarPerfil(){
     : t('maxNivel');
 
   document.getElementById('tNivel').innerHTML=etq;
-  document.getElementById('tPts').textContent=`${pts} ${t('pts')}`;
+  document.getElementById('tPts').innerHTML=`${pts} ${t('pts')}`+(pend>0?` <span class="pts-pend" title="${t('porSubir')}">+${pend}</span>`:'');
   document.getElementById('tBarra').style.width=pct+'%';
   document.getElementById('tMeta').textContent=meta;
 
   document.getElementById('pFotos').textContent=nFotos;
-  document.getElementById('pPts').textContent=pts;
+  document.getElementById('pPts').innerHTML=`${pts}`+(pend>0?`<span class="pts-pend" title="${t('porSubir')}">+${pend}</span>`:'');
   document.getElementById('pNivel').innerHTML=etq;
   document.getElementById('pBarra').style.width=pct+'%';
   document.getElementById('pMeta').textContent=`${meta} · ${t('comoPts')}`;
@@ -2108,7 +2115,7 @@ const $avisos=document.getElementById('avisos');
 const aviso=(cl,ic,tx)=>{$avisos.innerHTML=`<div class="alerta ${cl}"><i class="${ic}"></i><div>${tx}</div></div>`};
 
 function dibujarMapa(){
-  const pts=regs.map((r,i)=>({...r,n:i+1})).filter(r=>r.lat!=null);
+  const pts=regs.map((r,i)=>({...r,n:regs.length-i})).filter(r=>r.lat!=null);
   const sin=regs.length-pts.length;
   if(!window.L)return respaldo(pts);
   const bl='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -2137,11 +2144,9 @@ function dibujarMapa(){
     }}).addTo(mapa);
     /* leyenda */
     const _leg=L.control({position:'bottomleft'});
-    _leg.onAdd=function(){const d=L.DomUtil.create('div','wdpa-leg collapsed');
-      d.innerHTML='<button type="button" class="wl-h"><span>'+t('wdpaTit')+'</span><span class="wl-ar">▸</span></button><div class="wl-body"><div><i class="ter"></i>'+t('wdpaTer')+'</div><div><i class="mar"></i>'+t('wdpaMar')+'</div></div>';
+    _leg.onAdd=function(){const d=L.DomUtil.create('div','wdpa-leg');
+      d.innerHTML='<b>'+t('wdpaTit')+'</b><div class="wl-body"><div><i class="ter"></i>'+t('wdpaTer')+'</div><div><i class="mar"></i>'+t('wdpaMar')+'</div></div>';
       try{L.DomEvent.disableClickPropagation(d);}catch(_){}
-      var _b=d.querySelector('.wl-h'), _ar=d.querySelector('.wl-ar');
-      _b.onclick=function(){ d.classList.toggle('collapsed'); _ar.textContent=d.classList.contains('collapsed')?'▸':'▾'; };
       return d;};
     _leg.addTo(mapa);
     let off=false;const mo=()=>{if(off)return;off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));};
@@ -2271,7 +2276,7 @@ async function abrirCarnet(){
     carnetBlob=await credencialPng();
     if(carnetUrl)URL.revokeObjectURL(carnetUrl);
     carnetUrl=URL.createObjectURL(carnetBlob);
-    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(totalPuntos())].k)}`;
+    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(puntosConfirmados())].k)}`;
     $cImg.hidden=false; $cCarga.hidden=true;
     document.getElementById('cGuardar').disabled=false;
   }catch{
@@ -2348,7 +2353,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$pe.classList.conta
 
 async function credencialPng(){
   await (document.fonts?.ready??Promise.resolve());
-  const n=regs.length, pts=totalPuntos(), i=nivelDe(pts), sig=NIVELES[i+1];
+  const n=regs.length, pts=puntosConfirmados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const TH=NIVELES[i];
   const W=780, H=1120, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
@@ -2460,10 +2465,10 @@ const b64=blob=>new Promise((ok,no)=>{const r=new FileReader();
   r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsDataURL(blob)});
 
 async function mapaHtml(){
-  const d=[];let n=0;
+  const d=[];
   const _B=(mapa&&mapa.getBounds)?mapa.getBounds():null;
   const _en=(la,ln)=>!_B||_B.contains([la,ln]);
-  for(const r of regs){n++;if(r.lat==null)continue;if(!_en(r.lat,r.lng))continue;
+  for(let ri=0;ri<regs.length;ri++){const r=regs[ri];const n=regs.length-ri;if(r.lat==null)continue;if(!_en(r.lat,r.lng))continue;
     d.push({n,lat:r.lat,lng:r.lng,grupo:r.clase||'',especie:r.especie||'',
       cant:r.cant,notas:r.notas||'',iucn:r.iucn||'',
       fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.foto)})}
@@ -2763,7 +2768,17 @@ const SPECIES=[["Lutjanus cyanopterus","Cubera","Cubera Snapper","Actinopterygii
 
 /* ── v4: heatmap toggle ── */
 (function(){const b=document.getElementById('heatCtl');if(!b)return;
-  b.onclick=()=>{heatOn=!heatOn;b.setAttribute('aria-pressed',heatOn);b.classList.toggle('on',heatOn);dibujarMapa();};})();
+  var _miU=null;
+  function mostrarMiUbic(){ if(!mapa||!gps)return; try{if(_miU)mapa.removeLayer(_miU);}catch(_){}
+    try{_miU=L.marker([gps.lat,gps.lng],{icon:L.divIcon({className:'',iconSize:[14,14],iconAnchor:[7,7],html:'<div class="mi-ubic"></div>'})}).addTo(mapa);}catch(_){} }
+  b.onclick=async()=>{ b.classList.add('on');
+    try{
+      gpsIniciado=true;
+      await ensureGps();
+      if(gps&&mapa){ mapa.setView([gps.lat,gps.lng],16); mostrarMiUbic(); }
+      else{ aviso('a-av','ri-map-pin-off-line',t(motivo||'sinsenal')); }
+    }catch(_){}
+    b.classList.remove('on'); };})();
 
 /* ── v0.3: envio de datos al Drive (Apps Script Web App) ── */
 const CG_ENVIO_URL='https://script.google.com/macros/s/AKfycbxLthzg2zo6Wqw3RaU0xtyosK8qA9jYlCn2YP5xPK7ed7Ms7b-E_rzTGFi2V5MGr4fJ/exec';
