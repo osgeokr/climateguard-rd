@@ -1019,6 +1019,7 @@ textarea{resize:vertical;min-height:66px}
   background:var(--azul);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
   display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font-family:var(--tit);font-size:11px;font-weight:600;color:#fff}
+.marca .mdot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.4px rgba(0,0,0,.22)}
 .marca.endemic{background:var(--verde)}.marca.invasive{background:var(--rojo)}
 .marca-trk{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:var(--rojo);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca-trk svg{transform:rotate(45deg)}
@@ -1982,7 +1983,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.5';
+const APP_VER='1.4.6';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2169,7 +2170,7 @@ function dibujarMapa(){
   if(!navigator.onLine&&!mapa._off){mapa._off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));}
   pts.forEach(r=>{
     L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"></div>`})})
+      html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"><i class="mdot"></i></div>`})})
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
        <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
        <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>
@@ -2198,7 +2199,7 @@ function respaldo(pts){
   const la=pts.map(p=>p.lat),ln=pts.map(p=>p.lng);
   const y0=Math.min(...la),y1=Math.max(...la),x0=Math.min(...ln),x1=Math.max(...ln);
   const nx=v=>x1===x0?50:12+(v-x0)/(x1-x0)*76,ny=v=>y1===y0?50:12+(y1-v)/(y1-y0)*76;
-  el.innerHTML=pts.map(r=>`<div class="marca" style="left:${nx(r.lng)}%;top:${ny(r.lat)}%;background:${iucnMark(r.iucn).bg}"></div>`).join('');
+  el.innerHTML=pts.map(r=>`<div class="marca" style="left:${nx(r.lng)}%;top:${ny(r.lat)}%;background:${iucnMark(r.iucn).bg}"><i class="mdot"></i></div>`).join('');
   aviso('a-av','ri-wifi-off-line',t('sinMosaicos'));
 }
 
@@ -2506,6 +2507,7 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 .marca{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
 background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca span{transform:rotate(45deg);font:600 11px system-ui;color:#fff}
+.marca .mdot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.4px rgba(0,0,0,.22)}
 .marca.endemic{background:#1B7F5A}.marca.invasive{background:#CE1126}
 .marca-trk{width:27px;height:27px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:#CE1126;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
 .marca-trk svg{transform:rotate(45deg)}
@@ -2578,7 +2580,7 @@ if(window.L&&(D.length||TR.length)){
   var _lg=L.control({position:'bottomleft'});_lg.onAdd=function(){var el=L.DomUtil.create('div','wlg');el.innerHTML='<b>'+WTIT+'</b><div><span class="s ter"></span>'+WTER+'</div><div><span class="s mar"></span>'+WMAR+'</div>';return el;};_lg.addTo(m);
   D.forEach(function(d){
     L.marker([d.lat,d.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"></div>'})})
+      html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"><i class="mdot"></i></div>'})})
      .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
        (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
        '<br>'+(d.notas||SN)+'<br>'+d.lat.toFixed(5)+', '+d.lng.toFixed(5)+'<br>'+d.fecha+
