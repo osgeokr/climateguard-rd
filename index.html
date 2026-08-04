@@ -1740,8 +1740,8 @@ async function enHilo(file){
 let gps=null,motivo='',gpsTs=0;
 const $ubic=document.getElementById('ubic');
 const ALTIC='<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px" aria-hidden="true"><path d="M3 20 L9 8 L12.5 14 L16 7 L21 20 Z"></path></svg>';
-const PTIC='<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="#1B7F5A"></circle></svg>';
-const LNIC='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#CE1126" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M4 18 L9.5 8.5 L14 14.5 L20 6"></path></svg>';
+const PTIC='<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px" aria-hidden="true"><path d="M12 2.2c-4.2 0-7.5 3.3-7.5 7.4 0 5.2 7.5 12.2 7.5 12.2s7.5-7 7.5-12.2C19.5 5.5 16.2 2.2 12 2.2z" fill="#1B7F5A"></path><circle cx="12" cy="9.6" r="2.9" fill="#fff"></circle></svg>';
+const LNIC='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#CE1126" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M4.5 17 L11 9 L19.5 14"></path><circle cx="4.5" cy="17" r="2.1" fill="#CE1126" stroke="none"></circle><circle cx="11" cy="9" r="2.1" fill="#CE1126" stroke="none"></circle><circle cx="19.5" cy="14" r="2.1" fill="#CE1126" stroke="none"></circle></svg>';
 function verUbic(){
   $ubic.innerHTML = gps
     ? `<i class="ri-map-pin-fill"></i> <b>${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}</b>`
@@ -1982,7 +1982,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.4';
+const APP_VER='1.4.5';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2589,9 +2589,9 @@ if(window.L&&(D.length||TR.length)){
     var _href='data:application/geo+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(_g));
     var _fn='ClimateGuard_recorrido_'+(tk.name?tk.name.replace(/[^A-Za-z0-9]+/g,'_'):'track')+'.geojson';
     var _dkm=tk.d<1000?tk.d+' m':(tk.d/1000).toFixed(2)+' km';
-    var _h='<div class="tp"><h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CE1126" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4 18 L9.5 8.5 L14 14.5 L20 6"></path></svg> '+tk.name+'</h4><small>'+tk.c.length+' pts \u00b7 '+_dkm+'</small><a class="dl" href="'+_href+'" download="'+_fn+'">\u2b07 '+SAVETRK+'</a></div>';
+    var _h='<div class="tp"><h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CE1126" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4.5 17 L11 9 L19.5 14"></path><circle cx="4.5" cy="17" r="2" fill="#CE1126" stroke="none"></circle><circle cx="11" cy="9" r="2" fill="#CE1126" stroke="none"></circle><circle cx="19.5" cy="14" r="2" fill="#CE1126" stroke="none"></circle></svg> '+tk.name+'</h4><small>'+tk.c.length+' pts \u00b7 '+_dkm+'</small><a class="dl" href="'+_href+'" download="'+_fn+'">\u2b07 '+SAVETRK+'</a></div>';
     L.polyline(tk.c,{color:'#CE1126',weight:5,opacity:.9}).addTo(g).bindPopup(_h,{minWidth:180});
-    L.marker(tk.c[Math.floor(tk.c.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 C6 13 12 14 12 9 C12 4 18 6 18 5"></path><circle cx="6" cy="18" r="1.7" fill="#fff" stroke="none"></circle><circle cx="18" cy="5" r="1.7" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(g).bindPopup(_h,{minWidth:180});
+    L.marker(tk.c[Math.floor(tk.c.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 17 L11 9 L19.5 14"></path><circle cx="4.5" cy="17" r="2" fill="#fff" stroke="none"></circle><circle cx="11" cy="9" r="2" fill="#fff" stroke="none"></circle><circle cx="19.5" cy="14" r="2" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(g).bindPopup(_h,{minWidth:180});
   });
   var PTS=D.map(function(d){return[d.lat,d.lng];});TR.forEach(function(tk){PTS=PTS.concat(tk.c);});
   if(PTS.length===1)m.setView(PTS[0],17);
@@ -2918,7 +2918,7 @@ var CGTracks = (function(){
       const ph=`<div class="trk-pop"><b>${esc(nombreDe(tr))}</b><br><span>${tr.coords.length} pts \u00b7 ${fmtD(dist(tr.coords))}</span><br><span>${fch}</span></div>`;
       const _cs=tr.coords.map(c=>[c[1],c[0]]);
       L.polyline(_cs,{color:'#CE1126',weight:5,opacity:.9}).addTo(trkLayer).bindPopup(ph);
-      L.marker(_cs[Math.floor(_cs.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 C6 13 12 14 12 9 C12 4 18 6 18 5"></path><circle cx="6" cy="18" r="1.7" fill="#fff" stroke="none"></circle><circle cx="18" cy="5" r="1.7" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(trkLayer).bindPopup(ph);
+      L.marker(_cs[Math.floor(_cs.length/2)],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,27],html:'<div class="marca-trk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 17 L11 9 L19.5 14"></path><circle cx="4.5" cy="17" r="2" fill="#fff" stroke="none"></circle><circle cx="11" cy="9" r="2" fill="#fff" stroke="none"></circle><circle cx="19.5" cy="14" r="2" fill="#fff" stroke="none"></circle></svg></div>'})}).addTo(trkLayer).bindPopup(ph);
     }});
     trkLayer.addTo(mapa);
   }
