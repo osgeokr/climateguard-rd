@@ -1326,7 +1326,6 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       <button type="button" class="btn btn-2" id="btnEnviar"><span data-i18n="bEnviar"></span></button>
     </div>
     <div id="avisos"></div>
-    <button type="button" class="probar" id="probar" data-i18n="bPrueba"></button>
    </div>
   </main>
 
@@ -1740,11 +1739,12 @@ async function enHilo(file){
 /* ── Ubicacion 1: GPS en vivo ── */
 let gps=null,motivo='',gpsTs=0;
 const $ubic=document.getElementById('ubic');
+const ALTIC='<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px" aria-hidden="true"><path d="M3 20 L9 8 L12.5 14 L16 7 L21 20 Z"></path></svg>';
 function verUbic(){
   $ubic.innerHTML = gps
     ? `<i class="ri-map-pin-fill"></i> <b>${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}</b>`
       +(gps.accuracy?`<br>±${Math.round(gps.accuracy)} m`:'')
-      +(gps.alt!=null?('<br>'+t('altit')+' '+Math.round(gps.alt)+' m'+(gps.altAcc!=null?(' ±'+Math.round(gps.altAcc)+' m'):'')):'')
+      +(gps.alt!=null?('<br>'+ALTIC+' '+Math.round(gps.alt)+' m'+(gps.altAcc!=null?(' ±'+Math.round(gps.altAcc)+' m'):'')):'')
     : `<i class="ri-map-pin-off-line"></i> ${t(motivo||'sinsenal')}`;
 }
 let gpsIniciado=false;
@@ -1928,7 +1928,7 @@ async function pintar(anim=false){
           <p>${esc(r.notas||'')}</p>
           <button type="button" class="mini editar-btn">${t('editar')}</button>
           <small>${r.lat!=null
-            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+t('altit')+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
+            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
             : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
           ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
         </div>`;
@@ -1978,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4';
+const APP_VER='1.4.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2168,9 +2168,8 @@ function dibujarMapa(){
       html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"><span style="color:${iucnMark(r.iucn).fg}">${String(r.n).padStart(2,'0')}</span></div>`})})
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
        <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
-       <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>${esc(r.notas||t('sinNotas'))}<br>
-       ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.alt!=null?(' · '+t('altit')+' '+Math.round(r.alt)+' m'):''}<br>${new Date(r.fecha).toLocaleString(loc())}</small>
-       <button type="button" class="pop-mover" data-id="${r.id}"><i class="ri-cursor-line"></i> ${t('mover')}</button></div>`,{minWidth:200})
+       <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>
+       ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.accuracy!=null?(' ±'+Math.round(r.accuracy)+' m'):''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'):''}<br>${new Date(r.fecha).toLocaleString(loc())}</small></div>`,{minWidth:200})
      .addTo(capa);
   });
   if(heatOn && window.L && L.heatLayer && pts.length){
@@ -2185,7 +2184,7 @@ function dibujarMapa(){
   if(!pts.length && !ntrk)
     aviso('a-av','ri-map-pin-off-line',`${t('ningunaC')}<br>`+(motivo?`${t('gpsEs')} <b>${t(motivo)}</b>. `:'')+t('useUbicar'));
   else
-    aviso('a-info','ri-information-line',`${pts.length} ${t('obsN')}${sin?` · ${sin} ${t('sinUbiN')}`:''} · ${ntrk} ${t('recorridosN')}. ${t('explica')}`);
+    aviso('a-info','ri-map-2-line',`${pts.length} ${t('obsN')} · ${ntrk} ${t('recorridosN')}`);
 }
 function respaldo(pts){
   let el=document.getElementById('mapa');
@@ -2620,15 +2619,6 @@ function descargar(file){const u=URL.createObjectURL(file);const a=document.crea
 const sello=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`};
 
-document.getElementById('probar').onclick=async()=>{
-  const base=gps??SD;
-  const sinUbi=regs.filter(r=>r.lat==null);
-  if(!sinUbi.length){aviso('a-info','ri-information-line',t('yaTienen'));return}
-  for(const r of sinUbi)await almacen.patch(r.id,{
-    lat:base.lat+(Math.random()-.5)*.05,lng:base.lng+(Math.random()-.5)*.07,
-    accuracy:null,origen:'prueba'});
-  await pintar();
-};
 
 /* ── Idioma ── */
 function aplicarIdioma(){
@@ -2822,10 +2812,6 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
 
 /* ── v4: reubicar desde el marcador / cancelar ── */
 document.addEventListener('click',e=>{
-  const mv=e.target.closest&&e.target.closest('.pop-mover');
-  if(mv){ubicando=mv.dataset.id;if(mapa)mapa.closePopup();
-    document.getElementById('mapa').classList.add('ubicando');
-    aviso('a-av','ri-cursor-line',`${t('toque')} <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`);return;}
   if(e.target.id==='cancelUbic'){ubicando=null;const m=document.getElementById('mapa');if(m)m.classList.remove('ubicando');dibujarMapa();}
 });
 
