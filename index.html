@@ -153,6 +153,8 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
 .pts-bump{display:inline-block;animation:ptsBump .85s ease}
 .pts-pend{opacity:.42;font-weight:600;font-size:.82em;margin-left:2px}
+.gsi-wrap{display:flex;justify-content:center;margin:8px 0 4px;min-height:44px}
+.gate-msg{color:var(--rojo,#CE1126);font-size:12px;text-align:center;min-height:15px;margin:4px 0}
 @keyframes ptsBump{0%{transform:scale(1)}25%{transform:scale(1.4);color:#1B7F5A}55%{transform:scale(1)}100%{transform:scale(1)}}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
 
@@ -1171,15 +1173,8 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       </svg><span class="lk-txt">ClimateGuard<br>Mobile</span></h2>
       <span class="pill-piloto" data-i18n="piloto"></span>
       <p class="rol" data-i18n="gateSub"></p>
-      <div class="f">
-        <label for="usr" data-i18n="usuario"></label>
-        <input type="text" id="usr" value="Byeong-Hyeok Yu" autocapitalize="none">
-      </div>
-      <div class="f">
-        <label for="pwd" data-i18n="clave"></label>
-        <input type="password" id="pwd" value="demo1234">
-      </div>
-      <button type="button" class="btn btn-1" id="entrar" data-i18n="ingresar"></button>
+      <div id="gsiBtn" class="gsi-wrap"></div>
+      <p class="gate-msg" id="gateMsg"></p>
       <p class="nota" data-i18n="gateNota"></p>
     </div>
   </div>
@@ -1528,7 +1523,7 @@ const DIC={
   credAsunto:'Credencial de investigacion - ClimateGuard',
   nivel:'Nivel', ingresar:'Iniciar sesion', usuario:'Usuario', clave:'Contrasena',
   gateSub:'Acceso para el equipo y la ciudadanía',
-  gateNota:'Prototipo de demostracion. No valida credenciales ni existe cuenta real.',
+  gateNota:'Inicia sesión con tu cuenta de Google para participar.', gBloq:'Tu cuenta está bloqueada.', gPend:'Tu cuenta está pendiente de aprobación.', gOffline:'Se necesita conexión para el primer inicio de sesión.', envLogin:'Inicia sesión con Google para enviar.',
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
   faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
@@ -1610,7 +1605,7 @@ const DIC={
   credAsunto:'Research ID card - ClimateGuard',
   nivel:'Level', ingresar:'Sign in', usuario:'User', clave:'Password',
   gateSub:'Access for staff and citizens',
-  gateNota:'Demo prototype. Credentials are not checked and no real account exists.',
+  gateNota:'Sign in with your Google account to take part.', gBloq:'Your account is blocked.', gPend:'Your account is awaiting approval.', gOffline:'Internet is required for the first sign-in.', envLogin:'Sign in with Google to send.',
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
   faltan:'', paraNivel:'points to the next level',
@@ -1983,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.7';
+const APP_VER='1.5.0';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2063,24 +2058,77 @@ function ascenso(i){
 }
 document.getElementById('aOk').onclick=()=>document.getElementById('ascenso').classList.remove('on');
 
-/* ── Acceso (demostracion) ── */
-document.getElementById('entrar').onclick=()=>{
-  document.getElementById('gate').classList.add('oculto');
-  try{localStorage.setItem('cg_entered','1');}catch(_){}
-  setTimeout(iniciarGPS,300);
-  armarBack();
-};
-document.getElementById('pwd').addEventListener('keydown',e=>{
-  if(e.key==='Enter')document.getElementById('entrar').click()});
+/* ── Acceso: Google Sign-In (OAuth 2.0 / OpenID Connect) ── */
+const CG_CLIENT_ID='918300818571-39mnd09t4q7k1kro6olhiafjme803k5b.apps.googleusercontent.com';
+let cgSession=(()=>{try{return JSON.parse(localStorage.getItem('cg_gauth')||'null');}catch(_){return null;}})();
+let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null;
+function _jwtPayload(tok){ try{ var s=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }catch(_){ return null; } }
+function entrarApp(){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); try{armarBack();}catch(_){} }
+function aplicarSesion(s){
+  cgSession=s; try{localStorage.setItem('cg_gauth',JSON.stringify({email:s.email,name:s.name,picture:s.picture}));}catch(_){}
+  perfilNombre=s.name||s.email; try{localStorage.setItem('cg_name_rd',perfilNombre);}catch(_){}
+  try{aplicarNombre();}catch(_){}
+}
+function onGoogle(resp){
+  var cred=resp&&resp.credential; if(!cred)return;
+  var p=_jwtPayload(cred); if(!p)return;
+  cgIdToken=cred; cgTokenExp=(p.exp||0)*1000;
+  aplicarSesion({email:(p.email||'').toLowerCase(), name:p.name||'', picture:p.picture||''});
+  if(onGoogleExtra){ var f=onGoogleExtra; onGoogleExtra=null; try{f(cred);}catch(_){} }
+  var gm=document.getElementById('gateMsg'); if(gm)gm.textContent='';
+  if(document.getElementById('gate').classList.contains('oculto'))return;   /* ya dentro: solo refresco de token */
+  verificarEstado(cred, function(st){
+    if(st==='blocked'){ if(gm)gm.textContent=t('gBloq'); return; }
+    if(st==='pending'){ if(gm)gm.textContent=t('gPend'); return; }
+    entrarApp();
+  }, function(){ entrarApp(); });   /* sin conexion: entrar (el servidor verifica al enviar) */
+}
+function verificarEstado(idToken, ok, fail){
+  try{
+    var cb='cgme'+Date.now(), sc=document.createElement('script'), done=false;
+    var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
+    window[cb]=function(r){ fin(); if(r&&r.ok){ ok(String(r.status||'active')); } else { fail(); } };
+    sc.onerror=function(){ fin(); fail(); };
+    sc.src=CG_ENVIO_URL+'?action=me&callback='+cb+'&id_token='+encodeURIComponent(idToken);
+    document.body.appendChild(sc);
+    setTimeout(function(){ if(!done){ fin(); fail(); } },8000);
+  }catch(_){ fail(); }
+}
+function initGoogle(){
+  if(!(window.google&&google.accounts&&google.accounts.id))return false;
+  try{
+    google.accounts.id.initialize({client_id:CG_CLIENT_ID, callback:onGoogle, auto_select:true});
+    var bx=document.getElementById('gsiBtn');
+    if(bx){ bx.innerHTML=''; google.accounts.id.renderButton(bx,{type:'standard',theme:'filled_blue',size:'large',shape:'pill',text:'continue_with'}); }
+    try{google.accounts.id.prompt();}catch(_){}
+    return true;
+  }catch(_){ return false; }
+}
+(function(){ var g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true; g.defer=true; document.head.appendChild(g); })();
+(function waitGIS(n){ if(initGoogle())return; if(n<=0){ if(cgSession){ entrarApp(); } else { var gm=document.getElementById('gateMsg'); if(gm)gm.textContent=t('gOffline'); } return; } setTimeout(function(){waitGIS(n-1);},400); })(25);
+if(cgSession){ perfilNombre=cgSession.name||cgSession.email; try{localStorage.setItem('cg_name_rd',perfilNombre);}catch(_){} }
+function tokenFresco(){
+  return new Promise(function(res){
+    if(cgIdToken && cgTokenExp-Date.now()>60000) return res(cgIdToken);
+    if(!(window.google&&google.accounts&&google.accounts.id)) return res(null);
+    var done=false;
+    onGoogleExtra=function(tok){ if(done)return; done=true; res(tok); };
+    try{ google.accounts.id.prompt(); }catch(_){ done=true; onGoogleExtra=null; res(null); }
+    setTimeout(function(){ if(!done){ done=true; onGoogleExtra=null; res((cgIdToken&&cgTokenExp-Date.now()>0)?cgIdToken:null); } },5000);
+  });
+}
 function cerrarSesion(){
+  try{google.accounts.id.disableAutoSelect();}catch(_){}
+  cgIdToken=null; cgTokenExp=0; cgSession=null;
+  try{localStorage.removeItem('cg_gauth');}catch(_){}
   try{localStorage.removeItem('cg_entered');}catch(_){}
   try{cerrarPerfil();}catch(_){}
   document.getElementById('gate').classList.remove('oculto');
+  var gm=document.getElementById('gateMsg'); if(gm)gm.textContent='';
+  try{initGoogle();}catch(_){}
 }
 var _sBtn=document.getElementById('salir'); if(_sBtn)_sBtn.onclick=cerrarSesion;
 var _peSalir=document.getElementById('peSalir'); if(_peSalir)_peSalir.onclick=cerrarSesion;
-/* v11.10: recordar el acceso (demo) para no volver a la pantalla al recargar / atras */
-try{ if(localStorage.getItem('cg_entered')==='1'){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); armarBack(); } }catch(_){}
 /* ── v0.11: boton atras del telefono — cierra un overlay o "pulsa de nuevo para salir"
    (asi no se vuelve a la pantalla de acceso al presionar atras) ── */
 /* estado compartido de la trampa de historial para el boton atras */
@@ -2791,6 +2839,8 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1);
     const nt=trAll.filter(tr=>sentMap['t:'+tr.id]!==sigTrack(tr));
     if(!nf.length && !nt.length){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
+    const _idt=await tokenFresco();
+    if(!_idt){ aviso('a-er','ri-error-warning-line',t('envLogin')); b.disabled=false; return; }
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
     const obs={type:'FeatureCollection',features:nf.map((r,i)=>{
       const fn='foto_'+String(i+1).padStart(2,'0')+(r.especie?'_'+r.especie.replace(/[^\w-]+/g,'_'):'')+'.jpg'; r.__fn=fn;
@@ -2807,8 +2857,8 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
       regs.forEach(r=>{const k='p:'+r.id;seen[k]=1;s+=(ledNext[k]!=null?ledNext[k]:puntosDe(r));});
       trAll.forEach(tr=>{const k='t:'+tr.id;seen[k]=1;s+=(ledNext[k]!=null?ledNext[k]:puntosTrack(tr));});
       for(const k in ledNext){if(!seen[k])s+=ledNext[k];} return s; })();
-    const perfil={usuario:(perfilNombre||'anonimo'),puntos:projTotal,nivel:nivelDe(projTotal)+1,bono:CG_PTS_BONUS,ledger:ledNext};
-    const payload={token:CG_ENVIO_TOKEN,app:'ClimateGuard',schema:1,ver:APP_VER,submissionId:uid(),usuario:(perfilNombre||'anonimo'),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos};
+    const perfil={puntos:projTotal,nivel:nivelDe(projTotal)+1,bono:CG_PTS_BONUS,ledger:ledNext};
+    const payload={idToken:_idt,app:'ClimateGuard',schema:1,ver:APP_VER,submissionId:uid(),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos};
     await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     /* despachado: persistir firmas + puntos acreditados */
     nf.forEach(r=>{ sentMap['p:'+r.id]=sigFoto(r); }); nt.forEach(tr=>{ sentMap['t:'+tr.id]=sigTrack(tr); });
