@@ -1983,7 +1983,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.4.6';
+const APP_VER='1.4.7';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2541,14 +2541,17 @@ window.guardarFoto=function(n){
     c.fillStyle='#C77700'; c.fillRect(0,H,W,Math.max(3,Math.round(band*0.05)));
     var pad=Math.round(W*0.03);
     var r=band*0.30, cx=pad+r, cy=H+band*0.5;
-    c.lineWidth=Math.max(1.2,r*0.11);
-    c.strokeStyle='rgba(255,255,255,.45)'; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
-    c.strokeStyle='rgba(255,255,255,.72)'; c.beginPath(); c.arc(cx,cy,r*0.70,0,7); c.stroke();
-    c.strokeStyle='rgba(255,255,255,1)'; c.beginPath(); c.arc(cx,cy,r*0.44,0,7); c.stroke();
+    var s=r/27;
+    c.fillStyle='#fff'; c.beginPath(); c.arc(cx,cy,r+s*4.5,0,7); c.fill();
+    c.lineWidth=s*3;
+    c.strokeStyle='#AEC1D4'; c.beginPath(); c.arc(cx,cy,s*27,0,7); c.stroke();
+    c.strokeStyle='#6688AD'; c.beginPath(); c.arc(cx,cy,s*19,0,7); c.stroke();
+    c.lineWidth=s*3.4;
+    c.strokeStyle='#003876'; c.beginPath(); c.arc(cx,cy,s*12,0,7); c.stroke();
     c.fillStyle='#1B7F5A';
-    c.beginPath(); c.moveTo(cx,cy-r*0.6);
-    c.bezierCurveTo(cx+r*0.34,cy-r*0.22,cx+r*0.34,cy+r*0.30,cx,cy+r*0.6);
-    c.bezierCurveTo(cx-r*0.34,cy+r*0.30,cx-r*0.34,cy-r*0.22,cx,cy-r*0.6); c.fill();
+    c.beginPath(); c.moveTo(cx,cy-s*10.5);
+    c.bezierCurveTo(cx+s*4.8,cy-s*5.5,cx+s*4.8,cy+s*5.5,cx,cy+s*10.5);
+    c.bezierCurveTo(cx-s*4.8,cy+s*5.5,cx-s*4.8,cy-s*5.5,cx,cy-s*10.5); c.fill();
     var tx=cx+r+pad*0.7;
     var f1=Math.round(band*0.26), f2=Math.round(band*0.185), f3=Math.round(band*0.16);
     c.textBaseline='alphabetic';
