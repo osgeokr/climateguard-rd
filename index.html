@@ -1978,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.5.2';
+const APP_VER='1.5.3';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2114,7 +2114,7 @@ function initGoogle(){
 }
 (function(){ var g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true; g.defer=true; document.head.appendChild(g); })();
 (function waitGIS(n){ if(initGoogle())return; if(n<=0){ if(cgSession){ entrarApp(); } else { var gm=document.getElementById('gateMsg'); if(gm)gm.textContent=t('gOffline'); } return; } setTimeout(function(){waitGIS(n-1);},400); })(25);
-if(cgSession){ perfilNombre=cgSession.name||cgSession.email; try{localStorage.setItem('cg_name_rd',perfilNombre);}catch(_){} }
+if(cgSession){ try{localStorage.setItem('cg_name_rd', cgSession.name||cgSession.email);}catch(_){} }
 function tokenFresco(){
   return new Promise(function(res){
     if(cgIdToken && cgTokenExp-Date.now()>60000) return res(cgIdToken);
