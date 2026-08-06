@@ -1523,7 +1523,7 @@ const DIC={
   credAsunto:'Credencial de investigacion - ClimateGuard',
   nivel:'Nivel', ingresar:'Iniciar sesion', usuario:'Usuario', clave:'Contrasena',
   gateSub:'Acceso para el equipo y la ciudadanía',
-  gateNota:'Inicia sesión con tu cuenta de Google para participar.', gBloq:'Tu cuenta está bloqueada.', gPend:'Tu cuenta está pendiente de aprobación.', gOffline:'Se necesita conexión para el primer inicio de sesión.', envLogin:'Inicia sesión con Google para enviar.',
+  gateNota:'Inicia sesión con tu cuenta de Google para participar.', gBloq:'Tu cuenta está bloqueada.', gPend:'Tu cuenta está pendiente de aprobación.', gOffline:'Se necesita conexión para el primer inicio de sesión.', envLogin:'Inicia sesión con Google para enviar.', gEntrando:'Iniciando sesión…',
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
   faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
@@ -1605,7 +1605,7 @@ const DIC={
   credAsunto:'Research ID card - ClimateGuard',
   nivel:'Level', ingresar:'Sign in', usuario:'User', clave:'Password',
   gateSub:'Access for staff and citizens',
-  gateNota:'Sign in with your Google account to take part.', gBloq:'Your account is blocked.', gPend:'Your account is awaiting approval.', gOffline:'Internet is required for the first sign-in.', envLogin:'Sign in with Google to send.',
+  gateNota:'Sign in with your Google account to take part.', gBloq:'Your account is blocked.', gPend:'Your account is awaiting approval.', gOffline:'Internet is required for the first sign-in.', envLogin:'Sign in with Google to send.', gEntrando:'Signing in…',
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
   faltan:'', paraNivel:'points to the next level',
@@ -1978,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.5.0';
+const APP_VER='1.5.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2061,7 +2061,7 @@ document.getElementById('aOk').onclick=()=>document.getElementById('ascenso').cl
 /* ── Acceso: Google Sign-In (OAuth 2.0 / OpenID Connect) ── */
 const CG_CLIENT_ID='918300818571-39mnd09t4q7k1kro6olhiafjme803k5b.apps.googleusercontent.com';
 let cgSession=(()=>{try{return JSON.parse(localStorage.getItem('cg_gauth')||'null');}catch(_){return null;}})();
-let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null;
+let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null, cgVerificando=false;
 function _jwtPayload(tok){ try{ var s=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }catch(_){ return null; } }
 function entrarApp(){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); try{armarBack();}catch(_){} }
 function aplicarSesion(s){
@@ -2075,13 +2075,17 @@ function onGoogle(resp){
   cgIdToken=cred; cgTokenExp=(p.exp||0)*1000;
   aplicarSesion({email:(p.email||'').toLowerCase(), name:p.name||'', picture:p.picture||''});
   if(onGoogleExtra){ var f=onGoogleExtra; onGoogleExtra=null; try{f(cred);}catch(_){} }
-  var gm=document.getElementById('gateMsg'); if(gm)gm.textContent='';
+  var gm=document.getElementById('gateMsg');
   if(document.getElementById('gate').classList.contains('oculto'))return;   /* ya dentro: solo refresco de token */
+  if(cgVerificando)return;   /* verificacion en curso: evita doble inicio de sesion */
+  cgVerificando=true;
+  if(gm){ gm.style.color='#6b7280'; gm.textContent=t('gEntrando'); }
   verificarEstado(cred, function(st){
-    if(st==='blocked'){ if(gm)gm.textContent=t('gBloq'); return; }
-    if(st==='pending'){ if(gm)gm.textContent=t('gPend'); return; }
+    cgVerificando=false;
+    if(st==='blocked'){ if(gm){ gm.style.color=''; gm.textContent=t('gBloq'); } return; }
+    if(st==='pending'){ if(gm){ gm.style.color=''; gm.textContent=t('gPend'); } return; }
     entrarApp();
-  }, function(){ entrarApp(); });   /* sin conexion: entrar (el servidor verifica al enviar) */
+  }, function(){ cgVerificando=false; entrarApp(); });   /* sin conexion: entrar (el servidor verifica al enviar) */
 }
 function verificarEstado(idToken, ok, fail){
   try{
