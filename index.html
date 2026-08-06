@@ -1978,7 +1978,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.5.1';
+const APP_VER='1.5.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -2075,17 +2075,21 @@ function onGoogle(resp){
   cgIdToken=cred; cgTokenExp=(p.exp||0)*1000;
   aplicarSesion({email:(p.email||'').toLowerCase(), name:p.name||'', picture:p.picture||''});
   if(onGoogleExtra){ var f=onGoogleExtra; onGoogleExtra=null; try{f(cred);}catch(_){} }
-  var gm=document.getElementById('gateMsg');
-  if(document.getElementById('gate').classList.contains('oculto'))return;   /* ya dentro: solo refresco de token */
-  if(cgVerificando)return;   /* verificacion en curso: evita doble inicio de sesion */
-  cgVerificando=true;
-  if(gm){ gm.style.color='#6b7280'; gm.textContent=t('gEntrando'); }
+  /* Entrar de INMEDIATO al recibir una credencial valida; el servidor revalida en cada envio. */
+  if(!document.getElementById('gate').classList.contains('oculto')){ entrarApp(); }
+  /* Comprobar estado en segundo plano: si esta bloqueado/pendiente, volver a la pantalla. */
   verificarEstado(cred, function(st){
-    cgVerificando=false;
-    if(st==='blocked'){ if(gm){ gm.style.color=''; gm.textContent=t('gBloq'); } return; }
-    if(st==='pending'){ if(gm){ gm.style.color=''; gm.textContent=t('gPend'); } return; }
-    entrarApp();
-  }, function(){ cgVerificando=false; entrarApp(); });   /* sin conexion: entrar (el servidor verifica al enviar) */
+    if(st==='blocked'){ _rechazar('gBloq'); }
+    else if(st==='pending'){ _rechazar('gPend'); }
+  }, function(){});
+}
+function _rechazar(msgKey){
+  try{google.accounts.id.disableAutoSelect();}catch(_){}
+  cgIdToken=null; cgTokenExp=0; cgSession=null;
+  try{localStorage.removeItem('cg_gauth');}catch(_){}
+  try{cerrarPerfil();}catch(_){}
+  document.getElementById('gate').classList.remove('oculto');
+  var gm=document.getElementById('gateMsg'); if(gm){ gm.style.color=''; gm.textContent=t(msgKey); }
 }
 function verificarEstado(idToken, ok, fail){
   try{
@@ -2101,7 +2105,7 @@ function verificarEstado(idToken, ok, fail){
 function initGoogle(){
   if(!(window.google&&google.accounts&&google.accounts.id))return false;
   try{
-    google.accounts.id.initialize({client_id:CG_CLIENT_ID, callback:onGoogle, auto_select:true});
+    google.accounts.id.initialize({client_id:CG_CLIENT_ID, callback:onGoogle, auto_select:true, use_fedcm_for_prompt:true, itp_support:true});
     var bx=document.getElementById('gsiBtn');
     if(bx){ bx.innerHTML=''; google.accounts.id.renderButton(bx,{type:'standard',theme:'filled_blue',size:'large',shape:'pill',text:'continue_with'}); }
     try{google.accounts.id.prompt();}catch(_){}
