@@ -1,4 +1,4 @@
-/* redeploy nonce: retry-2 after clearing queued deploys */
+/* redeploy nonce: retry-3 post-recovery fresh trigger */
 /* ClimateGuard Mobile - Service Worker
    Cachea el shell de la app para uso offline. Casi todo (fuentes, iconos,
    datos IUCN, contorno nacional y areas protegidas WDPA) esta embebido en
