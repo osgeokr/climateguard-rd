@@ -1,4 +1,4 @@
-/* redeploy nonce: retry-3 post-recovery fresh trigger */
+/* redeploy nonce: v1.5.4 ID card revisions */
 /* ClimateGuard Mobile - Service Worker
    Cachea el shell de la app para uso offline. Casi todo (fuentes, iconos,
    datos IUCN, contorno nacional y areas protegidas WDPA) esta embebido en
@@ -12,7 +12,7 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.5.3';
+const CACHE = 'climateguard-v1.5.4';
 const ASSETS = [
   './',
   './index.html',
