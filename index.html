@@ -4278,7 +4278,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.5.4';
+const APP_VER='1.5.5';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4657,9 +4657,12 @@ document.getElementById('cGuardar').onclick=async()=>{
   if(!carnetBlob)return;
   const b=document.getElementById('cGuardar'); b.disabled=true;
   const file=new File([carnetBlob],`ClimateGuard_Credencial_${sello()}.png`,{type:'image/png'});
-  /* v0.1: en movil usa la hoja de compartir (Guardar imagen) para NO navegar
-     al blob (eso recargaba la app y volvia al acceso en iOS); escritorio descarga. */
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
+  /* v1.5.5: solo iOS usa la hoja de compartir (evita que Safari recargue la app
+     al navegar al blob y vuelva al acceso). Android y escritorio descargan directo. */
+  const _esIOS=/iP(hone|ad|od)/.test(navigator.platform)
+    ||/iPad|iPhone|iPod/.test(navigator.userAgent)
+    ||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(_esIOS&&navigator.canShare&&navigator.canShare({files:[file]})){
     try{ await navigator.share({files:[file]}); b.disabled=false; return; }
     catch(e){ if(e&&e.name==='AbortError'){ b.disabled=false; return; } }
   }
