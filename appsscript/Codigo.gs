@@ -7,6 +7,7 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.1 (asistencia): QR corto (prefijo del hash) + coincidencia por prefijo.
  * v3 (asistencia, ago-2026): un administrador (ADMIN_EMAILS) puede registrar
  * la asistencia de los miembros escaneando la QR de su credencial. La QR
  * contiene el SHA-256 del email (ID anonimo). El servidor recalcula ese hash
@@ -181,12 +182,12 @@ function _sha256hex(str){
 /* Busca en el padron el miembro cuyo email produce ese hash. */
 function _memberByHash(ss, hash){
   hash = String(hash||'').toLowerCase();
-  if (!/^[0-9a-f]{64}$/.test(hash)) return null;
+  if (!/^[0-9a-f]{12,64}$/.test(hash)) return null;
   var sh = _usuarios(ss); var last = sh.getLastRow(); if (last < 2) return null;
   var vals = sh.getRange(2,1,last-1,2).getValues();   // email, name
   for (var i=0;i<vals.length;i++){
     var email = String(vals[i][0]||'').toLowerCase().trim(); if (!email) continue;
-    if (_sha256hex(email) === hash) return { email: email, name: (String(vals[i][1]||'') || email) };
+    if (_sha256hex(email).indexOf(hash) === 0) return { email: email, name: (String(vals[i][1]||'') || email) };
   }
   return null;
 }
