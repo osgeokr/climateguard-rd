@@ -1163,6 +1163,10 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-hoy ul{list-style:none;margin:0;padding:0}
 .asist-hoy li{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid #E4E7EA;font-size:14px;color:#1A1A1A}
 .asist-hoy li time{color:#8A929B;font-variant-numeric:tabular-nums;font-size:13px}
+.asist-hoy-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.asist-sync{font-family:var(--cpo);font-size:12px;font-weight:600;color:#fff;background:#003876;border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
+.asist-sync:disabled{opacity:.6}
+.asist-hoy li em.pend{color:#C77700;font-style:normal;font-weight:700;font-size:11px;vertical-align:middle}
 .carnet .pie-btns{display:flex;gap:9px}
 .carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
 </head>
@@ -1388,7 +1392,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
   </div>
   <div class="asist-msg a-info" id="aMsg"></div>
   <div class="asist-hoy">
-    <div class="asist-hoy-h"><span data-i18n="asistHoy"></span> · <span id="aCount">0</span></div>
+    <div class="asist-hoy-h"><span><span data-i18n="asistHoy"></span> · <span id="aCount">0</span></span><button type="button" id="aSync" class="asist-sync" hidden></button></div>
     <ul id="aLista"></ul>
   </div>
 </div>
@@ -3847,6 +3851,7 @@ const DIC={
   bandera:'Bandera de la Republica Dominicana',
   bVolver:'Volver', tituloCred:'Credencial', bGuardarImg:'Guardar imagen', bOk:'Guardar',
   asistencia:'Asistencia', asistScan:'Apunta a la QR de la credencial', asistHoy:'Asistencia de hoy', asistOk:'asistencia registrada', asistDup:'ya registrado hoy', asistUnknown:'Tarjeta no registrada', asistCamErr:'No se pudo abrir la camara', asistSend:'Registrando...', asistServerOff:'No se pudo conectar. Revisa la conexion.',
+  asistSavedLocal:'guardado en el dispositivo', asistOffline:'Sin conexion — guardado local', asistSync:'Sincronizar', asistSyncing:'Sincronizando...', asistSyncDone:'Todo sincronizado',
   preparando:'Preparando credencial...',
   bCred:'Compartir credencial', credArea:'Investigacion de cambio climatico - Flora y fauna',
   emitida:'Emitida', codigo:'Codigo', noOficial:'No oficial · No es un documento oficial.',
@@ -3931,6 +3936,7 @@ const DIC={
   bandera:'Flag of the Dominican Republic',
   bVolver:'Back', tituloCred:'ID card', bGuardarImg:'Save image', bOk:'Save',
   asistencia:'Attendance', asistScan:'Point at the ID card QR', asistHoy:'Today', asistOk:'checked in', asistDup:'already checked in today', asistUnknown:'Card not registered', asistCamErr:'Could not open the camera', asistSend:'Recording...', asistServerOff:'Could not reach the server.',
+  asistSavedLocal:'saved on device', asistOffline:'Offline — saved on device', asistSync:'Sync', asistSyncing:'Syncing...', asistSyncDone:'All synced',
   preparando:'Preparing ID card...',
   bCred:'Share ID card', credArea:'Climate change research - Flora and fauna',
   emitida:'Issued', codigo:'Code', noOficial:'Unofficial · Not an official document.',
@@ -4312,7 +4318,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.5';
+const APP_VER='1.6.6';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -5433,22 +5439,40 @@ try{
   window.CG_ADMIN=function(){ try{return !!(cgSession && ADMIN_EMAILS.indexOf(String(cgSession.email||'').toLowerCase())>=0);}catch(_){return false;} };
   const $asist=document.getElementById('asist'), $btn=document.getElementById('cAsistBtn');
   const $video=document.getElementById('aVideo'), $msg=document.getElementById('aMsg');
-  const $lista=document.getElementById('aLista'), $count=document.getElementById('aCount');
+  const $lista=document.getElementById('aLista'), $count=document.getElementById('aCount'), $sync=document.getElementById('aSync');
   if(!$asist||!$btn) return;
   let stream=null, scanning=false, rafId=0, lastHash='', lastAt=0, busy=false;
-  const seenHoy=new Set();
+  const ASIST_KEY='cg_asist_v1'; let cbN=0;
+  function loadStore(){ try{return JSON.parse(localStorage.getItem(ASIST_KEY))||{};}catch(_){return {};} }
+  function saveStore(o){ try{localStorage.setItem(ASIST_KEY,JSON.stringify(o));}catch(_){} }
+  function todayRecs(){ return loadStore()[hoy()]||{}; }
   const cv=document.createElement('canvas'); const cx=cv.getContext('2d',{willReadFrequently:true});
   let _bd=null; try{ if('BarcodeDetector' in window){ _bd=new BarcodeDetector({formats:['qr_code']}); } }catch(_){ _bd=null; }
   let _detecting=false;
   function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function setMsg(cls,ic,txt){ $msg.className='asist-msg '+(cls||''); $msg.innerHTML='<i class="'+ic+'"></i>'+txt; }
-  function addFila(name){
-    if(seenHoy.has(name))return; seenHoy.add(name);
-    const li=document.createElement('li'); const h=new Date();
-    const hhmm=String(h.getHours()).padStart(2,'0')+':'+String(h.getMinutes()).padStart(2,'0');
-    li.innerHTML='<span>'+String(name||'').replace(/[<>&]/g,'')+'</span><time>'+hhmm+'</time>';
-    $lista.insertBefore(li,$lista.firstChild); $count.textContent=String(seenHoy.size);
+  function renderList(){
+    const recs=todayRecs();
+    const keys=Object.keys(recs).sort(function(a,b){return recs[b].ts-recs[a].ts;});
+    $lista.innerHTML=''; let pend=0;
+    keys.forEach(function(h){
+      const r=recs[h]; if(!r.synced)pend++;
+      const d=new Date(r.ts); const hhmm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      const label=r.name?r.name:('CG-'+h.slice(0,8).toUpperCase());
+      const li=document.createElement('li');
+      li.innerHTML='<span>'+String(label).replace(/[<>&]/g,'')+(r.synced?'':' <em class="pend" title="'+t('asistOffline')+'">\u25CF</em>')+'</span><time>'+hhmm+'</time>';
+      $lista.appendChild(li);
+    });
+    $count.textContent=String(keys.length);
+    if(pend>0){ $sync.hidden=false; $sync.textContent=t('asistSync')+' ('+pend+')'; } else { $sync.hidden=true; }
+    return pend;
   }
+  function recordLocal(hash){
+    const o=loadStore(), d=hoy(); o[d]=o[d]||{};
+    if(o[d][hash]) return {dup:true};
+    o[d][hash]={ts:Date.now(),name:'',synced:0}; saveStore(o); return {dup:false};
+  }
+  function markSynced(d,hash,name){ const o=loadStore(); if(o[d]&&o[d][hash]){ o[d][hash].synced=1; if(name)o[d][hash].name=name; saveStore(o); } }
   function tick(){
     if(!scanning) return;
     try{
@@ -5474,33 +5498,43 @@ try{
     const hash=String(raw||'').toLowerCase();
     if(!/^[0-9a-f]{12,64}$/.test(hash)) return;
     const now=Date.now();
-    if(busy) return;
     if(hash===lastHash && now-lastAt<3500) return;
-    lastHash=hash; lastAt=now; enviar(hash);
+    lastHash=hash; lastAt=now;
+    const res=recordLocal(hash); renderList();
+    if(res.dup){ setMsg('a-warn','ri-check-double-line',t('asistDup')); }
+    else if(!navigator.onLine){ setMsg('a-info','ri-cloud-off-line',t('asistOffline')); }
+    else { setMsg('a-ok','ri-check-line',t('asistSavedLocal')); }
+    syncOne(hoy(),hash).then(function(ok){ if(ok){ const r=todayRecs()[hash]; if(r&&r.name){ setMsg('a-ok','ri-check-line', r.name+' \u00b7 '+t('asistOk')); } } });
   }
-  async function enviar(hash){
-    busy=true; setMsg('a-info','ri-loader-4-line',t('asistSend'));
-    let idt=''; try{ idt=await tokenFresco(); }catch(_){}
-    if(!idt){ setMsg('a-er','ri-error-warning-line',t('asistServerOff')); busy=false; return; }
-    const cb='cgat'+Date.now(); let sc;
-    const fin=function(r){
-      try{delete window[cb];}catch(_){} try{sc&&sc.parentNode&&sc.parentNode.removeChild(sc);}catch(_){}
-      if(!r){ setMsg('a-er','ri-error-warning-line',t('asistServerOff')); }
-      else if(!r.ok){ setMsg('a-er','ri-error-warning-line', r.error==='unknown'?t('asistUnknown'):t('asistServerOff')); }
-      else if(r.dup){ setMsg('a-warn','ri-check-double-line',(r.name||'')+' · '+t('asistDup')); addFila(r.name); }
-      else { setMsg('a-ok','ri-check-line',(r.name||'')+' · '+t('asistOk')); addFila(r.name); }
-      busy=false;
-    };
-    window[cb]=function(r){ fin(r); };
-    sc=document.createElement('script'); sc.onerror=function(){ fin(null); };
-    sc.src=CG_ENVIO_URL+'?action=attend&callback='+cb+'&id_token='+encodeURIComponent(idt)+'&hash='+hash+'&date='+hoy();
-    document.body.appendChild(sc);
-    setTimeout(function(){ if(busy) fin(null); },9000);
+  function syncOne(d,hash){
+    return new Promise(function(resolve){
+      if(!navigator.onLine){ resolve(false); return; }
+      Promise.resolve().then(tokenFresco).then(function(idt){
+        if(!idt){ resolve(false); return; }
+        const cb='cgat'+(++cbN); let sc, done=false;
+        const finish=function(r){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc&&sc.parentNode&&sc.parentNode.removeChild(sc);}catch(_){}
+          if(r&&r.ok){ markSynced(d,hash,r.name||''); renderList(); resolve(true); } else { resolve(false); } };
+        window[cb]=function(r){ finish(r); };
+        sc=document.createElement('script'); sc.onerror=function(){ finish(null); };
+        sc.src=CG_ENVIO_URL+'?action=attend&callback='+cb+'&id_token='+encodeURIComponent(idt)+'&hash='+hash+'&date='+d;
+        document.body.appendChild(sc);
+        setTimeout(function(){ finish(null); },9000);
+      }).catch(function(){ resolve(false); });
+    });
+  }
+  async function syncPending(){
+    if(!navigator.onLine) return;
+    const o=loadStore(); const dates=Object.keys(o);
+    for(let i=0;i<dates.length;i++){ const d=dates[i], recs=o[d];
+      const hs=Object.keys(recs).filter(function(h){return !recs[h].synced;});
+      for(let j=0;j<hs.length;j++){ if(!navigator.onLine)break; await syncOne(d,hs[j]); }
+    }
+    renderList();
   }
   async function abrir(){
     if(!window.CG_ADMIN()) return;
     try{ if(typeof cerrarCarnet==='function') cerrarCarnet(); }catch(_){}
-    seenHoy.clear(); $lista.innerHTML=''; $count.textContent='0';
+    renderList(); syncPending();
     $asist.classList.add('on'); setMsg('a-info','ri-qr-scan-2-line',t('asistScan'));
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
@@ -5516,6 +5550,8 @@ try{
     $asist.classList.remove('on');
   }
   $btn.onclick=abrir;
+  $sync.onclick=function(){ $sync.disabled=true; setMsg('a-info','ri-loader-4-line',t('asistSyncing')); syncPending().then(function(){ $sync.disabled=false; const p=renderList(); setMsg(p>0?'a-warn':'a-ok', p>0?'ri-cloud-off-line':'ri-check-line', p>0?(t('asistSync')+' ('+p+')'):t('asistSyncDone')); }); };
+  window.addEventListener('online', function(){ syncPending(); });
   document.getElementById('aVolver').onclick=cerrar;
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&$asist.classList.contains('on'))cerrar(); });
 })();
