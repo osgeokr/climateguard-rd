@@ -4321,7 +4321,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.9';
+const APP_VER='1.7.0';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -5212,7 +5212,9 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     const nf=regs.filter(r=>r.lat!=null && sentMap['p:'+r.id]!==sigFoto(r));
     const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1);
     const nt=trAll.filter(tr=>sentMap['t:'+tr.id]!==sigTrack(tr));
-    if(!nf.length && !nt.length){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
+    let _avPayload=null, _avSig='';
+    try{ const _av=localStorage.getItem(AV_KEY); if(_av){ _avSig=_av.length+'_'+_av.slice(-24); if(sentMap['avatar']!==_avSig){ _avPayload={mime:'image/jpeg',dataB64:_av.slice(_av.indexOf(',')+1)}; } } }catch(_){}
+    if(!nf.length && !nt.length && !_avPayload){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; return; }
     const _idt=await tokenFresco();
     if(!_idt){ aviso('a-er','ri-error-warning-line',t('envLogin')); b.disabled=false; return; }
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
@@ -5232,10 +5234,11 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
       trAll.forEach(tr=>{const k='t:'+tr.id;seen[k]=1;s+=(ledNext[k]!=null?ledNext[k]:puntosTrack(tr));});
       for(const k in ledNext){if(!seen[k])s+=ledNext[k];} return s; })();
     const perfil={puntos:projTotal,nivel:nivelDe(projTotal)+1,bono:CG_PTS_BONUS,ledger:ledNext};
-    const payload={idToken:_idt,app:'ClimateGuard',schema:1,ver:APP_VER,submissionId:uid(),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos};
+    const payload={idToken:_idt,app:'ClimateGuard',schema:1,ver:APP_VER,submissionId:uid(),fecha:new Date().toISOString(),perfil:perfil,observaciones:obs,recorridos:rec,fotos:fotos,avatar:_avPayload};
     await fetch(CG_ENVIO_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     /* despachado: persistir firmas + puntos acreditados */
     nf.forEach(r=>{ sentMap['p:'+r.id]=sigFoto(r); }); nt.forEach(tr=>{ sentMap['t:'+tr.id]=sigTrack(tr); });
+    if(_avPayload) sentMap['avatar']=_avSig;
     saveSent(sentMap); saveLedger(ledNext);
     try{pintar();}catch(_){}
     try{ verificarEstado(_idt, function(){}, function(){}); }catch(_){}
