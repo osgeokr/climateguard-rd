@@ -1162,7 +1162,9 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-hoy-h{font-family:var(--tit);font-weight:700;color:#003876;font-size:12.5px;margin:8px 0;text-transform:uppercase;letter-spacing:.5px}
 .asist-hoy ul{list-style:none;margin:0;padding:0}
 .asist-hoy li{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid #E4E7EA;font-size:14px;color:#1A1A1A}
-.asist-hoy li time{color:#8A929B;font-variant-numeric:tabular-nums;font-size:13px}</style>
+.asist-hoy li time{color:#8A929B;font-variant-numeric:tabular-nums;font-size:13px}
+.carnet .pie-btns{display:flex;gap:9px}
+.carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
 </head>
 <body>
 
@@ -1364,10 +1366,12 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
     <img id="cImg" alt="" hidden>
   </div>
   <div class="pie">
+    <div class="pie-btns">
     <button type="button" class="btn btn-1" id="cGuardar">
       <i class="ri-download-2-line"></i><span data-i18n="bGuardarImg"></span></button>
-    <button type="button" class="btn btn-2" id="cAsistBtn" hidden style="margin-top:9px">
+    <button type="button" class="btn btn-2" id="cAsistBtn" style="display:none">
       <i class="ri-qr-scan-2-line"></i><span data-i18n="asistencia"></span></button>
+    </div>
     <p class="cmsg" id="cMsg"></p>
   </div>
 </div>
@@ -4313,7 +4317,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.2';
+const APP_VER='1.6.3';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4665,7 +4669,7 @@ async function abrirCarnet(){
   $carnet.classList.add('on');
   $cImg.hidden=true; $cCarga.hidden=false; $cMsg.innerHTML='';
   document.getElementById('cGuardar').disabled=true;
-  try{document.getElementById('cAsistBtn').hidden=!(window.CG_ADMIN&&window.CG_ADMIN());}catch(_){}
+  try{document.getElementById('cAsistBtn').style.display=(window.CG_ADMIN&&window.CG_ADMIN())?'':'none';}catch(_){}
   document.getElementById('cVolver').focus();
   try{
     carnetBlob=await credencialPng();
@@ -4747,7 +4751,7 @@ async function credencialPng(){
   if(_email){try{const _hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(_email));_hid=[...new Uint8Array(_hb)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(_){}}
   const n=regs.length, pts=puntosConfirmados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const TH=NIVELES[i];
-  const W=780, H=1250, M=44;
+  const W=780, H=1330, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
   const c=cv.getContext('2d');
   c.fillStyle='#fff'; c.fillRect(0,0,W,H);
@@ -4840,13 +4844,13 @@ async function credencialPng(){
     const _dy=py+114;
     c.strokeStyle='#E4E7EA'; c.lineWidth=1;
     c.beginPath(); c.moveTo(M,_dy); c.lineTo(W-M,_dy); c.stroke();
-    const QS=112, BQ=128, QX=W-M-BQ, QY=_dy+16;
+    const QS=156, BQ=176, QX=W-M-BQ, QY=_dy+16;
     c.fillStyle='#fff';
     if(c.roundRect){c.beginPath();c.roundRect(QX,QY,BQ,BQ,10);c.fill();} else {c.fillRect(QX,QY,BQ,BQ);}
     c.strokeStyle='#E4E7EA'; c.lineWidth=1; c.strokeRect(QX+0.5,QY+0.5,BQ-1,BQ-1);
     try{
-      const _qr=qrcode(0,'M'); _qr.addData(_hid.toUpperCase(),'Alphanumeric'); _qr.make();
-      const _nm=_qr.getModuleCount(), _cell=QS/_nm, _ox=QX+8, _oy=QY+8;
+      const _qr=qrcode(0,'M'); _qr.addData(_hid.slice(0,16).toUpperCase(),'Alphanumeric'); _qr.make();
+      const _nm=_qr.getModuleCount(), _cell=QS/_nm, _ox=QX+(BQ-QS)/2, _oy=QY+(BQ-QS)/2;
       c.fillStyle='#002D62';
       for(let _r=0;_r<_nm;_r++)for(let _k=0;_k<_nm;_k++){ if(_qr.isDark(_r,_k)){ c.fillRect(Math.floor(_ox+_k*_cell),Math.floor(_oy+_r*_cell),Math.ceil(_cell),Math.ceil(_cell)); } }
     }catch(_){}
@@ -5470,7 +5474,7 @@ try{
   }
   function onCode(raw){
     const hash=String(raw||'').toLowerCase();
-    if(!/^[0-9a-f]{64}$/.test(hash)) return;
+    if(!/^[0-9a-f]{12,64}$/.test(hash)) return;
     const now=Date.now();
     if(busy) return;
     if(hash===lastHash && now-lastAt<3500) return;
@@ -5501,8 +5505,9 @@ try{
     seenHoy.clear(); $lista.innerHTML=''; $count.textContent='0';
     $asist.classList.add('on'); setMsg('a-info','ri-qr-scan-2-line',t('asistScan'));
     try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
       $video.srcObject=stream; $video.setAttribute('playsinline',''); await $video.play();
+      try{var _trk=stream.getVideoTracks()[0];var _caps=(_trk&&_trk.getCapabilities)?_trk.getCapabilities():{};if(_caps.focusMode&&_caps.focusMode.indexOf('continuous')>=0){await _trk.applyConstraints({advanced:[{focusMode:'continuous'}]});}}catch(_){}
       scanning=true; rafId=requestAnimationFrame(tick);
     }catch(e){ setMsg('a-er','ri-error-warning-line',t('asistCamErr')); }
   }
