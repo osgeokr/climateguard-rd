@@ -152,7 +152,10 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .pill.enviado{background:#E7F3EC;color:#1B7F5A;border:1px solid #BFE0CD}
 .pill.modificado{background:#FCF1E2;color:#C77700;border:1px solid #F0D9B8}
 .pts-bump{display:inline-block;animation:ptsBump .85s ease}
-.pts-pend{opacity:.42;font-weight:600;font-size:.82em;margin-left:2px}
+.pts-up{display:inline-flex;align-items:center;gap:3px;font-family:var(--cpo);font-weight:700;font-size:.8em;line-height:1;color:#fff;background:#C77700;border:0;border-radius:999px;padding:3px 9px;margin-left:6px;cursor:pointer;vertical-align:middle;box-shadow:0 1px 3px rgba(199,119,0,.35);animation:ptsUpPulse 2.2s ease-in-out infinite}
+.pts-up i{font-size:1.05em}
+.pts-up:active{transform:scale(.95)}
+@keyframes ptsUpPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 .gsi-wrap{display:flex;justify-content:center;margin:8px 0 4px;min-height:44px}
 .gate-msg{color:var(--rojo,#CE1126);font-size:12px;text-align:center;min-height:15px;margin:4px 0}
 @keyframes ptsBump{0%{transform:scale(1)}25%{transform:scale(1.4);color:#1B7F5A}55%{transform:scale(1)}100%{transform:scale(1)}}
@@ -1167,9 +1170,6 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-sync{font-family:var(--cpo);font-size:12px;font-weight:600;color:#fff;background:#003876;border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
 .asist-sync:disabled{opacity:.6}
 .asist-hoy li em.pend{color:#C77700;font-style:normal;font-weight:700;font-size:11px;vertical-align:middle}
-.subir-aviso{display:flex;align-items:center;gap:7px;margin:6px 16px 0;padding:6px 10px;background:#F3F6FA;border-radius:8px;font-size:12.5px;color:#5C6670}
-.subir-aviso>i{font-size:15px;color:#8A929B}
-.subir-aviso button{margin-left:auto;font-family:var(--cpo);font-weight:600;font-size:12.5px;color:#003876;background:none;border:0;padding:4px 4px;cursor:pointer}
 .carnet .pie-btns{display:flex;gap:9px}
 .carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
 </head>
@@ -1268,7 +1268,6 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
      <button type="button" class="cred-mini" id="credTira" data-aria="bCred">
        <i class="ri-id-card-line"></i></button>
    </div>
-   <div class="subir-aviso" id="subirAviso" hidden><i class="ri-upload-cloud-2-line" aria-hidden="true"></i><span id="subirTxt"></span><button type="button" id="subirBtn" data-i18n="bEnviar"></button></div>
 
    <div class="vista" id="vReg" role="tabpanel">
     <div class="subtabs" id="subtabs" role="tablist">
@@ -4322,7 +4321,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.8';
+const APP_VER='1.6.9';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4353,8 +4352,7 @@ let cgSrvPts=(()=>{try{const v=JSON.parse(localStorage.getItem('cg_srv_pts'));re
 function ptsMostrados(){ return (cgSrvPts!=null)?cgSrvPts:puntosConfirmados(); }
 function setSrvPts(p){ if(typeof p==='number'&&p>=0){ cgSrvPts=p; try{localStorage.setItem('cg_srv_pts',JSON.stringify({puntos:p}));}catch(_){}; try{pintarPerfil();}catch(_){} } }
 function pendientes(){ try{ const sent=loadSent(); const nf=regs.filter(r=>r.lat!=null && sent['p:'+r.id]!==sigFoto(r)).length; const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1); const nt=trAll.filter(tr=>sent['t:'+tr.id]!==sigTrack(tr)).length; return nf+nt; }catch(_){ return 0; } }
-function actualizarSubir(){ const el=document.getElementById('subirAviso'); if(!el)return; const n=pendientes(); const tx=document.getElementById('subirTxt'); if(n>0){ if(tx)tx.textContent=n+' \u00b7 '+t('porSubir'); el.hidden=false; } else { el.hidden=true; } }
-(function(){var _sb=document.getElementById('subirBtn'); if(_sb)_sb.onclick=function(){ var b=document.getElementById('btnEnviar'); if(b)b.click(); };})();
+document.addEventListener('click',function(e){ var b=e.target.closest?e.target.closest('.pts-up'):null; if(b){ e.preventDefault(); e.stopPropagation(); var s=document.getElementById('btnEnviar'); if(s)s.click(); } });
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
 let nivelActual=0, _prevPts=null;
 function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
@@ -4370,12 +4368,12 @@ function pintarPerfil(){
     : t('maxNivel');
 
   document.getElementById('tNivel').innerHTML=etq;
-  document.getElementById('tPts').innerHTML=`${pts} ${t('pts')}`+(pend>0?` <span class="pts-pend" title="${t('porSubir')}">+${pend}</span>`:'');
+  document.getElementById('tPts').innerHTML=`${pts} ${t('pts')}`+(pend>0?` <button type="button" class="pts-up" title="${t('porSubir')}" aria-label="${t('porSubir')}">+${pend} <i class="ri-upload-cloud-2-line" aria-hidden="true"></i></button>`:'');
   document.getElementById('tBarra').style.width=pct+'%';
   document.getElementById('tMeta').textContent=meta;
 
   document.getElementById('pFotos').textContent=nFotos;
-  document.getElementById('pPts').innerHTML=`${pts}`+(pend>0?`<span class="pts-pend" title="${t('porSubir')}">+${pend}</span>`:'');
+  document.getElementById('pPts').innerHTML=`${pts}`+(pend>0?` <button type="button" class="pts-up" title="${t('porSubir')}" aria-label="${t('porSubir')}">+${pend} <i class="ri-upload-cloud-2-line" aria-hidden="true"></i></button>`:'');
   document.getElementById('pNivel').innerHTML=etq;
   document.getElementById('pBarra').style.width=pct+'%';
   document.getElementById('pMeta').textContent=`${meta} · ${t('comoPts')}`;
@@ -4386,7 +4384,6 @@ function pintarPerfil(){
   if(_prevPts!=null && pts>_prevPts) destacarPts();
   _prevPts=pts;
   if(i>nivelActual){ nivelActual=i; ascenso(i); } else nivelActual=i;
-  try{actualizarSubir();}catch(_){}
 }
 
 /* Aviso flotante de puntos */
