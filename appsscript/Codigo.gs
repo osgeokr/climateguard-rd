@@ -7,6 +7,8 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.4 (web-proxy): archivos PRIVADOS; el sitio web lee imagenes/tracks via
+ *   action=file (verifica login y que el archivo sea del usuario o admin).
  * v3.3 (web-prep): UNA carpeta por usuario; foto_url/geo_url en las hojas;
  *   avatar de usuario a Drive; endpoints de lectura mine/stats/asistlist/users.
  * v3.2 (asistencia): offline-first; se registra la fecha del escaneo (cliente).
@@ -255,7 +257,7 @@ function doPost(e) {
       try {
         var avBlob = Utilities.newBlob(Utilities.base64Decode(body.avatar.dataB64), body.avatar.mime || 'image/jpeg', 'avatar.jpg');
         var avFile = _upsertFile(carpeta, 'avatar.jpg', avBlob);
-        try { avFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e0) {}
+        /* privado: sin compartir publicamente; el sitio web usa el proxy action=file */
         if (ss) _setUsuarioAvatar(ss, usuario, avFile.getUrl());
       } catch (eav) {}
     }
@@ -278,7 +280,7 @@ function doPost(e) {
           try {
             var fb = Utilities.newBlob(Utilities.base64Decode(fotosByName[p.foto].dataB64), fotosByName[p.foto].mime || 'image/jpeg', 'obs_'+id+'.jpg');
             var fFile = _upsertFile(carpeta, 'obs_'+id+'.jpg', fb);
-            try { fFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e1) {}
+            /* privado */
             fotoUrl = fFile.getUrl();
           } catch (e2) {}
         }
@@ -298,7 +300,7 @@ function doPost(e) {
             var one = { type:'FeatureCollection', features:[ft] };
             var gb = Utilities.newBlob(JSON.stringify(one), 'application/geo+json', 'track_'+id+'.geojson');
             var gFile = _upsertFile(carpeta, 'track_'+id+'.geojson', gb);
-            try { gFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e3) {}
+            /* privado */
             geoUrl = gFile.getUrl();
           } catch (e4) {}
         }
@@ -393,6 +395,21 @@ function doGet(e) {
       if (lu>=2){ var vu=shUs.getRange(2,1,lu-1,HEAD_USR.length).getValues();
         for (var iu=0;iu<vu.length;iu++) users.push({ email:vu[iu][0], name:vu[iu][1], picture:vu[iu][2], status:vu[iu][3], created_at:vu[iu][6], last_login:vu[iu][7], submissions:vu[iu][8], avatar_url:vu[iu][10] }); }
       return _json({ ok:true, users:users }, cb);
+    }
+    // Proxy de archivo privado (imagen/track): requiere login; propietario o admin
+    if (action === 'file') {
+      var uf = verifyIdToken(e.parameter.id_token);
+      if (!uf) return _json({ ok:false, error:'auth' }, cb);
+      var fid = String(e.parameter.id||'').trim();
+      if (!/^[-\w]{20,}$/.test(fid)) return _json({ ok:false, error:'bad_id' }, cb);
+      try {
+        var file = DriveApp.getFileById(fid);
+        var permit = _esAdmin(uf.email);
+        if (!permit) { var pit = file.getParents(); while (pit.hasNext()) { if (String(pit.next().getName()).toLowerCase() === uf.email) { permit = true; break; } } }
+        if (!permit) return _json({ ok:false, error:'forbidden' }, cb);
+        var blob = file.getBlob();
+        return _json({ ok:true, mime:blob.getContentType(), name:file.getName(), dataB64:Utilities.base64Encode(blob.getBytes()) }, cb);
+      } catch (ef) { return _json({ ok:false, error:'not_found' }, cb); }
     }
     // Consulta de puntos por email (?usuario=email[&callback=fn])
     var u = e && e.parameter && e.parameter.usuario;
