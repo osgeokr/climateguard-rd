@@ -4326,7 +4326,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.5';
+const APP_VER='1.7.6';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4435,6 +4435,7 @@ function onGoogle(resp){
     if(st==='blocked'){ _rechazar('gBloq'); }
     else if(st==='pending'){ _rechazar('gPend'); }
   }, function(){});
+  try{reconciliarEnviados(cred);}catch(_){}
 }
 function _rechazar(msgKey){
   try{google.accounts.id.disableAutoSelect();}catch(_){}
@@ -4454,6 +4455,35 @@ function verificarEstado(idToken, ok, fail){
     document.body.appendChild(sc);
     setTimeout(function(){ if(!done){ fin(); fail(); } },8000);
   }catch(_){ fail(); }
+}
+/* v1.7.6: al iniciar sesion, consultar al servidor que observaciones/recorridos
+   YA existen para este usuario y marcarlos como ENVIADOS localmente. Asi, al
+   cambiar de telefono, los datos demo ya subidos no vuelven a ofrecerse para
+   subir (ni suman puntos de nuevo). Solo marca items que existen tambien en
+   local; no borra ni altera datos. */
+function reconciliarEnviados(idToken){
+  if(!idToken || !navigator.onLine) return;
+  try{
+    var cb='cgmine'+Date.now(), sc=document.createElement('script'), done=false;
+    var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
+    window[cb]=function(r){ fin(); if(!r||!r.ok) return;
+      try{
+        var sent=loadSent(), led=loadLedger(), ch=false;
+        var oIds={}; (r.observaciones||[]).forEach(function(o){ if(o&&o.id!=null&&o.id!=='') oIds[String(o.id)]=1; });
+        var tIds={}; (r.recorridos||[]).forEach(function(x){ if(x&&x.id!=null&&x.id!=='') tIds[String(x.id)]=1; });
+        (regs||[]).forEach(function(rg){ if(rg&&oIds[String(rg.id)]){ var k='p:'+rg.id, sg=sigFoto(rg); if(sent[k]!==sg){sent[k]=sg;ch=true;} if(led[k]==null){led[k]=puntosDe(rg);ch=true;} } });
+        var trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]);
+        trAll.forEach(function(tr){ if(tr&&tIds[String(tr.id)]){ var k='t:'+tr.id, sg=sigTrack(tr); if(sent[k]!==sg){sent[k]=sg;ch=true;} if(led[k]==null){led[k]=puntosTrack(tr);ch=true;} } });
+        if(ch){ saveSent(sent); saveLedger(led); }
+        if(typeof r.puntos==='number'){ try{setSrvPts(r.puntos);}catch(_){} }
+        try{pintar();}catch(_){} try{pintarPerfil();}catch(_){}
+      }catch(_){}
+    };
+    sc.onerror=function(){ fin(); };
+    sc.src=CG_ENVIO_URL+'?action=mine&callback='+cb+'&id_token='+encodeURIComponent(idToken);
+    document.body.appendChild(sc);
+    setTimeout(function(){ if(!done) fin(); },8000);
+  }catch(_){}
 }
 function initGoogle(){
   if(!(window.google&&google.accounts&&google.accounts.id))return false;
@@ -5702,15 +5732,16 @@ async function seedDemo(){
     var now=Date.now();
     var hF=_durl2blob(DEMO_HAWK_FOTO),hM=_durl2blob(DEMO_HAWK_MINI);
     var bF=_durl2blob(DEMO_BAULA_FOTO),bM=_durl2blob(DEMO_BAULA_MINI);
-    await almacen.put({id:uid(),foto:hF,mini:hM,w:1200,h:800,origW:2560,origH:1707,bytes:hF.size,tipo:'image/jpeg',q:82,
+    await almacen.put({id:'demo-obs-carey',foto:hF,mini:hM,w:1200,h:800,origW:2560,origH:1707,bytes:hF.size,tipo:'image/jpeg',q:82,
       fecha:now-3*3600*1000,lat:18.1557,lng:-68.7206,accuracy:8,origen:'demo',clase:'Reptilia',iucn:'CR',
       especie:'Eretmochelys imbricata',notas:'Tortuga carey anidando en la playa — Parque Nacional Cotubanam\u00e1 (Isla Saona).',cant:1});
-    await almacen.put({id:uid(),foto:bF,mini:bM,w:1200,h:800,origW:1600,origH:1064,bytes:bF.size,tipo:'image/jpeg',q:82,
+    await almacen.put({id:'demo-obs-baula',foto:bF,mini:bM,w:1200,h:800,origW:1600,origH:1064,bytes:bF.size,tipo:'image/jpeg',q:82,
       fecha:now-6*3600*1000,lat:18.3497,lng:-68.8360,accuracy:10,origen:'demo',clase:'Reptilia',iucn:'VU',
       especie:'Dermochelys coriacea',notas:'Tortuga tinglar (baula) — monitoreo nocturno de anidaci\u00f3n, Parque Nacional Cotubanam\u00e1.',cant:1});
     localStorage.setItem('cg_demo_seeded','1');
     try{if(typeof CGTracks!=='undefined'&&CGTracks.seed&&!localStorage.getItem('cg_demo_tracks')){CGTracks.seed(SAMPLE_TRACKS);localStorage.setItem('cg_demo_tracks','1');}}catch(_){}
     pintar();
+    try{ if(cgIdToken) reconciliarEnviados(cgIdToken); }catch(_){}
   }catch(_){}
 }
 seedDemo();
