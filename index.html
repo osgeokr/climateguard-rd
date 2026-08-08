@@ -1167,6 +1167,8 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-sync{font-family:var(--cpo);font-size:12px;font-weight:600;color:#fff;background:#003876;border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
 .asist-sync:disabled{opacity:.6}
 .asist-hoy li em.pend{color:#C77700;font-style:normal;font-weight:700;font-size:11px;vertical-align:middle}
+.subir-aviso{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 16px 0;padding:9px 12px;background:#FFF4E0;border:1px solid #F0D08A;border-radius:10px;font-size:13px;color:#8A5A00}
+.subir-aviso button{flex:none;font-family:var(--cpo);font-weight:600;font-size:12.5px;color:#fff;background:#C77700;border:0;border-radius:999px;padding:7px 14px;cursor:pointer}
 .carnet .pie-btns{display:flex;gap:9px}
 .carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
 </head>
@@ -1265,6 +1267,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
      <button type="button" class="cred-mini" id="credTira" data-aria="bCred">
        <i class="ri-id-card-line"></i></button>
    </div>
+   <div class="subir-aviso" id="subirAviso" hidden><span id="subirTxt"></span><button type="button" id="subirBtn" data-i18n="bEnviar"></button></div>
 
    <div class="vista" id="vReg" role="tabpanel">
     <div class="subtabs" id="subtabs" role="tablist">
@@ -4318,7 +4321,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.6';
+const APP_VER='1.6.7';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4345,12 +4348,18 @@ function itemsPuntos(){ const led=loadLedger(), sent=loadSent(); let conf=0,pend
   for(const k in led){ if(!seen[k]) conf+=led[k]; }
   return {conf:conf,pend:pend}; }
 const puntosConfirmados=()=>itemsPuntos().conf;
+let cgSrvPts=(()=>{try{const v=JSON.parse(localStorage.getItem('cg_srv_pts'));return (v&&typeof v.puntos==='number')?v.puntos:null;}catch(_){return null;}})();
+function ptsMostrados(){ return (cgSrvPts!=null)?cgSrvPts:puntosConfirmados(); }
+function setSrvPts(p){ if(typeof p==='number'&&p>=0){ cgSrvPts=p; try{localStorage.setItem('cg_srv_pts',JSON.stringify({puntos:p}));}catch(_){}; try{pintarPerfil();}catch(_){} } }
+function pendientes(){ try{ const sent=loadSent(); const nf=regs.filter(r=>r.lat!=null && sent['p:'+r.id]!==sigFoto(r)).length; const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1); const nt=trAll.filter(tr=>sent['t:'+tr.id]!==sigTrack(tr)).length; return nf+nt; }catch(_){ return 0; } }
+function actualizarSubir(){ const el=document.getElementById('subirAviso'); if(!el)return; const n=pendientes(); const tx=document.getElementById('subirTxt'); if(n>0){ if(tx)tx.textContent=n+' \u00b7 '+t('porSubir'); el.hidden=false; } else { el.hidden=true; } }
+(function(){var _sb=document.getElementById('subirBtn'); if(_sb)_sb.onclick=function(){ var b=document.getElementById('btnEnviar'); if(b)b.click(); };})();
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
 let nivelActual=0, _prevPts=null;
 function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
 
 function pintarPerfil(){
-  const nFotos=regs.length, _ip=itemsPuntos(), pts=_ip.conf, pend=_ip.pend, i=nivelDe(pts), sig=NIVELES[i+1];
+  const nFotos=regs.length, _ip=itemsPuntos(), pend=_ip.pend, pts=ptsMostrados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const rango=t(NIVELES[i].k);
   const _th=NIVELES[i];
   const etq=`<u style="background:${_th.col}">${t('nivel')||'Niv.'} ${i+1}</u><i class="${_th.ic}" style="color:${_th.col};margin:0 2px 0 5px;font-size:12px;vertical-align:-1px"></i>${rango}`;
@@ -4376,6 +4385,7 @@ function pintarPerfil(){
   if(_prevPts!=null && pts>_prevPts) destacarPts();
   _prevPts=pts;
   if(i>nivelActual){ nivelActual=i; ascenso(i); } else nivelActual=i;
+  try{actualizarSubir();}catch(_){}
 }
 
 /* Aviso flotante de puntos */
@@ -4435,7 +4445,7 @@ function verificarEstado(idToken, ok, fail){
   try{
     var cb='cgme'+Date.now(), sc=document.createElement('script'), done=false;
     var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
-    window[cb]=function(r){ fin(); if(r&&r.ok){ ok(String(r.status||'active')); } else { fail(); } };
+    window[cb]=function(r){ fin(); if(r&&r.ok){ try{ if(typeof r.puntos==='number') setSrvPts(r.puntos); }catch(_){}; ok(String(r.status||'active')); } else { fail(); } };
     sc.onerror=function(){ fin(); fail(); };
     sc.src=CG_ENVIO_URL+'?action=me&callback='+cb+'&id_token='+encodeURIComponent(idToken);
     document.body.appendChild(sc);
@@ -4676,7 +4686,7 @@ async function abrirCarnet(){
     carnetBlob=await credencialPng();
     if(carnetUrl)URL.revokeObjectURL(carnetUrl);
     carnetUrl=URL.createObjectURL(carnetBlob);
-    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(puntosConfirmados())].k)}`;
+    $cImg.src=carnetUrl; $cImg.alt=`${t('tituloCred')} · ${t(NIVELES[nivelDe(ptsMostrados())].k)}`;
     $cImg.hidden=false; $cCarga.hidden=true;
     document.getElementById('cGuardar').disabled=false;
   }catch{
@@ -4744,7 +4754,7 @@ async function credencialPng(){
   const _email=((typeof cgSession!=='undefined'&&cgSession&&cgSession.email)||'').toLowerCase().trim();
   let _hid='';
   if(_email){try{const _hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(_email));_hid=[...new Uint8Array(_hb)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(_){}}
-  const n=regs.length, pts=puntosConfirmados(), i=nivelDe(pts), sig=NIVELES[i+1];
+  const n=regs.length, pts=ptsMostrados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const TH=NIVELES[i];
   const W=780, H=1330, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
@@ -5230,6 +5240,7 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     nf.forEach(r=>{ sentMap['p:'+r.id]=sigFoto(r); }); nt.forEach(tr=>{ sentMap['t:'+tr.id]=sigTrack(tr); });
     saveSent(sentMap); saveLedger(ledNext);
     try{pintar();}catch(_){}
+    try{ verificarEstado(_idt, function(){}, function(){}); }catch(_){}
     aviso('a-ok','ri-check-line',`${t('envOk')}: ${nf.length} ${t('fotos')}, ${nt.length} ${t('recorridosN')}${recon>0?` \u00b7 ${recon} ${t('ptsRecon')}`:''}`);
   }catch(e){ aviso('a-er','ri-error-warning-line',t('envErr')); }
   b.disabled=false;
