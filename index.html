@@ -1167,8 +1167,9 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-sync{font-family:var(--cpo);font-size:12px;font-weight:600;color:#fff;background:#003876;border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
 .asist-sync:disabled{opacity:.6}
 .asist-hoy li em.pend{color:#C77700;font-style:normal;font-weight:700;font-size:11px;vertical-align:middle}
-.subir-aviso{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 16px 0;padding:9px 12px;background:#FFF4E0;border:1px solid #F0D08A;border-radius:10px;font-size:13px;color:#8A5A00}
-.subir-aviso button{flex:none;font-family:var(--cpo);font-weight:600;font-size:12.5px;color:#fff;background:#C77700;border:0;border-radius:999px;padding:7px 14px;cursor:pointer}
+.subir-aviso{display:flex;align-items:center;gap:7px;margin:6px 16px 0;padding:6px 10px;background:#F3F6FA;border-radius:8px;font-size:12.5px;color:#5C6670}
+.subir-aviso>i{font-size:15px;color:#8A929B}
+.subir-aviso button{margin-left:auto;font-family:var(--cpo);font-weight:600;font-size:12.5px;color:#003876;background:none;border:0;padding:4px 4px;cursor:pointer}
 .carnet .pie-btns{display:flex;gap:9px}
 .carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
 </head>
@@ -1267,7 +1268,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
      <button type="button" class="cred-mini" id="credTira" data-aria="bCred">
        <i class="ri-id-card-line"></i></button>
    </div>
-   <div class="subir-aviso" id="subirAviso" hidden><span id="subirTxt"></span><button type="button" id="subirBtn" data-i18n="bEnviar"></button></div>
+   <div class="subir-aviso" id="subirAviso" hidden><i class="ri-upload-cloud-2-line" aria-hidden="true"></i><span id="subirTxt"></span><button type="button" id="subirBtn" data-i18n="bEnviar"></button></div>
 
    <div class="vista" id="vReg" role="tabpanel">
     <div class="subtabs" id="subtabs" role="tablist">
@@ -4321,7 +4322,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.7';
+const APP_VER='1.6.8';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
