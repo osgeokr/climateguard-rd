@@ -4326,7 +4326,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.2';
+const APP_VER='1.7.3';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4578,7 +4578,7 @@ function dibujarMapa(){
   if(heatCapa){mapa.removeLayer(heatCapa);heatCapa=null;}
   if(!navigator.onLine&&!mapa._off){mapa._off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));}
   pts.forEach(r=>{
-    L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
+    L.marker([r.lat,r.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
       html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"><i class="mdot"></i></div>`})})
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
        <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
@@ -4960,13 +4960,13 @@ window.guardarFoto=function(n){
   var im=new Image();
   im.onload=function(){
     var W=im.naturalWidth||im.width, H=im.naturalHeight||im.height;
-    var band=Math.max(70, Math.round(W*0.11));
+    var band=Math.max(72, Math.round(H*0.12));
     var cv=document.createElement('canvas'); cv.width=W; cv.height=H+band;
     var c=cv.getContext('2d');
     c.drawImage(im,0,0,W,H);
     c.fillStyle='#003876'; c.fillRect(0,H,W,band);
     c.fillStyle='#C77700'; c.fillRect(0,H,W,Math.max(3,Math.round(band*0.05)));
-    var pad=Math.round(W*0.03);
+    var pad=Math.round(band*0.30);
     var r=band*0.30, cx=pad+r, cy=H+band*0.5;
     var s=r/27;
     c.fillStyle='#fff'; c.beginPath(); c.arc(cx,cy,r+s*4.5,0,7); c.fill();
@@ -4979,16 +4979,20 @@ window.guardarFoto=function(n){
     c.beginPath(); c.moveTo(cx,cy-s*10.5);
     c.bezierCurveTo(cx+s*4.8,cy-s*5.5,cx+s*4.8,cy+s*5.5,cx,cy+s*10.5);
     c.bezierCurveTo(cx-s*4.8,cy+s*5.5,cx-s*4.8,cy-s*5.5,cx,cy-s*10.5); c.fill();
-    var tx=cx+r+pad*0.7;
+    var tx=cx+r+pad*0.7, avail=W-tx-pad;
     var f1=Math.round(band*0.26), f2=Math.round(band*0.185), f3=Math.round(band*0.16);
-    c.textBaseline='alphabetic';
-    c.fillStyle='#fff'; c.font='700 '+f1+'px system-ui,sans-serif';
-    c.fillText('ClimateGuard Mobile', tx, H+band*0.40);
-    c.fillStyle='#DCE7F5'; c.font='italic 600 '+f2+'px system-ui,sans-serif';
-    c.fillText((d.especie?d.especie+'  ':'')+(d.grupo||''), tx, H+band*0.64);
-    c.fillStyle='#9FB6D6'; c.font='400 '+f3+'px system-ui,sans-serif';
+    var L1='ClimateGuard Mobile';
+    var L2=(d.especie?d.especie+'  ':'')+(d.grupo||'');
     var l3=(d.iucn?d.iucn+' · ':'')+(d.cant?d.cant+' ind · ':'')+d.fecha+' · '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);
-    c.fillText(l3, tx, H+band*0.86);
+    c.textBaseline='alphabetic';
+    c.font='700 '+f1+'px system-ui,sans-serif'; var w1=c.measureText(L1).width;
+    c.font='italic 600 '+f2+'px system-ui,sans-serif'; var w2=c.measureText(L2).width;
+    c.font='400 '+f3+'px system-ui,sans-serif'; var w3=c.measureText(l3).width;
+    var sc=Math.min(1, avail/Math.max(w1,w2,w3,1));
+    if(sc<1){ f1=Math.max(9,Math.floor(f1*sc)); f2=Math.max(8,Math.floor(f2*sc)); f3=Math.max(7,Math.floor(f3*sc)); }
+    c.fillStyle='#fff'; c.font='700 '+f1+'px system-ui,sans-serif'; c.fillText(L1, tx, H+band*0.40);
+    c.fillStyle='#DCE7F5'; c.font='italic 600 '+f2+'px system-ui,sans-serif'; c.fillText(L2, tx, H+band*0.64);
+    c.fillStyle='#9FB6D6'; c.font='400 '+f3+'px system-ui,sans-serif'; c.fillText(l3, tx, H+band*0.86);
     cv.toBlob(function(bl){ var a=document.createElement('a'); a.href=URL.createObjectURL(bl);
       a.download='ClimateGuard_'+((d.especie||'foto').split(' ').join('_'))+'_'+('0'+d.n).slice(-2)+'.jpg';
       document.body.appendChild(a); a.click(); a.remove();
@@ -5009,7 +5013,7 @@ if(window.L&&(D.length||TR.length)){
   try{L.geoJSON(BG_W,{pane:'wp',style:function(f){return f.properties.k==='M'?{color:'#0B57D0',weight:1,fillColor:'#1F72E6',fillOpacity:.26}:{color:'#1E7A34',weight:1,fillColor:'#37A24A',fillOpacity:.28};},onEachFeature:function(f,l){var p=f.properties;l.bindPopup('<div class="tp"><b>'+(p.n||'')+'</b>'+(p.d?'<br>'+p.d:'')+(p.c?' · '+p.c:'')+'</div>');}}).addTo(m);}catch(e){}
   var _lg=L.control({position:'bottomleft'});_lg.onAdd=function(){var el=L.DomUtil.create('div','wlg');el.innerHTML='<b>'+WTIT+'</b><div><span class="s ter"></span>'+WTER+'</div><div><span class="s mar"></span>'+WMAR+'</div>';return el;};_lg.addTo(m);
   D.forEach(function(d){
-    L.marker([d.lat,d.lng],{icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
+    L.marker([d.lat,d.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
       html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"><i class="mdot"></i></div>'})})
      .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
        (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
