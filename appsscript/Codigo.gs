@@ -7,6 +7,8 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.5 (puntos): _certificarPuntos ahora tambien cuenta los recorridos
+ *   (10 + 5 si distancia >= 200 m), igual que la app.
  * v3.4 (web-proxy): archivos PRIVADOS; el sitio web lee imagenes/tracks via
  *   action=file (verifica login y que el archivo sea del usuario o admin).
  * v3.3 (web-prep): UNA carpeta por usuario; foto_url/geo_url en las hojas;
@@ -461,6 +463,19 @@ function _certificarPuntos(shO, ss, usuario) {
       pts += base * BONO; cnt += 1;
     }
   }
+  // Recorridos (tracks): 10 + 5 si distancia >= 200 m (igual que la app)
+  try {
+    var shR = _sheet(ss, 'Recorridos', HEAD_REC);
+    var lastR = shR.getLastRow();
+    if (lastR >= 2) {
+      var vr = shR.getRange(2,1,lastR-1,shR.getLastColumn()).getValues();
+      for (var r = 0; r < vr.length; r++) {
+        if (String(vr[r][1]).toLowerCase() !== usuario) continue;   // col B = usuario
+        var dm = Number(vr[r][4] || 0);                             // col E = distance_m
+        pts += (10 + (dm >= 200 ? 5 : 0)) * BONO;
+      }
+    }
+  } catch (eR) {}
   var nivel = 1;
   for (var j = 0; j < NIVELES_MIN.length; j++) if (pts >= NIVELES_MIN[j]) nivel = j+1;
   var shP = _sheet(ss, 'Puntos', HEAD_PTS);
