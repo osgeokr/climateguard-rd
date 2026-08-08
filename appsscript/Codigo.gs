@@ -7,6 +7,7 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.2 (asistencia): offline-first; se registra la fecha del escaneo (cliente).
  * v3.1 (asistencia): QR corto (prefijo del hash) + coincidencia por prefijo.
  * v3 (asistencia, ago-2026): un administrador (ADMIN_EMAILS) puede registrar
  * la asistencia de los miembros escaneando la QR de su credencial. La QR
@@ -317,7 +318,8 @@ function doGet(e) {
       if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
       var miembro = _memberByHash(ss, e.parameter.hash);
       if (!miembro) return _json({ ok:false, error:'unknown' }, cb);
-      var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); // dia del servidor
+      var fecha = String(e.parameter.date||'').slice(0,10); // fecha del escaneo (cliente)
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
       var dup = _marcarAsistencia(ss, fecha, miembro.email, miembro.name, admin.email);
       return _json({ ok:true, name:miembro.name, email:miembro.email, dup:dup, date:fecha }, cb);
     }
