@@ -23,8 +23,8 @@
 .gate-idioma s{color:var(--borde)}
 .pill-piloto{display:block;width:max-content;margin:9px auto 0;background:#CE1126;color:#fff;border:1px solid #CE1126;text-transform:uppercase;
   font-family:var(--tit);font-size:11px;font-weight:600;letter-spacing:.03em;padding:3px 12px;border-radius:20px}
-.chip-piloto{display:inline-block;background:rgba(255,255,255,.16);color:#fff;font-weight:600;font-size:9.5px;
-  letter-spacing:.05em;padding:1px 7px;border-radius:10px}
+.chip-piloto{display:inline-block;background:#CE1126;color:#fff;font-weight:600;font-size:9.5px;
+  letter-spacing:.05em;padding:1px 7px;border-radius:10px;text-transform:uppercase}
 .av-edit{cursor:pointer;position:relative}
 .av-edit:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
 .av-edit::after{content:'\270E';position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;font-size:10px;
@@ -155,6 +155,9 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .pts-up{display:inline-flex;align-items:center;gap:3px;font-family:var(--cpo);font-weight:700;font-size:.8em;line-height:1;color:#fff;background:#C77700;border:0;border-radius:999px;padding:3px 9px;margin-left:6px;cursor:pointer;vertical-align:middle;box-shadow:0 1px 3px rgba(199,119,0,.35);animation:ptsUpPulse 2.2s ease-in-out infinite}
 .pts-up i{font-size:1.05em}
 .pts-up:active{transform:scale(.95)}
+.pts-up.sending{background:#003876;box-shadow:0 1px 3px rgba(0,56,118,.35);animation:none;pointer-events:none}
+.pts-up.sending i{animation:ptsSpin .8s linear infinite}
+@keyframes ptsSpin{to{transform:rotate(360deg)}}
 @keyframes ptsUpPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 .gsi-wrap{display:flex;justify-content:center;margin:8px 0 4px;min-height:44px}
 .gate-msg{color:var(--rojo,#CE1126);font-size:12px;text-align:center;min-height:15px;margin:4px 0}
@@ -3874,7 +3877,7 @@ const DIC={
   r4:'Naturalista', r5:'Maestro Naturalista',
   bTomar:'Tomar foto', bGaleria:'Elegir de galería', bCambiarFoto:'Cambiar foto',
   offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
-  piloto:'Unofficial', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
+  piloto:'UNOFFICIAL', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
   mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor', miUbic:'Mi ubicación',
   sinNombre:'Sin nombre', recortar:'Ajustar foto', bConfirmar:'Confirmar',
   gpsTitulo:'Ubicación desactivada', reintentar:'Reintentar', cerrar:'Cerrar', gpsOk:'Ubicación activada.',
@@ -3959,7 +3962,7 @@ const DIC={
   r4:'Naturalist', r5:'Master Naturalist',
   bTomar:'Take photo', bGaleria:'Choose from gallery', bCambiarFoto:'Change photo',
   offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected areas', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
-  piloto:'Unofficial', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
+  piloto:'UNOFFICIAL', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
   mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap', miUbic:'My location',
   sinNombre:'No name', recortar:'Adjust photo', bConfirmar:'Confirm',
   gpsTitulo:'Location is off', reintentar:'Retry', cerrar:'Close', gpsOk:'Location enabled.',
@@ -4321,7 +4324,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.0';
+const APP_VER='1.7.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4352,7 +4355,7 @@ let cgSrvPts=(()=>{try{const v=JSON.parse(localStorage.getItem('cg_srv_pts'));re
 function ptsMostrados(){ return (cgSrvPts!=null)?cgSrvPts:puntosConfirmados(); }
 function setSrvPts(p){ if(typeof p==='number'&&p>=0){ cgSrvPts=p; try{localStorage.setItem('cg_srv_pts',JSON.stringify({puntos:p}));}catch(_){}; try{pintarPerfil();}catch(_){} } }
 function pendientes(){ try{ const sent=loadSent(); const nf=regs.filter(r=>r.lat!=null && sent['p:'+r.id]!==sigFoto(r)).length; const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1); const nt=trAll.filter(tr=>sent['t:'+tr.id]!==sigTrack(tr)).length; return nf+nt; }catch(_){ return 0; } }
-document.addEventListener('click',function(e){ var b=e.target.closest?e.target.closest('.pts-up'):null; if(b){ e.preventDefault(); e.stopPropagation(); var s=document.getElementById('btnEnviar'); if(s)s.click(); } });
+document.addEventListener('click',function(e){ var b=e.target.closest?e.target.closest('.pts-up'):null; if(b){ e.preventDefault(); e.stopPropagation(); if(b.classList.contains('sending'))return; b.classList.add('sending'); var _i=b.querySelector('i'); if(_i)_i.className='ri-loader-4-line'; var s=document.getElementById('btnEnviar'); if(s)s.click(); } });
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
 let nivelActual=0, _prevPts=null;
 function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
@@ -4943,7 +4946,7 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 .tp h4{margin:0 0 3px;font:600 13.5px system-ui}
 .tp small{font-size:11px;color:#5C6670}
 </style></head><body>
-<div id="gob"><span class="pais"><span id="fl"></span> ${t('pais')} <span class="pill">Unofficial</span></span><span class="lang">ES / EN</span></div>
+<div id="gob"><span class="pais"><span id="fl"></span> ${t('pais')} <span class="pill">UNOFFICIAL</span></span><span class="lang">ES / EN</span></div>
 <div id="hd"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="3" opacity=".45"></circle><circle cx="32" cy="32" r="19" fill="none" stroke="#fff" stroke-width="3" opacity=".7"></circle><circle cx="32" cy="32" r="12" fill="none" stroke="#fff" stroke-width="3.4"></circle><path d="M32 21.5 C36.8 26.5 36.8 37.5 32 42.5 C27.2 37.5 27.2 26.5 32 21.5 Z" fill="#1B7F5A"></path></svg><div><b>ClimateGuard Mobile</b>
 <span>${t('sub')} · ${d.length} ${t('fotos')} · ${ntrk} ${t('recorridosN')}</span></div></div>
 <div id="m"></div>
@@ -5240,10 +5243,12 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     nf.forEach(r=>{ sentMap['p:'+r.id]=sigFoto(r); }); nt.forEach(tr=>{ sentMap['t:'+tr.id]=sigTrack(tr); });
     if(_avPayload) sentMap['avatar']=_avSig;
     saveSent(sentMap); saveLedger(ledNext);
+    try{ setSrvPts(projTotal); }catch(_){}
     try{pintar();}catch(_){}
     try{ verificarEstado(_idt, function(){}, function(){}); }catch(_){}
     aviso('a-ok','ri-check-line',`${t('envOk')}: ${nf.length} ${t('fotos')}, ${nt.length} ${t('recorridosN')}${recon>0?` \u00b7 ${recon} ${t('ptsRecon')}`:''}`);
   }catch(e){ aviso('a-er','ri-error-warning-line',t('envErr')); }
+  try{pintarPerfil();}catch(_){}
   b.disabled=false;
 });
 
