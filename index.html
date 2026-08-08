@@ -88,6 +88,8 @@ footer .marcas{margin-bottom:4px}
 .inst-banner .inst-txt b{font-size:13.5px;color:var(--txt)}
 .inst-banner .inst-txt span{font-size:11.5px;color:var(--txt-2);line-height:1.45}
 .inst-banner .inst-x{flex:none;background:none;border:0;font-size:20px;line-height:1;color:var(--txt-2);cursor:pointer;padding:2px 4px;align-self:flex-start}
+.inst-banner.done{border-color:#BFE3CD;border-left:4px solid #1B7F5A}
+.inst-banner.done .inst-txt b{color:#1B7F5A}
 .trk-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .trk-item{display:flex;align-items:center;gap:10px;background:#F5F7F9;border:1px solid var(--borde);border-radius:8px;padding:7px 4px 7px 11px}
 .trk-item .ti-info{flex:1;min-width:0}
@@ -3892,7 +3894,7 @@ const DIC={
   trackOk:'Recorrido guardado', trackAsunto:'Recorrido de campo - ClimateGuard',
   trackUno:'Recorrido', trackDelA:'Eliminar recorrido',
   trackPause:'Pausar', trackResume:'Reanudar', trackPausado:'En pausa', trackRen:'Renombrar', trackNombreT:'Nombre del recorrido', bGuardarN:'Guardar',
-  instDone:'Instalada. Ábrela desde el icono en tu pantalla de inicio.', instTitulo:'Instalar ClimateGuard', instTxt:'Añádela a tu pantalla de inicio para usarla como app (funciona sin conexión).', instBtn:'Instalar', instIOS:'En Safari: toca <b>Compartir</b> y luego <b>«Añadir a pantalla de inicio»</b>.', instCerrar:'Ahora no',
+  instDone:'Instalada. Ábrela desde el icono en tu pantalla de inicio.', instTitulo:'Instalar ClimateGuard', instTxt:'Añádela a tu pantalla de inicio para usarla como app (funciona sin conexión).', instBtn:'Instalar', instIOS:'En Safari: toca <b>Compartir</b> y luego <b>«Añadir a pantalla de inicio»</b>.', instCerrar:'Ahora no', instDoneTitle:'\u00a1Instalada!', instAbrirTit:'Ya instalada', instAbrir:'\u00c1brela desde el icono de ClimateGuard en tu pantalla de inicio.',
   g:{bird:'Ave',reptile:'Reptil',amphibian:'Anfibio',mammal:'Mamifero',
      fish:'Pez',insect:'Insecto',plant:'Planta',fungus:'Hongo',other:'Otro',Anthozoa:'Corales',Malacostraca:'Crustáceos',Gastropoda:'Gasterópodos',Cephalopoda:'Cefalópodos',Holothuroidea:'Pepinos de mar',Hydrozoa:'Hidrozoos',Bivalvia:'Bivalvos',Animalia:'Otros animales',Arachnida:'Arácnidos'},
   c:{native:'Nativa',endemic:'Endemica',invasive:'Invasora'}
@@ -3977,7 +3979,7 @@ const DIC={
   trackOk:'Track saved', trackAsunto:'Field track - ClimateGuard',
   trackUno:'Track', trackDelA:'Delete track',
   trackPause:'Pause', trackResume:'Resume', trackPausado:'Paused', trackRen:'Rename', trackNombreT:'Track name', bGuardarN:'Save',
-  instDone:'Installed. Open it from the icon on your home screen.', instTitulo:'Install ClimateGuard', instTxt:'Add it to your home screen to use it like an app (works offline).', instBtn:'Install', instIOS:'In Safari: tap <b>Share</b>, then <b>“Add to Home Screen”</b>.', instCerrar:'Not now',
+  instDone:'Installed. Open it from the icon on your home screen.', instTitulo:'Install ClimateGuard', instTxt:'Add it to your home screen to use it like an app (works offline).', instBtn:'Install', instIOS:'In Safari: tap <b>Share</b>, then <b>“Add to Home Screen”</b>.', instCerrar:'Not now', instDoneTitle:'Installed!', instAbrirTit:'Already installed', instAbrir:'Open it from the ClimateGuard icon on your home screen.',
   g:{bird:'Bird',reptile:'Reptile',amphibian:'Amphibian',mammal:'Mammal',
      fish:'Fish',insect:'Insect',plant:'Plant',fungus:'Fungus',other:'Other',Anthozoa:'Corals',Malacostraca:'Crustaceans',Gastropoda:'Gastropods',Cephalopoda:'Cephalopods',Holothuroidea:'Sea cucumbers',Hydrozoa:'Hydrozoans',Bivalvia:'Bivalves',Animalia:'Other animals',Arachnida:'Arachnids'},
   c:{native:'Native',endemic:'Endemic',invasive:'Invasive'}
@@ -4324,7 +4326,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.1';
+const APP_VER='1.7.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -5590,8 +5592,8 @@ try{
   try{
     const standalone = (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
     if(standalone) return;
+    let _inst=false; try{_inst=localStorage.getItem('cg_installed')==='1';}catch(_){}
     let dismissed=false; try{dismissed=localStorage.getItem('cg_inst_dismiss')==='1';}catch(_){}
-    if(dismissed) return;
     const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Mac/.test(navigator.platform)&&navigator.maxTouchPoints>1);
     let deferred=null, shown=false;
     function mostrar(iosMode){
@@ -5606,8 +5608,34 @@ try{
       const ib=document.getElementById('instBtn');
       if(ib) ib.onclick=async function(){ if(!deferred)return; deferred.prompt(); try{await deferred.userChoice;}catch(_){} deferred=null; el.remove(); };
     }
+    function mostrarInstalada(){
+      var old=document.getElementById('instBanner'); if(old)old.remove();
+      if(document.getElementById('instDoneBanner')) return;
+      var el=document.createElement('div'); el.className='inst-banner done'; el.id='instDoneBanner';
+      el.innerHTML='<img src="'+ICON192+'" alt="">'+
+        '<div class="inst-txt"><b>'+t('instDoneTitle')+'</b><span>'+t('instDone')+'</span></div>'+
+        '<button type="button" class="inst-x" id="instDoneX" aria-label="'+t('instCerrar')+'">&times;</button>';
+      document.body.appendChild(el);
+      var _c=function(){ try{el.remove();}catch(_){} };
+      document.getElementById('instDoneX').onclick=_c; setTimeout(_c,12000);
+    }
+    function mostrarAbrir(){
+      if(document.getElementById('instAbrirBanner')||document.getElementById('instDoneBanner')) return;
+      var el=document.createElement('div'); el.className='inst-banner'; el.id='instAbrirBanner';
+      el.innerHTML='<img src="'+ICON192+'" alt="">'+
+        '<div class="inst-txt"><b>'+t('instAbrirTit')+'</b><span>'+t('instAbrir')+'</span></div>'+
+        '<button type="button" class="inst-x" id="instAbrirX" aria-label="'+t('instCerrar')+'">&times;</button>';
+      document.body.appendChild(el);
+      document.getElementById('instAbrirX').onclick=function(){ try{el.remove();}catch(_){} try{localStorage.setItem('cg_open_dismiss','1');}catch(_){} };
+    }
+    window.addEventListener('appinstalled', function(){ const b=document.getElementById('instBanner'); if(b)b.remove(); try{localStorage.setItem('cg_installed','1');}catch(_){} try{localStorage.setItem('cg_inst_dismiss','1');}catch(_){} try{mostrarInstalada();}catch(_){} });
+    if(_inst){
+      let _od=false; try{_od=localStorage.getItem('cg_open_dismiss')==='1';}catch(_){}
+      if(!_od) setTimeout(mostrarAbrir,1200);
+      return;
+    }
+    if(dismissed) return;
     window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; mostrar(false); });
-    window.addEventListener('appinstalled', function(){ const b=document.getElementById('instBanner'); if(b)b.remove(); try{localStorage.setItem('cg_inst_dismiss','1');}catch(_){} try{flash(t('instDone'));}catch(_){} });
     if(isIOS){ setTimeout(function(){ mostrar(true); }, 1500); }
   }catch(_){}
 })();
