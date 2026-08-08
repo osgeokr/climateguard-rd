@@ -7,6 +7,8 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.3 (web-prep): UNA carpeta por usuario; foto_url/geo_url en las hojas;
+ *   avatar de usuario a Drive; endpoints de lectura mine/stats/asistlist/users.
  * v3.2 (asistencia): offline-first; se registra la fecha del escaneo (cliente).
  * v3.1 (asistencia): QR corto (prefijo del hash) + coincidencia por prefijo.
  * v3 (asistencia, ago-2026): un administrador (ADMIN_EMAILS) puede registrar
@@ -62,10 +64,10 @@ const TOKEN_LEGADO = 'cg-kLVvRhNatYBkOTphQmCOx585YIiM';
 const BONO        = 1;                    // los puntos se "reconocen" al enviar
 const NIVELES_MIN = [0, 100, 250, 500, 1000];
 
-const HEAD_OBS = ['id','usuario','especie','clase','iucn','cant','notas','lat','lng','accuracy','fecha','updated_at','foto','submissionId','recibido','estado','altitude','alt_accuracy'];
-const HEAD_REC = ['id','usuario','name','points','distance_m','start','end','submissionId','recibido'];
+const HEAD_OBS = ['id','usuario','especie','clase','iucn','cant','notas','lat','lng','accuracy','fecha','updated_at','foto','submissionId','recibido','estado','altitude','alt_accuracy','foto_url'];
+const HEAD_REC = ['id','usuario','name','points','distance_m','start','end','submissionId','recibido','geo_url'];
 const HEAD_PTS = ['usuario','puntos','nivel','observaciones','actualizado'];
-const HEAD_USR = ['email','name','picture','status','role','sub','created_at','last_login','submissions'];
+const HEAD_USR = ['email','name','picture','status','role','sub','created_at','last_login','submissions','folder_id','avatar_url'];
 const HEAD_ASIST = ['fecha','email','nombre','recibido','registrado_por'];   // v3 asistencia
 
 // ── CREACION DE LA BASE ─────────────────────────────────────────────────────
@@ -139,7 +141,7 @@ function _touchUser(ss, u){
   var sh = _usuarios(ss); var row = _userRow(sh, u.email); var now = new Date().toISOString();
   if (row < 0){
     var st = _statusForEmail(u.email);
-    sh.appendRow([u.email, u.name, u.picture, st, '', u.sub, now, now, 0]);
+    sh.appendRow([u.email, u.name, u.picture, st, '', u.sub, now, now, 0, '', '']);
     return st;
   }
   var st2 = String(sh.getRange(row,4).getValue() || 'active');
@@ -243,18 +245,19 @@ function doPost(e) {
       if (!_rateOk(shOrate, usuario)) return _json({ ok:false, error:'rate' });
     }
 
-    // 4) Archivos en Drive (carpeta por envio)
-    var raiz = DriveApp.getFolderById(CARPETA_ID);
-    var sello = String(body.fecha || new Date().toISOString()).replace(/[:.]/g,'-');
-    var sub = raiz.createFolder(sello + ' - ' + usuario.replace(/[^\w\-@. ]+/g,'_'));
-    if (body.observaciones) sub.createFile('observaciones.geojson', JSON.stringify(body.observaciones), 'application/geo+json');
-    if (body.recorridos)    sub.createFile('recorridos.geojson',    JSON.stringify(body.recorridos),    'application/geo+json');
+    // 4) Carpeta del usuario (UNA por usuario) + avatar
+    var carpeta = _carpetaUsuario(ss, usuario);
+    var fotosByName = {};
     if (body.fotos && body.fotos.length) {
-      for (var i = 0; i < body.fotos.length; i++) {
-        var f = body.fotos[i];
-        var blob = Utilities.newBlob(Utilities.base64Decode(f.dataB64), f.mime || 'image/jpeg', f.name || ('foto_'+(i+1)+'.jpg'));
-        sub.createFile(blob);
-      }
+      for (var i = 0; i < body.fotos.length; i++) { var ff = body.fotos[i]; if (ff && ff.name) fotosByName[ff.name] = ff; }
+    }
+    if (carpeta && body.avatar && body.avatar.dataB64) {
+      try {
+        var avBlob = Utilities.newBlob(Utilities.base64Decode(body.avatar.dataB64), body.avatar.mime || 'image/jpeg', 'avatar.jpg');
+        var avFile = _upsertFile(carpeta, 'avatar.jpg', avBlob);
+        try { avFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e0) {}
+        if (ss) _setUsuarioAvatar(ss, usuario, avFile.getUrl());
+      } catch (eav) {}
     }
 
     // 5) Base de datos en Sheets (upsert por id) — usuario = email verificado
@@ -262,22 +265,45 @@ function doPost(e) {
     if (ss) {
       var obsF = (body.observaciones && body.observaciones.features) || [];
       var recF = (body.recorridos && body.recorridos.features) || [];
+      var COL_OBS_FOTOURL = HEAD_OBS.length;   // 1-based col (foto_url)
+      var COL_REC_GEOURL  = HEAD_REC.length;   // 1-based col (geo_url)
 
       var shO = _sheet(ss, 'Observaciones', HEAD_OBS);
       obsF.forEach(function(ft){
         var p = ft.properties || {}, g = ft.geometry || {}, c = (g.coordinates||[null,null]);
-        var estado = _valorActual(shO, String(p.id||''), 16) || 'valido';
-        _upsert(shO, String(p.id||''), [String(p.id||''), usuario, p.especie||'', p.clase||'', p.iucn||'',
+        var id = String(p.id||'');
+        var estado = _valorActual(shO, id, 16) || 'valido';
+        var fotoUrl = _valorActual(shO, id, COL_OBS_FOTOURL) || '';
+        if (carpeta && p.foto && fotosByName[p.foto]) {
+          try {
+            var fb = Utilities.newBlob(Utilities.base64Decode(fotosByName[p.foto].dataB64), fotosByName[p.foto].mime || 'image/jpeg', 'obs_'+id+'.jpg');
+            var fFile = _upsertFile(carpeta, 'obs_'+id+'.jpg', fb);
+            try { fFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e1) {}
+            fotoUrl = fFile.getUrl();
+          } catch (e2) {}
+        }
+        _upsert(shO, id, [id, usuario, p.especie||'', p.clase||'', p.iucn||'',
           p.cant||1, p.notas||'', c[1], c[0], (p.accuracy==null?'':p.accuracy), p.fecha||'', p.updated_at||'',
           p.foto||'', sid, new Date().toISOString(), estado,
-          (p.altitude==null?'':p.altitude), (p.alt_accuracy==null?'':p.alt_accuracy)]);
+          (p.altitude==null?'':p.altitude), (p.alt_accuracy==null?'':p.alt_accuracy), fotoUrl]);
       });
 
       var shR = _sheet(ss, 'Recorridos', HEAD_REC);
       recF.forEach(function(ft){
         var p = ft.properties || {};
-        _upsert(shR, String(p.id||''), [String(p.id||''), usuario, p.name||'', p.points||'', p.distance_m||'',
-          p.start||'', p.end||'', sid, new Date().toISOString()]);
+        var id = String(p.id||'');
+        var geoUrl = _valorActual(shR, id, COL_REC_GEOURL) || '';
+        if (carpeta) {
+          try {
+            var one = { type:'FeatureCollection', features:[ft] };
+            var gb = Utilities.newBlob(JSON.stringify(one), 'application/geo+json', 'track_'+id+'.geojson');
+            var gFile = _upsertFile(carpeta, 'track_'+id+'.geojson', gb);
+            try { gFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e3) {}
+            geoUrl = gFile.getUrl();
+          } catch (e4) {}
+        }
+        _upsert(shR, id, [id, usuario, p.name||'', p.points||'', p.distance_m||'',
+          p.start||'', p.end||'', sid, new Date().toISOString(), geoUrl]);
       });
 
       var r = _certificarPuntos(shO, ss, usuario);
@@ -285,7 +311,7 @@ function doPost(e) {
       _bumpSubmissions(ss, usuario);
     }
 
-    return _json({ ok:true, usuario:usuario, carpeta:sub.getName(), url:sub.getUrl(), puntos:puntosCert, nivel:nivelCert, sheet: !!sheetId });
+    return _json({ ok:true, usuario:usuario, carpeta:(carpeta?carpeta.getName():''), url:(carpeta?carpeta.getUrl():''), puntos:puntosCert, nivel:nivelCert, sheet: !!sheetId });
   } catch (err) {
     return _json({ ok:false, error:String(err) });
   }
@@ -324,6 +350,50 @@ function doGet(e) {
       return _json({ ok:true, name:miembro.name, email:miembro.email, dup:dup, date:fecha }, cb);
     }
 
+    // Datos propios del usuario (para el sitio web)
+    if (action === 'mine') {
+      var um = verifyIdToken(e.parameter.id_token);
+      if (!um) return _json({ ok:false, error:'auth' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var em = um.email;
+      var obs = _rowsFor(_sheet(ss,'Observaciones',HEAD_OBS), 1, em, HEAD_OBS);
+      var rec = _rowsFor(_sheet(ss,'Recorridos',HEAD_REC), 1, em, HEAD_REC);
+      var pm = _certificarPuntos(_sheet(ss,'Observaciones',HEAD_OBS), ss, em);
+      return _json({ ok:true, email:em, name:um.name, puntos:pm.puntos, nivel:pm.nivel, avatar:_usuarioAvatar(ss,em), observaciones:obs, recorridos:rec }, cb);
+    }
+    // Estadisticas por usuario (solo admin)
+    if (action === 'stats') {
+      var as = verifyIdToken(e.parameter.id_token);
+      if (!as) return _json({ ok:false, error:'auth' }, cb);
+      if (!_esAdmin(as.email)) return _json({ ok:false, error:'not_admin' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var shPs = _sheet(ss,'Puntos',HEAD_PTS); var lp = shPs.getLastRow(); var stats=[];
+      if (lp>=2){ var vp=shPs.getRange(2,1,lp-1,HEAD_PTS.length).getValues();
+        for (var ip=0;ip<vp.length;ip++) stats.push({ usuario:vp[ip][0], puntos:vp[ip][1], nivel:vp[ip][2], observaciones:vp[ip][3], actualizado:vp[ip][4] }); }
+      return _json({ ok:true, stats:stats }, cb);
+    }
+    // Lista de asistencia (solo admin)
+    if (action === 'asistlist') {
+      var aa = verifyIdToken(e.parameter.id_token);
+      if (!aa) return _json({ ok:false, error:'auth' }, cb);
+      if (!_esAdmin(aa.email)) return _json({ ok:false, error:'not_admin' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var shAs = _sheet(ss,'Asistencia',HEAD_ASIST); var la = shAs.getLastRow(); var asist=[];
+      if (la>=2){ var va=shAs.getRange(2,1,la-1,HEAD_ASIST.length).getValues();
+        for (var ia=0;ia<va.length;ia++) asist.push({ fecha:_ymd(va[ia][0]), email:va[ia][1], nombre:va[ia][2], recibido:va[ia][3], registrado_por:va[ia][4] }); }
+      return _json({ ok:true, asistencia:asist }, cb);
+    }
+    // Padron de usuarios (solo admin)
+    if (action === 'users') {
+      var au = verifyIdToken(e.parameter.id_token);
+      if (!au) return _json({ ok:false, error:'auth' }, cb);
+      if (!_esAdmin(au.email)) return _json({ ok:false, error:'not_admin' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var shUs = _usuarios(ss); var lu = shUs.getLastRow(); var users=[];
+      if (lu>=2){ var vu=shUs.getRange(2,1,lu-1,HEAD_USR.length).getValues();
+        for (var iu=0;iu<vu.length;iu++) users.push({ email:vu[iu][0], name:vu[iu][1], picture:vu[iu][2], status:vu[iu][3], created_at:vu[iu][6], last_login:vu[iu][7], submissions:vu[iu][8], avatar_url:vu[iu][10] }); }
+      return _json({ ok:true, users:users }, cb);
+    }
     // Consulta de puntos por email (?usuario=email[&callback=fn])
     var u = e && e.parameter && e.parameter.usuario;
     if (u && ss) {
@@ -380,6 +450,53 @@ function _certificarPuntos(shO, ss, usuario) {
   _upsert(shP, usuario, [usuario, pts, nivel, cnt, new Date().toISOString()]);
   return { puntos: pts, nivel: nivel };
 }
+function _upsertFile(folder, name, blob){
+  var it = folder.getFilesByName(name);
+  while (it.hasNext()) { try { it.next().setTrashed(true); } catch(_){} }
+  return folder.createFile(blob.setName(name));
+}
+function _carpetaUsuario(ss, email){
+  email = String(email).toLowerCase();
+  var raiz = DriveApp.getFolderById(CARPETA_ID);
+  if (!ss) { var it0 = raiz.getFoldersByName(email); return it0.hasNext()? it0.next() : raiz.createFolder(email); }
+  var sh = _usuarios(ss); var COL_FID = 10; var row = _userRow(sh, email);
+  if (row > 0) { var fid = String(sh.getRange(row, COL_FID).getValue()||''); if (fid) { try { var f = DriveApp.getFolderById(fid); if (f && !f.isTrashed()) return f; } catch(_){} } }
+  var lock = LockService.getScriptLock(); try { lock.waitLock(8000); } catch(_){}
+  try {
+    row = _userRow(sh, email);
+    if (row > 0) { var fid2 = String(sh.getRange(row, COL_FID).getValue()||''); if (fid2) { try { var f2 = DriveApp.getFolderById(fid2); if (f2 && !f2.isTrashed()) return f2; } catch(_){} } }
+    var it = raiz.getFoldersByName(email); var folder = it.hasNext()? it.next() : raiz.createFolder(email);
+    if (row > 0) sh.getRange(row, COL_FID).setValue(folder.getId());
+    return folder;
+  } finally { try { lock.releaseLock(); } catch(_){} }
+}
+function _setUsuarioAvatar(ss, email, url){ var sh=_usuarios(ss); var row=_userRow(sh,String(email).toLowerCase()); if(row>0) sh.getRange(row,11).setValue(url); }
+function _usuarioAvatar(ss, email){ var sh=_usuarios(ss); var row=_userRow(sh,String(email).toLowerCase()); return row>0? String(sh.getRange(row,11).getValue()||'') : ''; }
+function _rowsFor(sh, usuarioCol0, email, header){
+  var last=sh.getLastRow(); if(last<2) return [];
+  var w=sh.getLastColumn(); var vals=sh.getRange(2,1,last-1,w).getValues();
+  email=String(email).toLowerCase(); var out=[];
+  for(var i=0;i<vals.length;i++){ if(String(vals[i][usuarioCol0]).toLowerCase()!==email) continue;
+    var o={}; for(var j=0;j<header.length;j++){ o[header[j]]=vals[i][j]; } out.push(o); }
+  return out;
+}
+/* Ejecutar UNA vez para dejar la base lista para el sitio web:
+   actualiza encabezados, BORRA todos los datos y VACIA la carpeta de Drive
+   (mantiene la propia hoja de calculo). */
+function resetYActualizar(){
+  var id=getSheetId(); if(!id){ Logger.log('Ejecuta primero crearBaseDeDatos()'); return; }
+  var ss=SpreadsheetApp.openById(id);
+  _setHead(ss,'Observaciones',HEAD_OBS); _setHead(ss,'Recorridos',HEAD_REC); _setHead(ss,'Puntos',HEAD_PTS);
+  _setHead(ss,'Usuarios',HEAD_USR); _setHead(ss,'Asistencia',HEAD_ASIST);
+  ['Observaciones','Recorridos','Puntos','Usuarios','Asistencia'].forEach(function(n){
+    var sh=ss.getSheetByName(n); if(!sh) return; var last=sh.getLastRow(); if(last>1) sh.deleteRows(2,last-1);
+  });
+  var raiz=DriveApp.getFolderById(CARPETA_ID); var nf=0, nfi=0;
+  var fol=raiz.getFolders(); while(fol.hasNext()){ try{ fol.next().setTrashed(true); nf++; }catch(_){} }
+  var fil=raiz.getFiles(); while(fil.hasNext()){ var fx=fil.next(); if(fx.getId()===id) continue; try{ fx.setTrashed(true); nfi++; }catch(_){} }
+  Logger.log('reset ok · datos borrados · carpetas '+nf+' · archivos '+nfi);
+}
+function _setHead(ss, name, head){ var sh=ss.getSheetByName(name)||ss.insertSheet(name); sh.getRange(1,1,1,head.length).setValues([head]); }
 function _json(obj, callback) {
   var txt = JSON.stringify(obj);
   if (callback) {
