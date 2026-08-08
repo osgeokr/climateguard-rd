@@ -1405,11 +1405,6 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
         <button type="button" class="cambiar-foto" id="peFotoBtn"><i class="ri-camera-switch-line"></i><span data-i18n="bCambiarFoto"></span></button>
         <input type="file" id="peFotoInp" accept="image/*" hidden>
       </div>
-      <div class="pe-campo">
-        <label for="peNom" data-i18n="lNombre"></label>
-        <input type="text" id="peNom" maxlength="40" autocapitalize="words">
-      </div>
-      <button type="button" class="btn btn-1" id="peGuardar" data-i18n="bOk"></button>
       <p id="peMsg"></p>
       <button type="button" class="pe-salir" id="peSalir" data-i18n="salir"></button>
     </div>
@@ -4317,7 +4312,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.4';
+const APP_VER='1.6.5';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4716,11 +4711,11 @@ function aplicarAvatar(uri){document.documentElement.style.setProperty('--av',`u
 (function(){try{const s=localStorage.getItem(AV_KEY);if(s)aplicarAvatar(s);}catch{}})();
 /* v1.5.4: cambiar foto en la credencial removido (usar Editar perfil) */
 /* ── v3: perfil editable (nombre + foto) ── */
-let perfilNombre=(()=>{try{return localStorage.getItem('cg_name_rd')||''}catch{return ''}})();
+let perfilNombre=(()=>{try{return (cgSession&&(cgSession.name||cgSession.email))||localStorage.getItem('cg_name_rd')||''}catch(_){return ''}})();
 function aplicarNombre(){const e=document.getElementById('pNom');if(e)e.textContent=perfilNombre||t('sinNombre');}
 aplicarNombre();
 const $pe=document.getElementById('perfilEdit');
-function abrirPerfil(){document.getElementById('peNom').value=perfilNombre;document.getElementById('peMsg').innerHTML='';$pe.classList.add('on');setTimeout(()=>document.getElementById('peNom').focus(),50);}
+function abrirPerfil(){document.getElementById('peMsg').innerHTML='';$pe.classList.add('on');}
 function cerrarPerfil(){$pe.classList.remove('on');}
 document.getElementById('peVolver').onclick=cerrarPerfil;
 document.getElementById('editPerfil')&&(document.getElementById('editPerfil').onclick=abrirPerfil);
@@ -4736,12 +4731,6 @@ document.getElementById('peFotoInp').addEventListener('change',e=>{
       document.getElementById('peMsg').innerHTML='<i class="ri-check-line"></i>';
     }catch{document.getElementById('peMsg').innerHTML=`<i class="ri-error-warning-line"></i>${t('errImg')}`;} });
 });
-document.getElementById('peGuardar').onclick=()=>{
-  const v=document.getElementById('peNom').value.trim();
-  if(v)perfilNombre=v;
-  try{localStorage.setItem('cg_name_rd',perfilNombre);}catch{}
-  aplicarNombre();cerrarPerfil();
-};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$pe.classList.contains('on'))cerrarPerfil();});
 
 async function credencialPng(){
