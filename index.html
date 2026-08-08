@@ -4317,7 +4317,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.6.3';
+const APP_VER='1.6.4';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -5449,6 +5449,8 @@ try{
   let stream=null, scanning=false, rafId=0, lastHash='', lastAt=0, busy=false;
   const seenHoy=new Set();
   const cv=document.createElement('canvas'); const cx=cv.getContext('2d',{willReadFrequently:true});
+  let _bd=null; try{ if('BarcodeDetector' in window){ _bd=new BarcodeDetector({formats:['qr_code']}); } }catch(_){ _bd=null; }
+  let _detecting=false;
   function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function setMsg(cls,ic,txt){ $msg.className='asist-msg '+(cls||''); $msg.innerHTML='<i class="'+ic+'"></i>'+txt; }
   function addFila(name){
@@ -5462,11 +5464,18 @@ try{
     if(!scanning) return;
     try{
       if($video.readyState===$video.HAVE_ENOUGH_DATA){
-        const w=$video.videoWidth, h=$video.videoHeight;
-        if(w&&h){ cv.width=w; cv.height=h; cx.drawImage($video,0,0,w,h);
-          const img=cx.getImageData(0,0,w,h);
-          const code=(typeof jsQR!=='undefined')?jsQR(img.data,w,h,{inversionAttempts:'dontInvert'}):null;
-          if(code&&code.data) onCode(String(code.data).trim());
+        if(_bd){
+          if(!_detecting){ _detecting=true;
+            _bd.detect($video).then(function(codes){ if(codes&&codes.length){ onCode(String(codes[0].rawValue||'').trim()); } })
+              .catch(function(){}).then(function(){ _detecting=false; });
+          }
+        } else {
+          const w=$video.videoWidth, h=$video.videoHeight;
+          if(w&&h){ cv.width=w; cv.height=h; cx.drawImage($video,0,0,w,h);
+            const img=cx.getImageData(0,0,w,h);
+            const code=(typeof jsQR!=='undefined')?jsQR(img.data,w,h,{inversionAttempts:'dontInvert'}):null;
+            if(code&&code.data) onCode(String(code.data).trim());
+          }
         }
       }
     }catch(_){}
@@ -5505,7 +5514,7 @@ try{
     seenHoy.clear(); $lista.innerHTML=''; $count.textContent='0';
     $asist.classList.add('on'); setMsg('a-info','ri-qr-scan-2-line',t('asistScan'));
     try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
       $video.srcObject=stream; $video.setAttribute('playsinline',''); await $video.play();
       try{var _trk=stream.getVideoTracks()[0];var _caps=(_trk&&_trk.getCapabilities)?_trk.getCapabilities():{};if(_caps.focusMode&&_caps.focusMode.indexOf('continuous')>=0){await _trk.applyConstraints({advanced:[{focusMode:'continuous'}]});}}catch(_){}
       scanning=true; rafId=requestAnimationFrame(tick);
