@@ -1078,8 +1078,9 @@ canvas.oculto{display:none}
 .tira .fila{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .nivel{font-family:var(--tit);font-size:13px;font-weight:600;color:var(--azul);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nivel u{text-decoration:none;font-size:10px;background:var(--azul);color:#fff;
-  border-radius:9px;padding:2px 6px;margin-right:6px;vertical-align:1px}
+.nivel u{text-decoration:none;font-size:11px;background:var(--azul);color:#fff;
+  border-radius:999px;padding:3px 9px;margin-right:6px;vertical-align:1px}
+.nivel b{font-family:var(--tit);font-weight:700;font-size:13.5px;color:var(--azul)}
 .puntos{font-family:var(--tit);font-size:13px;font-weight:600;color:var(--verde);white-space:nowrap}
 .barra{height:6px;background:#EAEDF0;border-radius:3px;margin-top:7px;overflow:hidden}
 .barra i{display:block;height:100%;background:var(--azul);border-radius:3px;transition:width .5s ease}
@@ -4326,7 +4327,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.7';
+const APP_VER='1.7.8';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4366,7 +4367,7 @@ function pintarPerfil(){
   const nFotos=regs.length, _ip=itemsPuntos(), pend=_ip.pend, pts=ptsMostrados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const rango=t(NIVELES[i].k);
   const _th=NIVELES[i];
-  const etq=`<u style="background:${_th.col}">${t('nivel')||'Niv.'} ${i+1}</u><i class="${_th.ic}" style="color:${_th.col};margin:0 2px 0 5px;font-size:12px;vertical-align:-1px"></i>${rango}`;
+  const etq=`<u style="background:${_th.col}">${t('nivel')||'Niv.'} ${i+1}</u><i class="${_th.ic}" style="color:${_th.col};margin:0 2px 0 5px;font-size:12px;vertical-align:-1px"></i><b>${rango}</b>`;
   const pct=sig ? Math.min(100,(pts-NIVELES[i].min)/(sig.min-NIVELES[i].min)*100) : 100;
   const meta=sig
     ? `${t('faltan')} ${sig.min-pts} ${t('paraNivel')}`.trim()
