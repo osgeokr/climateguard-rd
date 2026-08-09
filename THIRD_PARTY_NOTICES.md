@@ -41,3 +41,9 @@ Developed for a biodiversity survey initiative supported by KOICA, KNPS
 (Korea National Park Service), and the Ministry of Environment and Natural
 Resources of the Dominican Republic (MMARN). This is an unofficial
 demonstration prototype and is not an official government product.
+
+## Leaflet.markercluster 1.5.3
+
+License: MIT
+Copyright (c) 2012 David Leaver
+https://github.com/Leaflet/Leaflet.markercluster
