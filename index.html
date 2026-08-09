@@ -3869,7 +3869,7 @@ const DIC={
   credAsunto:'Credencial de investigacion - ClimateGuard',
   nivel:'Nivel', ingresar:'Iniciar sesion', usuario:'Usuario', clave:'Contrasena',
   gateSub:'Acceso para el equipo y la ciudadanía',
-  gateNota:'Inicia sesión con tu cuenta de Google para participar.', gBloq:'Tu cuenta está bloqueada.', gPend:'Tu cuenta está pendiente de aprobación.', gOffline:'Se necesita conexión para el primer inicio de sesión.', envLogin:'Inicia sesión con Google para enviar.', envOffline:'Sin conexión — guardado en el dispositivo. Envíalo al reconectar.', gEntrando:'Iniciando sesión…',
+  gateNota:'Inicia sesión con tu cuenta de Google para participar.', gBloq:'Tu cuenta está bloqueada.', gPend:'Tu cuenta está pendiente de aprobación.', gOffline:'Se necesita conexión para el primer inicio de sesión.', envLogin:'Inicia sesión con Google para enviar.', envOffline:'Sin conexión — guardado en el dispositivo. Envíalo al reconectar.', envReauth:'Tu sesión de Google expiró. Inicia sesión de nuevo para enviar.', gEntrando:'Iniciando sesión…',
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
   faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
@@ -3954,7 +3954,7 @@ const DIC={
   credAsunto:'Research ID card - ClimateGuard',
   nivel:'Level', ingresar:'Sign in', usuario:'User', clave:'Password',
   gateSub:'Access for staff and citizens',
-  gateNota:'Sign in with your Google account to take part.', gBloq:'Your account is blocked.', gPend:'Your account is awaiting approval.', gOffline:'Internet is required for the first sign-in.', envLogin:'Sign in with Google to send.', envOffline:'No connection — saved on device. Send it once reconnected.', gEntrando:'Signing in…',
+  gateNota:'Sign in with your Google account to take part.', gBloq:'Your account is blocked.', gPend:'Your account is awaiting approval.', gOffline:'Internet is required for the first sign-in.', envLogin:'Sign in with Google to send.', envOffline:'No connection — saved on device. Send it once reconnected.', envReauth:'Your Google session expired. Sign in again to send.', gEntrando:'Signing in…',
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
   faltan:'', paraNivel:'points to the next level',
@@ -4327,7 +4327,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.7.8';
+const APP_VER='1.7.9';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4415,7 +4415,7 @@ document.getElementById('aOk').onclick=()=>document.getElementById('ascenso').cl
 /* ── Acceso: Google Sign-In (OAuth 2.0 / OpenID Connect) ── */
 const CG_CLIENT_ID='918300818571-39mnd09t4q7k1kro6olhiafjme803k5b.apps.googleusercontent.com';
 let cgSession=(()=>{try{return JSON.parse(localStorage.getItem('cg_gauth')||'null');}catch(_){return null;}})();
-let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null, cgVerificando=false;
+let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null, cgVerificando=false, _pendingSend=false;
 function _jwtPayload(tok){ try{ var s=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }catch(_){ return null; } }
 function entrarApp(){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); try{armarBack();}catch(_){} }
 function aplicarSesion(s){
@@ -4437,6 +4437,7 @@ function onGoogle(resp){
     else if(st==='pending'){ _rechazar('gPend'); }
   }, function(){});
   try{reconciliarEnviados(cred);}catch(_){}
+  if(_pendingSend){ _pendingSend=false; setTimeout(function(){ try{ var _b=document.getElementById('btnEnviar'); if(_b) _b.click(); }catch(_){} }, 500); }
 }
 function _rechazar(msgKey){
   try{google.accounts.id.disableAutoSelect();}catch(_){}
@@ -4485,6 +4486,16 @@ function reconciliarEnviados(idToken){
     document.body.appendChild(sc);
     setTimeout(function(){ if(!done) fin(); },8000);
   }catch(_){}
+}
+/* v1.7.9: en linea pero sin poder refrescar el token para enviar -> volver a
+   pedir inicio de sesion de Google y, al lograrlo, reintentar el envio solo.
+   No borra la sesion ni los datos locales. */
+function reautenticarEnviar(){
+  try{ aviso('a-er','ri-login-circle-line',t('envReauth')); }catch(_){}
+  cgIdToken=null; cgTokenExp=0; _pendingSend=true;
+  var g=document.getElementById('gate'); if(g) g.classList.remove('oculto');
+  var gm=document.getElementById('gateMsg'); if(gm){ gm.style.color=''; gm.textContent=t('envReauth'); }
+  try{ initGoogle(); }catch(_){}
 }
 function initGoogle(){
   if(!(window.google&&google.accounts&&google.accounts.id))return false;
@@ -5275,7 +5286,7 @@ document.getElementById('btnEnviar')&&(document.getElementById('btnEnviar').oncl
     if(!nf.length && !nt.length && !_avPayload){ aviso('a-info','ri-information-line',t('envNada')); b.disabled=false; try{pintarPerfil();}catch(_){} return; }
     if(!navigator.onLine){ aviso('a-info','ri-cloud-off-line',t('envOffline')); b.disabled=false; try{pintarPerfil();}catch(_){} return; }
     const _idt=await tokenFresco();
-    if(!_idt){ aviso('a-er','ri-error-warning-line',t('envLogin')); b.disabled=false; try{pintarPerfil();}catch(_){} return; }
+    if(!_idt){ b.disabled=false; try{pintarPerfil();}catch(_){} try{reautenticarEnviar();}catch(_){} return; }
     aviso('a-info','ri-loader-4-line',t('envEnviando'));
     const obs={type:'FeatureCollection',features:nf.map((r,i)=>{
       const fn='foto_'+String(i+1).padStart(2,'0')+(r.especie?'_'+r.especie.replace(/[^\w-]+/g,'_'):'')+'.jpg'; r.__fn=fn;
