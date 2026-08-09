@@ -7,6 +7,8 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.6 (admin): action=stats devuelve recorridos por usuario; nuevo
+ *   action=userdata (solo admin) con observaciones/recorridos de un usuario.
  * v3.5 (puntos): _certificarPuntos ahora tambien cuenta los recorridos
  *   (10 + 5 si distancia >= 200 m), igual que la app.
  * v3.4 (web-proxy): archivos PRIVADOS; el sitio web lee imagenes/tracks via
@@ -372,9 +374,27 @@ function doGet(e) {
       if (!_esAdmin(as.email)) return _json({ ok:false, error:'not_admin' }, cb);
       if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
       var shPs = _sheet(ss,'Puntos',HEAD_PTS); var lp = shPs.getLastRow(); var stats=[];
+      var _trk = {};
+      var shRc = _sheet(ss,'Recorridos',HEAD_REC); var lrc = shRc.getLastRow();
+      if (lrc>=2){ var vrc = shRc.getRange(2,1,lrc-1,HEAD_REC.length).getValues();
+        for (var kc=0;kc<vrc.length;kc++){ var uc=String(vrc[kc][1]||'').toLowerCase(); if(uc) _trk[uc]=(_trk[uc]||0)+1; } }
       if (lp>=2){ var vp=shPs.getRange(2,1,lp-1,HEAD_PTS.length).getValues();
-        for (var ip=0;ip<vp.length;ip++) stats.push({ usuario:vp[ip][0], puntos:vp[ip][1], nivel:vp[ip][2], observaciones:vp[ip][3], actualizado:vp[ip][4] }); }
+        for (var ip=0;ip<vp.length;ip++){ var upe=String(vp[ip][0]||'').toLowerCase();
+          stats.push({ usuario:vp[ip][0], puntos:vp[ip][1], nivel:vp[ip][2], observaciones:vp[ip][3], recorridos:(_trk[upe]||0), actualizado:vp[ip][4] }); } }
       return _json({ ok:true, stats:stats }, cb);
+    }
+    // Datos de un usuario (solo admin): observaciones + recorridos
+    if (action === 'userdata') {
+      var ud = verifyIdToken(e.parameter.id_token);
+      if (!ud) return _json({ ok:false, error:'auth' }, cb);
+      if (!_esAdmin(ud.email)) return _json({ ok:false, error:'not_admin' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var tgt = String(e.parameter.email||'').toLowerCase();
+      if (!tgt) return _json({ ok:false, error:'no_email' }, cb);
+      var obsU = _rowsFor(_sheet(ss,'Observaciones',HEAD_OBS), 1, tgt, HEAD_OBS);
+      var recU = _rowsFor(_sheet(ss,'Recorridos',HEAD_REC), 1, tgt, HEAD_REC);
+      var pmU = _certificarPuntos(_sheet(ss,'Observaciones',HEAD_OBS), ss, tgt);
+      return _json({ ok:true, email:tgt, puntos:pmU.puntos, nivel:pmU.nivel, observaciones:obsU, recorridos:recU }, cb);
     }
     // Lista de asistencia (solo admin)
     if (action === 'asistlist') {
