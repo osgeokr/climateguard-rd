@@ -7,6 +7,9 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.7 (admin): nuevo action=resetuser (solo admin) para reiniciar una
+ *   cuenta de prueba: borra sus filas en las 5 pestanas (Usuarios opcional)
+ *   y envia su carpeta de Drive a la papelera.
  * v3.6 (admin): action=stats devuelve recorridos por usuario; nuevo
  *   action=userdata (solo admin) con observaciones/recorridos de un usuario.
  * v3.5 (puntos): _certificarPuntos ahora tambien cuenta los recorridos
@@ -383,6 +386,18 @@ function doGet(e) {
           stats.push({ usuario:vp[ip][0], puntos:vp[ip][1], nivel:vp[ip][2], observaciones:vp[ip][3], recorridos:(_trk[upe]||0), actualizado:vp[ip][4] }); } }
       return _json({ ok:true, stats:stats }, cb);
     }
+    // Reiniciar una cuenta (solo admin): borra filas del usuario y su carpeta Drive.
+    if (action === 'resetuser') {
+      var rs = verifyIdToken(e.parameter.id_token);
+      if (!rs) return _json({ ok:false, error:'auth' }, cb);
+      if (!_esAdmin(rs.email)) return _json({ ok:false, error:'not_admin' }, cb);
+      if (!ss) return _json({ ok:false, error:'no_sheet' }, cb);
+      var rtgt = String(e.parameter.email||'').toLowerCase().trim();
+      if (!rtgt || rtgt.indexOf('@')<0) return _json({ ok:false, error:'no_email' }, cb);
+      var rdelAcct = String(e.parameter.account||'')==='1';
+      var rrep = _resetUsuarioServer(ss, rtgt, rdelAcct);
+      return _json({ ok:true, email:rtgt, account_deleted:rdelAcct, deleted:rrep }, cb);
+    }
     // Datos de un usuario (solo admin): observaciones + recorridos
     if (action === 'userdata') {
       var ud = verifyIdToken(e.parameter.id_token);
@@ -457,6 +472,32 @@ function _sheet(ss, nombre, header) {
   if (!sh) { sh = ss.insertSheet(nombre); if (header) sh.appendRow(header); }
   else if (header && sh.getLastRow() === 0) sh.appendRow(header);
   return sh;
+}
+/* Reinicia una cuenta: borra sus filas en las pestanas y envia su carpeta a la
+   papelera. delAcct=true tambien borra la fila de Usuarios (registro). */
+function _resetUsuarioServer(ss, email, delAcct){
+  email = String(email).toLowerCase();
+  var plan = [ {name:'Observaciones',col0:1}, {name:'Recorridos',col0:1}, {name:'Puntos',col0:0}, {name:'Asistencia',col0:1} ];
+  if (delAcct) plan.push({ name:'Usuarios', col0:0 });
+  var rep = {};
+  for (var pi=0; pi<plan.length; pi++){
+    var p = plan[pi];
+    var sh = ss.getSheetByName(p.name); if(!sh){ rep[p.name]=0; continue; }
+    var last = sh.getLastRow(); if(last<2){ rep[p.name]=0; continue; }
+    var vals = sh.getRange(2,1,last-1,sh.getLastColumn()).getValues();
+    var rows = [];
+    for (var i=0;i<vals.length;i++){ if(String(vals[i][p.col0]||'').toLowerCase()===email) rows.push(i+2); }
+    rep[p.name] = rows.length;
+    for (var k=rows.length-1;k>=0;k--){ sh.deleteRow(rows[k]); }
+  }
+  var folders=0, files=0;
+  try{
+    var raiz = DriveApp.getFolderById(CARPETA_ID);
+    var it = raiz.getFoldersByName(email);
+    while(it.hasNext()){ var f=it.next(); folders++; var fi=f.getFiles(); while(fi.hasNext()){ fi.next(); files++; } f.setTrashed(true); }
+  }catch(eD){}
+  rep.DriveFolder = folders; rep.DriveFiles = files;
+  return rep;
 }
 function _upsert(sh, id, fila) {
   var last = sh.getLastRow();
