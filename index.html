@@ -4334,7 +4334,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.8.0';
+const APP_VER='1.8.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4494,6 +4494,22 @@ function reconciliarEnviados(idToken){
     setTimeout(function(){ if(!done) fin(); },8000);
   }catch(_){}
 }
+/* v1.8.1: refresca puntos/nivel certificados del servidor con el endpoint
+   publico ?usuario= (sin token). Evita que la insignia de nivel quede
+   "pegada" con un valor cacheado tras cambios en el servidor. */
+function refrescarPuntosServidor(){
+  try{
+    if(!navigator.onLine) return;
+    var em = cgSession && cgSession.email; if(!em) return;
+    var cb='cgpts'+Date.now(), sc=document.createElement('script'), done=false;
+    var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
+    window[cb]=function(r){ fin(); if(r&&r.ok&&typeof r.puntos==='number'){ try{setSrvPts(r.puntos);}catch(_){} } };
+    sc.onerror=function(){ fin(); };
+    sc.src=CG_ENVIO_URL+'?usuario='+encodeURIComponent(em)+'&callback='+cb+'&_='+Date.now();
+    document.body.appendChild(sc);
+    setTimeout(function(){ if(!done) fin(); },8000);
+  }catch(_){}
+}
 /* v1.7.9: en linea pero sin poder refrescar el token para enviar -> volver a
    pedir inicio de sesion de Google y, al lograrlo, reintentar el envio solo.
    No borra la sesion ni los datos locales. */
@@ -4522,6 +4538,7 @@ function initGoogle(){
 if(cgSession){
   entrarApp();
   (function initBg(n){ if(initGoogle())return; if(n<=0)return; setTimeout(function(){initBg(n-1);},600); })(20);
+  try{ refrescarPuntosServidor(); }catch(_){}
 }else{
   (function waitGIS(n){ if(initGoogle())return; if(!navigator.onLine||n<=0){ var gm=document.getElementById('gateMsg'); if(gm)gm.textContent=t('gOffline'); return; } setTimeout(function(){waitGIS(n-1);},400); })(25);
 }
@@ -4530,8 +4547,15 @@ if(cgSession){ try{localStorage.setItem('cg_name_rd', cgSession.name||cgSession.
    refrescar el token y enviar los datos capturados sin reiniciar la app. */
 window.addEventListener('online', function(){
   try{
-    if(window.google&&google.accounts&&google.accounts.id){ initGoogle(); }
-    else { var g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true; g.defer=true; g.onload=function(){ try{initGoogle();}catch(_){} }; document.head.appendChild(g); }
+    var readyThen=function(){
+      try{ initGoogle(); }catch(_){}
+      /* pre-calentar el token si hay sesion y datos pendientes, para no forzar login al enviar */
+      try{ if(cgSession && pendientes()>0 && !(cgIdToken && cgTokenExp-Date.now()>120000)){ setTimeout(function(){ try{ tokenFresco(); }catch(_){} }, 800); } }catch(_){}
+      /* refrescar puntos/nivel reales del servidor (sin token) */
+      try{ refrescarPuntosServidor(); }catch(_){}
+    };
+    if(window.google&&google.accounts&&google.accounts.id){ readyThen(); }
+    else { var g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true; g.defer=true; g.onload=readyThen; document.head.appendChild(g); }
   }catch(_){}
 });
 function tokenFresco(){
