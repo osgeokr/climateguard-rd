@@ -4334,7 +4334,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.8.1';
+const APP_VER='1.8.2';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 const puntosDe=r=>10+(r.lat!=null?5:0)+(r.especie?5:0);
 function puntosTrack(tr){ let d=0; try{d=CGTracks.dist(tr.coords);}catch(_){} return 10+(d>=200?5:0); }
@@ -4516,17 +4516,18 @@ function refrescarPuntosServidor(){
 function reautenticarEnviar(){
   try{ aviso('a-er','ri-login-circle-line',t('envReauth')); }catch(_){}
   cgIdToken=null; cgTokenExp=0; _pendingSend=true;
+  try{ if(window.google&&google.accounts&&google.accounts.id&&google.accounts.id.cancel) google.accounts.id.cancel(); }catch(_){}
   var g=document.getElementById('gate'); if(g) g.classList.remove('oculto');
   var gm=document.getElementById('gateMsg'); if(gm){ gm.style.color=''; gm.textContent=t('envReauth'); }
-  try{ initGoogle(); }catch(_){}
+  try{ initGoogle(true); }catch(_){}
 }
-function initGoogle(){
+function initGoogle(noPrompt){
   if(!(window.google&&google.accounts&&google.accounts.id))return false;
   try{
     google.accounts.id.initialize({client_id:CG_CLIENT_ID, callback:onGoogle, auto_select:true, use_fedcm_for_prompt:true, itp_support:true});
     var bx=document.getElementById('gsiBtn');
     if(bx){ bx.innerHTML=''; google.accounts.id.renderButton(bx,{type:'standard',theme:'filled_blue',size:'large',shape:'pill',text:'continue_with'}); }
-    if(!document.getElementById('gate').classList.contains('oculto')){ try{google.accounts.id.prompt();}catch(_){} }
+    if(!noPrompt && !document.getElementById('gate').classList.contains('oculto')){ try{google.accounts.id.prompt();}catch(_){} }
     return true;
   }catch(_){ return false; }
 }
@@ -4562,10 +4563,20 @@ function tokenFresco(){
   return new Promise(function(res){
     if(cgIdToken && cgTokenExp-Date.now()>60000) return res(cgIdToken);
     if(!(window.google&&google.accounts&&google.accounts.id)) return res(null);
-    var done=false;
-    onGoogleExtra=function(tok){ if(done)return; done=true; res(tok); };
-    try{ google.accounts.id.prompt(); }catch(_){ done=true; onGoogleExtra=null; res(null); }
-    setTimeout(function(){ if(!done){ done=true; onGoogleExtra=null; res((cgIdToken&&cgTokenExp-Date.now()>0)?cgIdToken:null); } },5000);
+    var done=false, mostrado=false, tCorto=null, tLargo=null;
+    var cached=function(){ return (cgIdToken&&cgTokenExp-Date.now()>0)?cgIdToken:null; };
+    var fin=function(v){ if(done)return; done=true; onGoogleExtra=null; if(tCorto)clearTimeout(tCorto); if(tLargo)clearTimeout(tLargo); res(v); };
+    onGoogleExtra=function(tok){ fin(tok); };   /* el usuario eligio cuenta -> token fresco */
+    try{
+      google.accounts.id.prompt(function(n){
+        try{
+          if(n.isDisplayMoment && n.isDisplayMoment()){ mostrado=true; return; }   /* selector visible: esperar al usuario, no ir al gate */
+          if((n.isNotDisplayed && n.isNotDisplayed()) || (n.isSkippedMoment && n.isSkippedMoment()) || (n.isDismissedMoment && n.isDismissedMoment())){ fin(cached()); }  /* no se muestra / cerrado -> fallback */
+        }catch(_){ /* FedCM: is* no disponibles; confiar en credential + temporizadores */ }
+      });
+    }catch(_){ return fin(cached()); }
+    tCorto=setTimeout(function(){ if(!mostrado) fin(cached()); }, 8000);   /* si el selector no aparece pronto, pasar al gate */
+    tLargo=setTimeout(function(){ fin(cached()); }, 60000);                /* red de seguridad si el usuario no completa */
   });
 }
 function cerrarSesion(){
