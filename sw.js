@@ -1,4 +1,4 @@
-/* redeploy nonce: v1.6.8 lighter upload banner */
+/* redeploy nonce: v1.9.0 envio confirmado, foto completa JPEG, datos por usuario */
 /* ClimateGuard Mobile - Service Worker
    Cachea el shell de la app para uso offline. Casi todo (fuentes, iconos,
    datos IUCN, contorno nacional y areas protegidas WDPA) esta embebido en
@@ -12,7 +12,7 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.8.2';
+const CACHE = 'climateguard-v1.9.0';
 const ASSETS = [
   './',
   './index.html',
@@ -56,13 +56,20 @@ self.addEventListener('fetch', e => {
       || url.pathname === '/index.html';
     if (esShell) {
       // RED PRIMERO: siempre la ultima version cuando hay conexion.
-      e.respondWith(
-        fetch(req).then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
-          return res;
-        }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
-      );
+      // v1.9: con senal debil la red puede tardar mucho; si en 4 s no responde
+      // se abre la copia guardada y la descarga sigue en segundo plano.
+      const red = fetch(req).then(res => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return res;
+      });
+      const guardada = () => caches.match(req).then(hit => hit || caches.match('./index.html'));
+      e.respondWith(new Promise(resolve => {
+        let listo = false;
+        const t = setTimeout(() => { guardada().then(h => { if (h && !listo) { listo = true; resolve(h); } }); }, 4000);
+        red.then(res => { if (!listo) { listo = true; clearTimeout(t); resolve(res); } })
+           .catch(() => { clearTimeout(t); guardada().then(h => { if (!listo) { listo = true; resolve(h || Response.error()); } }); });
+      }));
+      e.waitUntil(red.catch(() => {}));
     } else {
       // Otros recursos locales (iconos, manifest): cache primero.
       e.respondWith(
