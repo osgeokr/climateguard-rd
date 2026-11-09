@@ -4682,7 +4682,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.7';
+const APP_VER='1.13.8';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5671,7 +5671,7 @@ background:#003876;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);di
 </style></head><body>
 <div id="gob"><span class="pais"><span id="fl"></span> ${t('pais')} <span class="pill">UNOFFICIAL</span></span><span class="lang">ES / EN</span></div>
 <div id="hd"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="3" opacity=".45"></circle><circle cx="32" cy="32" r="19" fill="none" stroke="#fff" stroke-width="3" opacity=".7"></circle><circle cx="32" cy="32" r="12" fill="none" stroke="#fff" stroke-width="3.4"></circle><path d="M32 21.5 C36.8 26.5 36.8 37.5 32 42.5 C27.2 37.5 27.2 26.5 32 21.5 Z" fill="#1B7F5A"></path></svg><div><b>ClimateGuard Mobile</b>
-<span>${t('sub')} · ${d.length} ${t('fotos')} · ${ntrk} ${t('recorridosN')}</span></div></div>
+<span>${t('sub')} · ${d.length} ${t('fotos')}${ntrk?` · ${ntrk} ${t('recorridosN')}`:''}</span></div></div>
 <div id="m"></div>
 <script>
 var D=${datos},TR=${trk},BG_A=${bgA},BG_W=${bgW},IND=${JSON.stringify(t('indiv'))},SN=${JSON.stringify(t('sinNotas'))},WTIT=${JSON.stringify(t('wdpaTit'))},WTER=${JSON.stringify(t('wdpaTer'))},WMAR=${JSON.stringify(t('wdpaMar'))};
