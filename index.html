@@ -4632,7 +4632,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.12.3';
+const APP_VER='1.12.4';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5457,8 +5457,9 @@ async function entregarVarios(files,texto){
   files.forEach(f=>descargar(f));
   aviso('a-av','ri-download-2-line',`${t('noComp')} <b>${files.map(f=>f.name).join(', ')}</b>. ${t('adjunte')}`);
 }
-/* v1.12.1: imagen ligera del mapa (JPEG 1200x900) con mosaicos CARTO (CORS) y,
-   sin conexion, con el contorno nacional y las areas protegidas embebidos */
+/* v1.12.1: imagen ligera del mapa (JPEG 1200x900). v1.12.4: mismos mosaicos que el mapa de la
+   app (OpenStreetMap o, con Satelite elegido, Esri World Imagery); CARTO exige clave desde 2026.
+   Sin conexion: contorno nacional y areas protegidas embebidos. */
 /* v1.12.2: compartir una sola foto desde Registros (imagen con banda de datos) */
 async function fotoMarca(r){
   const bmp=await createImageBitmap(r.foto);
@@ -5514,13 +5515,15 @@ async function mapaPng(){
   const caja=z=>{ const a=P.map(r=>px(r.lat,r.lng,z)), xs=a.map(p=>p[0]), ys=a.map(p=>p[1]); return [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)]; };
   let z=16;
   if(P.length>1){ for(z=17;z>4;z--){ const b=caja(z); if(b[1]-b[0]<=W*0.78&&b[3]-b[2]<=MH*0.72) break; } }
+  const SAT=(document.getElementById('baseSel')||{}).value==='sat'; if(SAT) z=Math.min(z,17);
   const b=caja(z), ox=(b[0]+b[1])/2-W/2, oy=(b[2]+b[3])/2-MH/2, n=Math.pow(2,z);
   const cargar=u=>new Promise(ok=>{ const im=new Image(); im.crossOrigin='anonymous'; const tm=setTimeout(()=>ok(null),5000);
     im.onload=()=>{ clearTimeout(tm); ok(im); }; im.onerror=()=>{ clearTimeout(tm); ok(null); }; im.src=u; });
   const pend=[];
   if(navigator.onLine){ for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+W)/256);tx++) for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+MH)/256);ty++){
     if(ty<0||ty>=n) continue; const xx=((tx%n)+n)%n;
-    pend.push(cargar('https://'+'abcd'[(xx+ty)&3]+'.basemaps.cartocdn.com/rastertiles/voyager/'+z+'/'+xx+'/'+ty+'.png').then(im=>({im,tx,ty}))); } }
+    pend.push(cargar(SAT?('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+xx)
+      :('https://tile.openstreetmap.org/'+z+'/'+xx+'/'+ty+'.png')).then(im=>({im,tx,ty}))); } }
   const T=await Promise.all(pend), hay=T.some(o=>o.im);
   const dibujar=mos=>{
     const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
@@ -5545,7 +5548,7 @@ async function mapaPng(){
     c.textBaseline='alphabetic'; c.fillStyle='#fff'; c.font='700 40px Poppins, system-ui, sans-serif'; c.fillText('ClimateGuard Mobile',112,58);
     c.fillStyle='#DCE7F5'; c.font='400 24px "Open Sans", system-ui, sans-serif';
     c.fillText(`${t('filBio')}: ${nB},  ${t('filAm')}: ${nA},  ${new Date().toLocaleDateString(loc())}`,112,95);
-    if(mos){ c.font='400 15px system-ui, sans-serif'; c.fillStyle='rgba(0,0,0,.6)'; c.textAlign='right'; c.fillText('© OpenStreetMap, © CARTO',W-10,H-10); c.textAlign='left'; }
+    if(mos){ c.font='400 15px system-ui, sans-serif'; c.fillStyle='rgba(0,0,0,.6)'; c.textAlign='right'; c.fillText(SAT?'© Esri, Maxar':'© OpenStreetMap',W-10,H-10); c.textAlign='left'; }
     return cv; };
   const aBlob=cv=>new Promise((ok,no)=>{ try{ cv.toBlob(x=>x?ok(x):no(new Error('blob')),'image/jpeg',0.82); }catch(e){ no(e); } });
   try{ return await aBlob(dibujar(hay)); }catch(_){ return await aBlob(dibujar(false)); }
