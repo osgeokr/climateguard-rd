@@ -4691,7 +4691,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.9';
+const APP_VER='1.13.10';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5169,7 +5169,7 @@ function tab(esMapa){
   $tM.setAttribute('aria-selected',esMapa);$tR.setAttribute('aria-selected',!esMapa);
   try{ const a=document.getElementById('bnReg'), b=document.getElementById('bnMap');
     if(esMapa){ b.setAttribute('aria-current','page'); a.removeAttribute('aria-current'); } else { a.setAttribute('aria-current','page'); b.removeAttribute('aria-current'); } }catch(_){}
-  if(esMapa)dibujarMapa();
+  if(esMapa){ try{ window.scrollTo(0,0); }catch(_){} dibujarMapa(); }
 }
 $tR.onclick=()=>{ubicando=null;tab(false)};
 $tM.onclick=()=>tab(true);
