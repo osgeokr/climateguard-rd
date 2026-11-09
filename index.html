@@ -4012,7 +4012,7 @@ const DIC={
   perfilRol:'Guardián ambiental', ficha:'Ficha de demostracion',
   pts:'puntos', fotos:'fotos', salir:'Cerrar sesion',
   faltan:'Faltan', paraNivel:'puntos para el proximo nivel',
-  maxNivel:'Nivel maximo alcanzado', comoPts:'Fotos: 10 (+5 ubicacion, +5 especie) · Recorridos: 10 (+5 si >=200 m) · se acreditan al enviar', porSubir:'Pendiente de enviar',
+  maxNivel:'Nivel maximo alcanzado', comoPts:'Registros: 10 (+5 ubicación, +5 especie) · se acreditan al enviar', porSubir:'Pendiente de enviar',
   subiste:'Ascenso de nivel', seguir:'Continuar', nuevoRango:'Nuevo rango:',
   ganaste:'puntos',
   r1:'Aspirante', r2:'Observador', r3:'Explorador',
@@ -4097,7 +4097,7 @@ const DIC={
   perfilRol:'Environmental Guardian', ficha:'Demo profile',
   pts:'points', fotos:'photos', salir:'Sign out',
   faltan:'', paraNivel:'points to the next level',
-  maxNivel:'Top level reached', comoPts:'Photos: 10 (+5 location, +5 species) · Tracks: 10 (+5 if >=200 m) · credited on upload', porSubir:'Pending upload',
+  maxNivel:'Top level reached', comoPts:'Records: 10 (+5 location, +5 species) · credited on upload', porSubir:'Pending upload',
   subiste:'Level up', seguir:'Continue', nuevoRango:'New rank:',
   ganaste:'points',
   r1:'Trainee', r2:'Observer', r3:'Explorer',
@@ -4605,7 +4605,12 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.11.1';
+const APP_VER='1.12.0';
+/* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
+   no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
+   siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
+   nuevo 'Recorridos: 10 (+5 si >=200 m)' al texto comoPts). */
+const TRACKS_ON=false;
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 /* v1.9: los registros de demostracion (id demo-*) no suman ni se envian */
 const esDemoId=id=>/^demo-/.test(String(id||''));
@@ -5092,7 +5097,8 @@ $tM.onclick=()=>tab(true);
   ['cam','galeria'].forEach(id=>{ const el=document.getElementById(id); if(el) document.body.appendChild(el); });
   /* banda de recorrido fija bajo la cabecera */
   const band=document.getElementById('trkBand'), trk=document.querySelector('#paneTrk .tracking');
-  if(band&&trk){ band.appendChild(trk); const st=document.getElementById('trkStat'); if(st) st.setAttribute('data-idle',t('trkIdle')); }
+  if(!TRACKS_ON){ if(band) band.remove(); }
+  else if(band&&trk){ band.appendChild(trk); const st=document.getElementById('trkStat'); if(st) st.setAttribute('data-idle',t('trkIdle')); }
   const sh=document.getElementById('nuevoSheet');
   const abrirSheet=()=>sh.classList.add('on'), cerrarSheet=()=>sh.classList.remove('on');
   const capturar=(tipo,gal)=>{ modoTipo=tipo; cerrarSheet(); document.getElementById(gal?'galeria':'cam').click(); };
@@ -5974,6 +5980,7 @@ var CGTracks = (function(){
   function detenerWatch(){ if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;} }
   function start(){
     if(!navigator.geolocation){aviso('a-er','ri-error-warning-line',t('nodisp'));return;}
+    if(!TRACKS_ON) return;
     rec={id:uid(),start:Date.now(),coords:[],name:'',owner:curEmail()}; paused=false; saveLive(true);
     if(mapa&&window.L){liveLine=L.polyline([],{color:'#CE1126',weight:4,dashArray:'6 4'}).addTo(mapa);}
     iniciarWatch(); CGWake.on();

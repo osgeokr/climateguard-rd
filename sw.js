@@ -12,7 +12,7 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.11.1';
+const CACHE = 'climateguard-v1.12.0';
 const ASSETS = [
   './',
   './index.html',
