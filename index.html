@@ -223,6 +223,10 @@ body.oh-open .inst-banner{display:none!important}
 .oh-del{background:none;border:0;color:#8A939C;font-size:18px;cursor:pointer;padding:4px}
 .oh-prog{--p:0%;display:inline-block;width:92px;height:22px;border-radius:99px;background:linear-gradient(90deg,var(--azul) var(--p),#E3E8EE var(--p));
   color:#fff;font:700 11.5px/22px var(--cpo);text-align:center;text-shadow:0 0 3px rgba(0,0,0,.5)}
+.oh-sw{flex:none;width:46px;height:26px;border-radius:99px;border:0;background:#C9D1DA;position:relative;cursor:pointer;padding:0}
+.oh-sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.oh-sw.on{background:#B7791F}.oh-sw.on i{left:23px}
+.net-chip.off.sim{background:#B7791F}
 .oh-todo{width:100%;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
 </style>
 <style>/* required styles */
@@ -4676,7 +4680,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.4';
+const APP_VER='1.13.5';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -6516,6 +6520,9 @@ const CGOff=(function(){
   const jget=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(_){ return null; } };
   const jset=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(_){} };
   let cat=jget(K_CAT), inst=jget(K_INST)||{}, prog={}, abiertos={};
+  /* v1.13.5: modo practica sin conexion (para ensenar sin activar el modo avion) */
+  const K_SIM='cg_off_sim'; let sim=jget(K_SIM)===1;
+  const enLinea=()=>navigator.onLine&&!sim;
   const LAYS=['mapa','sat'];
 
   Object.assign(DIC.es,{offTit:'Sin conexión', offEnLinea:'En línea', offSinRed:'Sin conexión', offPend:'por enviar',
@@ -6530,7 +6537,7 @@ const CGOff=(function(){
     offBorrarTit:'¿Eliminar este mapa?', offBorrarMsg:'Podrás descargarlo otra vez cuando tengas conexión.',
     offPregTit:'Mapa para usar sin conexión', offPregMsg:'¿Descargar el mapa y la imagen satelital de {z} ({mb})? Así el mapa funcionará en modo avión. Mejor con Wi-Fi.',
     offPregSi:'Descargar', offPregNo:'Ahora no', offPackMapa:'Sin conexión: usando los mapas descargados.',
-    envConfTit:'¿Enviar ahora?', envConfMsg:'{reg}, aprox. {mb}. Usa datos móviles si no hay Wi-Fi.', envConfSi:'Enviar', offDl:'Mapas sin conexión'});
+    envConfTit:'¿Enviar ahora?', envConfMsg:'{reg}, aprox. {mb}. Usa datos móviles si no hay Wi-Fi.', envConfSi:'Enviar', offDl:'Mapas sin conexión', offSimTit:'Práctica sin conexión', offSimTxt:'Simula el modo avión: solo se usan los mapas descargados y no se envía nada.', offSimOn:'Práctica', offSimEnv:'Modo práctica sin conexión: desactívalo para enviar.'});
   Object.assign(DIC.en,{offTit:'Offline', offEnLinea:'Online', offSinRed:'Offline', offPend:'to send',
     offEstOn:'You are online. You can download maps and send your records.',
     offEstOff:'Offline mode. You can record, view the map and keep everything on the phone. Share and Send need a connection.',
@@ -6543,7 +6550,7 @@ const CGOff=(function(){
     offBorrarTit:'Delete this map?', offBorrarMsg:'You can download it again when you are online.',
     offPregTit:'Map for offline use', offPregMsg:'Download the map and satellite image of {z} ({mb})? The map will then work in airplane mode. Wi-Fi is best.',
     offPregSi:'Download', offPregNo:'Not now', offPackMapa:'Offline: using the downloaded maps.',
-    envConfTit:'Send now?', envConfMsg:'{reg}, about {mb}. Mobile data is used if there is no Wi-Fi.', envConfSi:'Send', offDl:'Offline maps'});
+    envConfTit:'Send now?', envConfMsg:'{reg}, about {mb}. Mobile data is used if there is no Wi-Fi.', envConfSi:'Send', offDl:'Offline maps', offSimTit:'Offline practice', offSimTxt:'Simulates airplane mode: only downloaded maps are used and nothing is sent.', offSimOn:'Practice', offSimEnv:'Offline practice mode: turn it off to send.'});
 
   const regN=n=>n===1?t('regUno'):t('regVarios').replace('{n}',n);
   const mb=b=>b>=1e6?(b/1e6).toFixed(b>=1e8?0:1)+' MB':Math.max(1,Math.round(b/1e3))+' KB';
@@ -6625,7 +6632,7 @@ const CGOff=(function(){
     jset(K_INST,inst); refrescarCapas(); pintarHub(); }
 
   async function catalogo(){
-    if(!navigator.onLine) return cat;
+    if(!enLinea()) return cat;
     try{ const r=await fetch(BASE+'packs.json',{cache:'no-cache'}); if(!r.ok) throw 0; cat=await r.json(); jset(K_CAT,cat); }catch(_){ if(!cat) throw new Error('cat'); }
     return cat; }
 
@@ -6658,7 +6665,7 @@ const CGOff=(function(){
       if(!on&&mapaRef.hasLayer(capas[l])) mapaRef.removeLayer(capas[l]);
       if(on) capas[l].redraw(); }
     /* sin conexión: quitar el mapa en línea para no gastar batería en mosaicos que fallan */
-    try{ mapaRef.eachLayer(x=>{ if(x instanceof L.TileLayer&&x._url) x.setOpacity(navigator.onLine||!hayPacks()?1:0); }); }catch(_){}
+    try{ mapaRef.eachLayer(x=>{ if(x instanceof L.TileLayer&&x._url) x.setOpacity(enLinea()||!hayPacks()?1:0); }); }catch(_){}
     pintarAtrib(); }
   function pintarAtrib(){ if(!mapaRef) return; const kind=selRef&&selRef.value==='sat'?'sat':'mapa';
     const a=[...new Set(instalados(kind).map(i=>i.attribution).filter(Boolean))].join(' | ');
@@ -6678,9 +6685,10 @@ const CGOff=(function(){
 
   /* ── chip de estado en la barra superior ── */
   function pintarChip(){ const c=document.getElementById('netChip'); if(!c) return;
-    const on=navigator.onLine, P=pendientes();
+    const on=enLinea(), P=pendientes();
     c.classList.toggle('off',!on); c.classList.toggle('pend',P.n>0);
-    c.innerHTML=(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<span>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</span>'+(P.n?'<b>'+P.n+'<em> '+esc(t('offPend'))+'</em></b>':'');
+    c.classList.toggle("sim",sim&&!on);
+    c.innerHTML=(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<span>'+esc(on?t('offEnLinea'):(sim?t('offSimOn'):t('offSinRed')))+'</span>'+(P.n?'<b>'+P.n+'<em> '+esc(t('offPend'))+'</em></b>':'');
     c.title=(on?t('offEnLinea'):t('offSinRed'))+(P.n?' · '+P.n+' '+t('offPend'):'');
     c.setAttribute('aria-label',t('offTit')); }
 
@@ -6691,9 +6699,10 @@ const CGOff=(function(){
   function pintarProg(k){ const el=document.querySelector('[data-prog="'+k+'"]'); if(el) el.style.setProperty('--p',Math.round((prog[k]||0)*100)+'%');
     const tx=document.querySelector('[data-progt="'+k+'"]'); if(tx) tx.textContent=Math.round((prog[k]||0)*100)+'%'; }
   async function pintarHub(){ const h=document.getElementById('offHub'); if(!h||!h.classList.contains('on')) return;
-    const on=navigator.onLine, P=pendientes();
+    const on=enLinea(), P=pendientes();
     document.getElementById('ohTit').textContent=t('offTit');
     let H='<section class="oh-est '+(on?'on':'off')+'">'+(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<div><b>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</b><p>'+esc(on?t('offEstOn'):t('offEstOff'))+'</p></div></section>';
+    H+='<section><div class="oh-row"><span><b>'+esc(t('offSimTit'))+'</b><br><small>'+esc(t('offSimTxt'))+'</small></span><button type="button" id="ohSim" class="oh-sw'+(sim?' on':'')+'" role="switch" aria-checked="'+sim+'" aria-label="'+esc(t('offSimTit'))+'"><i></i></button></div></section>';
     H+='<section><h4>'+esc(t('offPendTit'))+'</h4>'+(P.n?'<div class="oh-row"><span>'+esc(t('offPendTxt').replace('{reg}',regN(P.n)).replace('{mb}',mb(P.b)))+'</span><button type="button" class="btn btn-2 oh-b" id="ohEnviar"'+(on?'':' disabled')+'>'+esc(t('offEnviarYa'))+'</button></div>':'<p class="oh-m">'+esc(t('offPendNada'))+'</p>')+'</section>';
     H+='<section><h4>'+esc(t('offMapasTit'))+'</h4><p class="oh-m">'+esc(t('offMapasHint'))+'</p>';
     const packs=(cat&&cat.packs)||[];
@@ -6719,6 +6728,7 @@ const CGOff=(function(){
     cu.querySelectorAll('[data-todo]').forEach(b=>b.onclick=async()=>{ const p=pk(b.dataset.todo); for(const l of LAYS) if(p.layers[l]&&!(inst[p.id]&&inst[p.id][l])) await bajar(p,l); });
     cu.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const [id,l]=b.dataset.del.split('/'); borrar(id,l); });
     cu.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>verPack(b.dataset.ver));
+    const bs=document.getElementById('ohSim'); if(bs) bs.onclick=()=>{ sim=!sim; jset(K_SIM,sim?1:0); pintarChip(); refrescarCapas(); pintarHub(); };
     const be=document.getElementById('ohEnviar'); if(be) be.onclick=()=>{ cerrarHub(); try{ document.getElementById('bnMap').click(); }catch(_){} setTimeout(()=>document.getElementById('btnEnviar').click(),150); };
     try{ const e=await navigator.storage.estimate(); let m=0; for(const p in inst) for(const l in inst[p]) m+=inst[p][l].bytes||0;
       const el=document.getElementById('ohAlm'); if(el) el.textContent=t('offAlmTxt').replace('{m}',mb(m)).replace('{u}',mb(e.usage||0)).replace('{q}',mb(e.quota||0)); }catch(_){} }
@@ -6728,7 +6738,7 @@ const CGOff=(function(){
 
   /* ── primera vez: ofrecer el mapa del campus de práctica ── */
   async function preguntar(){
-    if(!navigator.onLine||jget(K_ASK)||!(typeof cgSessTok!=='undefined'&&cgSessTok)) return;
+    if(!enLinea()||jget(K_ASK)||!(typeof cgSessTok!=='undefined'&&cgSessTok)) return;
     try{ await catalogo(); }catch(_){ return; }
     const p=(cat&&cat.packs||[]).find(x=>x.id==='jimenoa'); if(!p||inst[p.id]) return;
     jset(K_ASK,1);
@@ -6748,15 +6758,15 @@ const CGOff=(function(){
     if(window._cgOffPend) enMapa.apply(null,window._cgOffPend);
     setTimeout(preguntar,4000);
   }
-  return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,regN,_tileId:tileId,_abrir:abrir};
+  return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,regN,enLinea,simulando:()=>sim,_tileId:tileId,_abrir:abrir};
 })();
 /* el mapa se crea más tarde (al abrir la pestaña Mapa) */
 (function(){ const _p=pintar; pintar=async function(){ const r=await _p.apply(this,arguments); try{ CGOff.pintarChip(); }catch(_){} return r; }; })();
 (function(){ const _g=guardarSesionTok; guardarSesionTok=function(){ const r=_g.apply(this,arguments); setTimeout(()=>CGOff.preguntar(),2500); return r; }; })();
 /* confirmación antes de Enviar: cuántos registros y cuánto pesa (datos móviles) */
 (function(){ const b=document.getElementById('btnEnviar'); if(!b) return; const orig=b.onclick;
-  b.onclick=async function(ev){ if(b.disabled) return; const P=CGOff.pendientes();
-    if(P.n&&navigator.onLine){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{reg}',CGOff.regN(P.n)).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
+  b.onclick=async function(ev){ if(b.disabled) return; if(CGOff.simulando()){ aviso('a-av','ri-wifi-off-line',t('offSimEnv')); return; } const P=CGOff.pendientes();
+    if(P.n&&CGOff.enLinea()){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{reg}',CGOff.regN(P.n)).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
     return orig&&orig.call(this,ev); }; })();
 CGOff.init();
 </script>
