@@ -4388,7 +4388,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.10.0';
+const APP_VER='1.10.1';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 /* v1.9: los registros de demostracion (id demo-*) no suman ni se envian */
 const esDemoId=id=>/^demo-/.test(String(id||''));
@@ -4427,7 +4427,9 @@ function itemsPuntos(){ const led=loadLedger(), sent=loadSent(); let conf=0,pend
 const puntosConfirmados=()=>itemsPuntos().conf;
 function srvPts(){ try{ const v=JSON.parse(localStorage.getItem(_uk('cg_srv_pts'))); return (v&&typeof v.puntos==='number')?v.puntos:null; }catch(_){ return null; } }
 function ptsMostrados(){ const v=srvPts(); return (v!=null)?v:puntosConfirmados(); }
-function setSrvPts(p){ if(typeof p==='number'&&p>=0){ try{localStorage.setItem(_uk('cg_srv_pts'),JSON.stringify({puntos:p}));}catch(_){}; try{pintarPerfil();}catch(_){} } }
+/* v1.10.1: 'celebrar' solo cuando los puntos llegan tras un envio propio; al iniciar sesion
+   o sincronizar con el servidor el nivel se actualiza sin mostrar el aviso de ascenso. */
+function setSrvPts(p,celebrar){ if(typeof p==='number'&&p>=0){ try{localStorage.setItem(_uk('cg_srv_pts'),JSON.stringify({puntos:p}));}catch(_){}; _celebrarNivel=!!celebrar; try{pintarPerfil();}catch(_){} _celebrarNivel=false; } }
 function pendientes(){ try{ const sent=loadSent();
   const nf=regs.filter(r=>r.lat!=null && !esDemoId(r.id) && sent['p:'+r.id]!==sigFoto(r)).length;
   const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1&&!esDemoId(x.id));
@@ -4445,7 +4447,7 @@ async function asegurarDueno(){
 }
 document.addEventListener('click',function(e){ var b=e.target.closest?e.target.closest('.pts-up'):null; if(b){ e.preventDefault(); e.stopPropagation(); if(b.classList.contains('sending'))return; b.classList.add('sending'); var _i=b.querySelector('i'); if(_i)_i.className='ri-loader-4-line'; var s=document.getElementById('btnEnviar'); if(s)s.click(); } });
 const nivelDe=n=>{let i=0;NIVELES.forEach((x,j)=>{if(n>=x.min)i=j});return i};
-let nivelActual=null, _prevPts=null;   /* v1.9: null = aun no leido (antes 0: la ventana salia en cada inicio) */
+let nivelActual=null, _prevPts=null, _lvlEmail=null, _celebrarNivel=false;   /* v1.9: null = aun no leido (antes 0: la ventana salia en cada inicio) */
 function destacarPts(){ ['tPts','pPts'].forEach(function(id){ const el=document.getElementById(id); if(!el)return; el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump'); setTimeout(function(){el.classList.remove('pts-bump');},850); }); }
 
 function pintarPerfil(){
@@ -4474,9 +4476,11 @@ function pintarPerfil(){
 
   if(_prevPts!=null && pts>_prevPts) destacarPts();
   _prevPts=pts;
-  const _lk='cg_lvl_seen:'+curEmail();
+  const _em=curEmail(); if(_em!==_lvlEmail){ _lvlEmail=_em; nivelActual=null; }   /* v1.10.1: nivel visto por cuenta */
+  const _lk='cg_lvl_seen:'+_em;
   if(nivelActual===null){ let v=NaN; try{v=parseInt(localStorage.getItem(_lk),10);}catch(_){} nivelActual=isNaN(v)?i:v; }
-  if(i>nivelActual){ nivelActual=i; ascenso(i); } else nivelActual=i;
+  if(i>nivelActual && _celebrarNivel && _em){ ascenso(i); }
+  nivelActual=i;
   try{localStorage.setItem(_lk,String(nivelActual));}catch(_){}
 }
 
@@ -5544,7 +5548,7 @@ async function enviarTodo(){
       sm[k]=sigTrack(tr); if(led[k]==null) led[k]=puntosTrack(tr); okN++; okTrk++; });
     if(li===0 && _avPayload) sm['avatar']=_avSig;
     saveSent(sm); saveLedger(led);
-    if(typeof res.puntos==='number'){ try{setSrvPts(res.puntos);}catch(_){} }
+    if(typeof res.puntos==='number'){ try{setSrvPts(res.puntos,true);}catch(_){} }
     if(its && its.some(x=>!x.saved)) fallo=fallo||'parcial';
   }
   try{ await pintar(); }catch(_){}   /* repintar ANTES del aviso final (dibujarMapa reescribe los avisos) */
