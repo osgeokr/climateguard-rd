@@ -103,6 +103,15 @@ function sesionGet(e, cb) {
     P.id_token = P.session;           // las acciones existentes la aceptan via verifyIdToken
   }
 
+  // v3.10: amenazas (Amenazas.gs)
+  if (a === 'amenazas') return amenazasGet(P, cb);
+  if (a === 'resetuser') {
+    var rz = verifyIdToken(P.id_token);
+    var rem = String(P.email || '').toLowerCase().trim();
+    if (rz && _esAdmin(rz.email) && rem.indexOf('@') > 0) amenazasReset(rem);
+    // sigue en Code.gs, que reinicia el resto de la cuenta
+  }
+
   // Primer inicio de sesion: id_token de Google -> clave de sesion propia
   if (a === 'login') {
     if (String(P.id_token || '').indexOf(SES_PREFIX) === 0) return _json({ ok: false, error: 'auth' }, cb);
@@ -162,5 +171,6 @@ function sesionPost(body) {
     if (!ps.valid) return _json({ ok: false, error: 'revoked' });
     body.idToken = body.session;
   }
+  guardarAmenazas(body);   // v3.10 (Amenazas.gs): nunca interrumpe el envio
   return null;
 }
