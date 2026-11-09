@@ -1189,7 +1189,90 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .alm-aviso{position:fixed;left:0;right:0;top:0;z-index:300;background:#B00E21;color:#fff;font-size:12.5px;line-height:1.4;padding:9px 14px;display:none;gap:8px;align-items:flex-start}
 .alm-aviso.on{display:flex}.alm-aviso i{font-size:16px}
 #cfmModal p{font-size:13.5px;color:#5C6670;line-height:1.5;margin:8px 0 0}
-.btn-peligro{background:#B00E21!important;color:#fff!important;border-color:#B00E21!important}</style>
+.btn-peligro{background:#B00E21!important;color:#fff!important;border-color:#B00E21!important}
+/* ══ v1.11: barra inferior, selector de registro, banda de recorrido, amenazas ══ */
+:root{--am:#A15C00;--am-cl:#FCF1E2;--am-bd:#F0D9B8;--cli:#0B5A66;--cli-cl:#EEF7F8;--cli-bd:#B5DADF}
+header nav{display:none}
+#subtabs,#paneTrk,#paneObs .captura{display:none!important}
+header{padding-bottom:12px}
+.app{padding-bottom:84px}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--borde);display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;height:70px;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+.bnav button{background:none;border:0;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--tit);font-size:12px;font-weight:600;color:var(--txt-2);cursor:pointer}
+.bnav button[aria-current=page]{color:var(--azul)}
+.bnav .bn-mas{justify-self:center;width:64px;height:64px;margin-top:-28px;border-radius:50%;background:var(--azul);color:#fff;border:4px solid var(--fondo);box-shadow:0 3px 10px rgba(0,56,118,.35)}
+.bnav .bn-mas:active{background:var(--azul-osc)}
+.trk-band{background:#fff;border-bottom:1px solid var(--borde)}
+.trk-band .tracking{margin:0;border:0;border-radius:0;padding:8px 12px 8px 16px;display:flex;align-items:center;gap:8px;background:transparent}
+.trk-band .trk-head{display:none}
+.trk-band .trk-stat{order:0;flex:1;margin:0;font-size:12.5px;min-height:0;color:var(--txt-2)}
+.trk-band .trk-stat:empty::before{content:attr(data-idle)}
+.trk-band .trk-row{order:1;gap:6px}
+.trk-band .trk-row .btn{flex:none;padding:8px 13px;font-size:12.5px;border-radius:999px}
+.trk-band:has(#trkBtn.rec){background:#1B7F5A}
+.trk-band:has(#trkBtn.rec) .trk-stat{color:#fff;font-weight:600}
+.trk-band:has(#trkBtn.rec) #trkBtn{background:#fff;color:#1B7F5A;border-color:#fff}
+.trk-band:has(#trkBtn.rec) #trkPause{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.sheet{position:fixed;inset:0;z-index:190;display:none;flex-direction:column;justify-content:flex-end}
+.sheet.on{display:flex}
+.sh-fondo{flex:1;background:rgba(0,20,45,.45)}
+.sh-caja{background:#fff;border-radius:16px 16px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.sh-asa{display:block;width:40px;height:4px;border-radius:2px;background:var(--borde);margin:0 auto 12px}
+.sh-caja h3{font-size:16px;margin-bottom:12px}
+.sh-ops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sh-op{height:130px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:var(--tit);cursor:pointer}
+.sh-op b{font-size:15px;font-weight:600}.sh-op small{font-family:var(--cpo);font-size:11.5px;font-weight:400}
+.sh-op.bio{background:var(--azul-cl);border:1px solid var(--azul);color:var(--azul)}
+.sh-op.am{background:var(--am-cl);border:1px solid var(--am);color:#7A4600}
+.sh-gal{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.sh-gal button{background:none;border:0;color:var(--txt-2);font-size:12px;text-decoration:underline;padding:8px 4px;cursor:pointer;font-family:var(--cpo)}
+.sh-seg{display:flex;gap:8px;align-items:flex-start;margin:10px 0 0;font-size:12px;line-height:1.45;color:#5A3A00}
+.sh-seg svg{flex:none;margin-top:1px}
+#form:not(.oculta){position:fixed;inset:0;z-index:180;margin:0;border:0;border-radius:0;overflow-y:auto;background:var(--fondo);display:flex;flex-direction:column}
+#form .f-bar{position:sticky;top:0;z-index:2;background:var(--azul);color:#fff;display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top))}
+#form[data-tipo=amenaza] .f-bar{background:var(--am)}
+#form .f-bar b{font-family:var(--tit);font-size:16px;font-weight:600}
+#form .f-bar button{background:none;border:0;color:#fff;font-size:22px;line-height:1;padding:4px 8px 4px 0;cursor:pointer}
+#form > .t-cab,#form > .campo{background:#fff}
+#form .acc{position:sticky;bottom:0;margin-top:auto;background:#fff;border-top:1px solid var(--borde);padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+#form[data-tipo=amenaza] #guardar:not(:disabled){background:var(--am)}
+#form[data-tipo=amenaza] .bio-only,#form:not([data-tipo=amenaza]) .am-only{display:none!important}
+.am-gl{display:block;font-size:11.5px;color:var(--txt-2);margin:2px 0 8px}
+.am-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.am-tile{height:76px;border:1px solid var(--borde);background:#fff;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:var(--cpo);font-size:12px;font-weight:700;line-height:1.2;color:#3B444C;padding:4px;cursor:pointer;text-align:center}
+.am-tile svg{color:var(--am)}
+.am-tile.clima{background:var(--cli-cl);border-color:var(--cli-bd);color:var(--cli)}.am-tile.clima svg{color:var(--cli)}
+.am-tile.otro{border-style:dashed}.am-tile.otro svg{color:var(--txt-2)}
+.am-tile[aria-pressed=true]{background:var(--am);border-color:var(--am);color:#fff}
+.am-tile.clima[aria-pressed=true]{background:var(--cli);border-color:var(--cli)}
+.am-tile[aria-pressed=true] svg{color:#fff}
+.am-mas-t{font-family:var(--tit);font-size:12.5px;font-weight:600;margin:6px 0 9px}
+.am-mas-t small{font-family:var(--cpo);font-weight:400;color:var(--txt-2)}
+#amSub{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+#amSub .g[aria-pressed=true]{background:var(--am);border-color:var(--am)}
+.am-seg{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.am-seg > span{width:64px;flex:none;font-size:12px;font-weight:600;color:var(--txt-2)}
+.am-seg .seg{flex:1;display:flex;gap:4px;background:#E9ECEF;border-radius:8px;padding:3px}
+.am-seg .seg button{flex:1;border:0;background:none;border-radius:6px;padding:9px 2px;font-family:var(--cpo);font-size:12.5px;font-weight:600;color:var(--txt-2);cursor:pointer}
+.am-seg .seg button[aria-pressed=true]{background:#fff;color:var(--am);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.am-seg .seg button.rep[aria-pressed=true]{color:#B00E21}
+#amHint{display:block;font-size:11.5px;color:var(--txt-2);line-height:1.45;margin-left:72px}
+.reg.reg-am{border-left-color:var(--am)}.reg.reg-am.clima{border-left-color:var(--cli)}
+.am-ic{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;background:var(--am);color:#fff;vertical-align:-5px;margin-right:2px}
+.am-ic svg{width:15px;height:15px}.am-ic.clima{background:var(--cli)}
+.pill.am-pill{background:var(--am-cl);color:#7A4600;border:1px solid var(--am-bd)}
+.pill.am-rep{background:#FDECEE;color:#B00E21;border:1px solid #E9A3AC;font-weight:700}
+.marca-am{width:24px;height:24px;transform:rotate(45deg);background:var(--am);border:2px solid #fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center}
+.marca-am.clima{background:var(--cli)}
+.marca-am.rep{box-shadow:0 0 0 3px #B00E21}
+.marca-am span{transform:rotate(-45deg);display:grid;place-items:center;color:#fff}
+.marca-am svg{width:14px;height:14px;stroke-width:2.6}
+.tipo-fil{position:absolute;top:10px;left:50px;z-index:6;display:flex;gap:3px;background:#fff;border-radius:999px;padding:3px;box-shadow:0 1px 5px rgba(0,0,0,.2)}
+.tipo-fil button{border:0;background:none;border-radius:999px;padding:7px 10px;font-family:var(--cpo);font-size:11.5px;font-weight:700;color:var(--txt-2);cursor:pointer}
+.tipo-fil button[aria-pressed=true]{background:var(--azul);color:#fff}
+.tipo-fil button.am[aria-pressed=true]{background:var(--am)}
+.trk-band [hidden]{display:none!important}
+.flash{bottom:calc(92px + env(safe-area-inset-bottom))}
+</style>
 </head>
 <body>
 
@@ -1270,6 +1353,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
       <button type="button" id="tabMap" role="tab" aria-selected="false" data-i18n="tab2"></button>
     </nav>
   </header>
+  <div class="trk-band" id="trkBand"></div>
   </div>
 
   <main>
@@ -1306,7 +1390,18 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
     </div>
 
     <section class="tarjeta oculta" id="form">
+      <div class="f-bar"><button type="button" id="fCerrar" aria-label="Cerrar">✕</button><b id="fTit"></b></div>
       <div class="t-cab"><img id="vista" alt=""><div class="datos" id="datos"></div></div>
+      <div class="campo am-only" id="amCampo">
+        <label><span data-i18n="queViste"></span> <span class="req">*</span></label>
+        <div id="amGrid"></div>
+        <div id="amMas" hidden>
+          <div class="am-mas-t"><span data-i18n="masDet"></span> <small data-i18n="opc"></small></div>
+          <div id="amSub"></div>
+          <div id="amSegs"></div>
+          <small id="amHint"></small>
+        </div>
+      </div>
 
       <div class="campo">
         <label for="esp"><span data-i18n="lEsp"></span> <span class="opt" data-i18n="opc"></span></label>
@@ -1352,6 +1447,7 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
    <div class="vista" id="vMap" role="tabpanel" hidden>
     <div class="mapa-wrap"><div id="mapa"></div>
       <select id="baseSel" class="base-sel" aria-label="Base"></select>
+      <div class="tipo-fil" id="tipoFil"></div>
       <button type="button" id="heatCtl" class="heat-ctl" data-aria="miUbic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"></circle><line x1="12" y1="2.5" x2="12" y2="5.5"></line><line x1="12" y1="18.5" x2="12" y2="21.5"></line><line x1="2.5" y1="12" x2="5.5" y2="12"></line><line x1="18.5" y1="12" x2="21.5" y2="12"></line></svg></button>
     </div>
     <div class="compartir">
@@ -1362,7 +1458,11 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
     <div id="avisos"></div>
    </div>
   </main>
-
+  <nav class="bnav" id="bnav">
+    <button type="button" id="bnReg" aria-current="page"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg><span data-i18n="tab1"></span></button>
+    <button type="button" id="bnMas" class="bn-mas" data-aria="nuevoReg"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button type="button" id="bnMap"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></svg><span data-i18n="tab2"></span></button>
+  </nav>
   <footer>
     <svg class="logo-cg" width="34" height="34" viewBox="0 0 64 64" aria-label="ClimateGuard">
       <circle cx="32" cy="32" r="27" fill="none" stroke="#AEC1D4" stroke-width="3"></circle>
@@ -1469,6 +1569,19 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
   </div>
 </div>
 
+<div class="sheet" id="nuevoSheet" role="dialog" aria-modal="true" aria-labelledby="shTit">
+  <div class="sh-fondo" id="shFondo"></div>
+  <div class="sh-caja">
+    <i class="sh-asa"></i>
+    <h3 id="shTit" data-i18n="queReg"></h3>
+    <div class="sh-ops">
+      <button type="button" class="sh-op bio" id="shBio"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15M5 19l7-7"></path></svg><b data-i18n="optBio"></b><small data-i18n="optBioS"></small></button>
+      <button type="button" class="sh-op am" id="shAm"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17h.01"></path></svg><b data-i18n="optAm"></b><small data-i18n="optAmS"></small></button>
+    </div>
+    <div class="sh-gal"><button type="button" id="shGalBio" data-i18n="oGalBio"></button><button type="button" id="shGalAm" data-i18n="oGalAm"></button></div>
+    <p class="sh-seg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6l8-3z"></path></svg><span data-i18n="segAm"></span></p>
+  </div>
+</div>
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
 <div class="alm-aviso" id="almAviso" role="alert"><i class="ri-error-warning-line"></i><span data-i18n="almErr"></span></div>
 <div class="mini-modal" id="cfmModal" role="dialog" aria-modal="true" aria-labelledby="cfmTit">
@@ -3840,7 +3953,7 @@ const DR_WDPA={"type":"FeatureCollection","features":[{"type":"Feature","propert
 /* ── Diccionario ── */
 const DIC={
  es:{
-  pais:'Republica Dominicana', sub:'Levantamiento de flora y fauna',
+  pais:'Republica Dominicana', sub:'Monitoreo de flora, fauna y amenazas',
   tab1:'Registros', tab2:'Mapa',
   capT:'Nueva observación', capP:'La ubicacion se guarda junto con la imagen',
   lGrupo:'Grupo', lEsp:'Especie', lCat:'Categoria', lCant:'Individuos observados',
@@ -3860,7 +3973,7 @@ const DIC={
   optim:'Optimizando imagen...', errImg:'No se pudo leer la imagen.',
   errImg2:'Intente con otra fotografia.',
   sinUbi:'Sin ubicacion', ubicar:'Ubicar en el mapa', sinNotas:'Sin notas', altit:'Alt.',
-  vacioT:'Sin registros', vacioP:'Tome una fotografia para iniciar el levantamiento.',
+  vacioT:'Sin registros', vacioP:'Toca + para registrar una especie o una amenaza.',
   borrarA:'Eliminar registro', fotoA:'Fotografia del registro',
   toque:'Toque el mapa para ubicar el registro',
   asignada:'Ubicacion asignada al registro.',
@@ -3904,7 +4017,7 @@ const DIC={
   r4:'Naturalista', r5:'Maestro Naturalista',
   bTomar:'Tomar foto', bGaleria:'Elegir de galería', bCambiarFoto:'Cambiar foto',
   offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
-  piloto:'UNOFFICIAL', gRevocado:'La sesión se cerró desde la administración. Inicia sesión de nuevo.', almErr:'Este teléfono no está guardando los datos. No cierres la app y envía tus registros cuanto antes.', avErr:'No se pudo guardar la foto en este teléfono.', delObsT:'¿Eliminar este registro?', delTrkT:'¿Eliminar este recorrido?', delEnviado:'Solo se borra de este teléfono. La copia enviada sigue en el servidor.', delNoEnviado:'Aún no se ha enviado. Si lo eliminas, no se podrá recuperar.', bEliminar:'Eliminar', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
+  piloto:'UNOFFICIAL', gRevocado:'La sesión se cerró desde la administración. Inicia sesión de nuevo.', almErr:'Este teléfono no está guardando los datos. No cierres la app y envía tus registros cuanto antes.', avErr:'No se pudo guardar la foto en este teléfono.', delObsT:'¿Eliminar este registro?', delTrkT:'¿Eliminar este recorrido?', delEnviado:'Solo se borra de este teléfono. La copia enviada sigue en el servidor.', delNoEnviado:'Aún no se ha enviado. Si lo eliminas, no se podrá recuperar.', bEliminar:'Eliminar', nuevoReg:'Nuevo registro', queReg:'¿Qué vas a registrar?', optBio:'Flora y fauna', optBioS:'Especie observada', optAm:'Amenaza', optAmS:'Presión o daño', oGalBio:'Galería: flora y fauna', oGalAm:'Galería: amenaza', segAm:'Si la actividad está en curso, no te acerques. Toma la foto desde un lugar seguro.', nuevaObs:'Nueva observación', nuevaAm:'Nueva amenaza', queViste:'¿Qué viste?', presHum:'Presión humana', climaOtros:'Clima y otros', masDet:'Más detalles', lEstado:'Estado', lMagn:'Magnitud', lAccion:'Acción', amElige:'Elige qué viste', reportar:'Reportar', filTodo:'Todo', filBio:'Flora y fauna', filAm:'Amenazas', trkIdle:'Sin recorrido activo', sinDet:'Sin detalles', amenazaN:'amenazas', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
   mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor', miUbic:'Mi ubicación',
   sinNombre:'Sin nombre', recortar:'Ajustar foto', bConfirmar:'Confirmar',
   gpsTitulo:'Ubicación desactivada', reintentar:'Reintentar', cerrar:'Cerrar', gpsOk:'Ubicación activada.',
@@ -3925,7 +4038,7 @@ const DIC={
   c:{native:'Nativa',endemic:'Endemica',invasive:'Invasora'}
  },
  en:{
-  pais:'Dominican Republic', sub:'Flora and fauna survey',
+  pais:'Dominican Republic', sub:'Flora, fauna and threat monitoring',
   tab1:'Records', tab2:'Map',
   capT:'New observation', capP:'Location is saved together with the image',
   lGrupo:'Group', lEsp:'Species', lCat:'Category', lCant:'Individuals observed',
@@ -3945,7 +4058,7 @@ const DIC={
   optim:'Optimising image...', errImg:'The image could not be read.',
   errImg2:'Please try another photo.',
   sinUbi:'No location', ubicar:'Place on map', sinNotas:'No notes', altit:'Alt.',
-  vacioT:'No records', vacioP:'Take a photo to start the survey.',
+  vacioT:'No records', vacioP:'Tap + to record a species or a threat.',
   borrarA:'Delete record', fotoA:'Photo of record',
   toque:'Tap the map to place record',
   asignada:'Location assigned to the record.',
@@ -3989,7 +4102,7 @@ const DIC={
   r4:'Naturalist', r5:'Master Naturalist',
   bTomar:'Take photo', bGaleria:'Choose from gallery', bCambiarFoto:'Change photo',
   offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected areas', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
-  piloto:'UNOFFICIAL', gRevocado:'Your session was closed by the administrator. Please sign in again.', almErr:'This phone is not saving data. Keep the app open and send your records as soon as possible.', avErr:'The photo could not be saved on this phone.', delObsT:'Delete this record?', delTrkT:'Delete this track?', delEnviado:'It is only removed from this phone. The sent copy stays on the server.', delNoEnviado:'It has not been sent yet. If you delete it, it cannot be recovered.', bEliminar:'Delete', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
+  piloto:'UNOFFICIAL', gRevocado:'Your session was closed by the administrator. Please sign in again.', almErr:'This phone is not saving data. Keep the app open and send your records as soon as possible.', avErr:'The photo could not be saved on this phone.', delObsT:'Delete this record?', delTrkT:'Delete this track?', delEnviado:'It is only removed from this phone. The sent copy stays on the server.', delNoEnviado:'It has not been sent yet. If you delete it, it cannot be recovered.', bEliminar:'Delete', nuevoReg:'New record', queReg:'What are you recording?', optBio:'Flora and fauna', optBioS:'Observed species', optAm:'Threat', optAmS:'Pressure or damage', oGalBio:'Gallery: flora and fauna', oGalAm:'Gallery: threat', segAm:'If the activity is in progress, do not get close. Take the photo from a safe place.', nuevaObs:'New observation', nuevaAm:'New threat', queViste:'What did you see?', presHum:'Human pressure', climaOtros:'Climate and other', masDet:'More details', lEstado:'Status', lMagn:'Size', lAccion:'Action', amElige:'Choose what you saw', reportar:'Report', filTodo:'All', filBio:'Flora and fauna', filAm:'Threats', trkIdle:'No active track', sinDet:'No details', amenazaN:'threats', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
   mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap', miUbic:'My location',
   sinNombre:'No name', recortar:'Adjust photo', bConfirmar:'Confirm',
   gpsTitulo:'Location is off', reintentar:'Retry', cerrar:'Close', gpsOk:'Location enabled.',
@@ -4224,6 +4337,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 async function procesarArchivo(file,deGaleria){
   if(!file)return;
+  prepararForm(modoTipo);
   $form.classList.remove('oculta');$guardar.disabled=true;
   $vistaImg.removeAttribute('src');$datos.innerHTML=`<b>${t('optim')}</b>`;
   try{
@@ -4248,7 +4362,7 @@ async function procesarArchivo(file,deGaleria){
         ? `<i class="ri-map-pin-fill"></i> ${borrador.lat.toFixed(5)}, ${borrador.lng.toFixed(5)}`
           +(borrador.origen==='exif'?' (EXIF)':'')
         : `<span class="sinubi"><i class="ri-error-warning-line"></i> ${t('sinUbi')}</span>`);
-    $guardar.disabled=false;
+    $guardar.disabled=!formListo();
   }catch{
     $datos.innerHTML=`<b>${t('errImg')}</b><br>${t('errImg2')}`;borrador=null;
   }
@@ -4258,20 +4372,22 @@ $cam.addEventListener('change',_onPick);
 document.getElementById('galeria').addEventListener('change',_onPick);
 document.getElementById('cancelar').onclick=()=>{borrador=null;editando=null;$form.classList.add('oculta');limpiar()};
 function limpiar(){editando=null;document.getElementById('esp').value='';iucnSel=null;claseSel='';try{window.CGgaleriaLimpiar&&window.CGgaleriaLimpiar();}catch(_){}{const h=document.getElementById('espHint');if(h){h.textContent='';h.classList.remove('hint-iucn');}}
-  document.getElementById('notas').value='';document.getElementById('cant').value='1'}
+  document.getElementById('notas').value='';document.getElementById('cant').value='1';try{amReset();}catch(_){} }
 $guardar.onclick=async()=>{
   if(editando){
-    await almacen.patch(editando.id,{clase:claseSel,iucn:iucnSel||null,especie:document.getElementById('esp').value.trim(),notas:document.getElementById('notas').value.trim(),cant:Math.max(1,parseInt(document.getElementById('cant').value)||1),updated:Date.now()});
+    await almacen.patch(editando.id,{clase:claseSel,iucn:iucnSel||null,especie:document.getElementById('esp').value.trim(),notas:document.getElementById('notas').value.trim(),cant:Math.max(1,parseInt(document.getElementById('cant').value)||1),updated:Date.now(),...amCampos(modoTipo)});
     editando=null;$form.classList.add('oculta');limpiar();
     await pintar();
     flash(t('actualizado'));
     return;
   }
   if(!borrador)return;
+  if(modoTipo==='amenaza'&&!amSel.cat)return;
   borrador.clase=claseSel;borrador.iucn=iucnSel||null;
   borrador.especie=document.getElementById('esp').value.trim();
   borrador.notas=document.getElementById('notas').value.trim();
   borrador.cant=Math.max(1,parseInt(document.getElementById('cant').value)||1);
+  Object.assign(borrador,amCampos(modoTipo));
   const gan=puntosDe(borrador);
   await almacen.put(borrador);
   borrador=null;$form.classList.add('oculta');limpiar();
@@ -4281,6 +4397,7 @@ $guardar.onclick=async()=>{
 
 function abrirEdicion(r){
   editando=r; borrador=null;
+  prepararForm(r.regTipo==='amenaza'?'amenaza':'bio',r);
   try{ const so=document.getElementById('stObs'); if(so&&so.getAttribute('aria-selected')!=='true')so.click(); }catch(_){}
   $form.classList.remove('oculta');
   try{$vistaImg.src=mu(r);}catch(_){}
@@ -4294,6 +4411,103 @@ function abrirEdicion(r){
   $guardar.disabled=false;
   try{$form.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}
 }
+/* ══ v1.11: AMENAZAS ══════════════════════════════════════════════════
+   Catalogo editable. 'k' es la clave que se guarda (no cambiarla una vez en
+   uso); 'es'/'en' son los textos visibles; 'iucn' es el codigo de la
+   clasificacion de amenazas de la UICN (Threats Classification Scheme 3.3). */
+const AMEN=[
+ {k:'fuego',es:'Fuego',en:'Fire',iucn:'7.1',d:'M12 2c.5 3.5 5 5.5 5 10.5A5 5 0 0 1 7 12.5c0-2.3 1.2-3.8 2.5-4.8.1 1.8 1 3 2.2 3.3C11 8.5 11 5 12 2z',
+  subs:[{k:'activo',es:'Incendio activo',en:'Active fire'},{k:'quemada',es:'Área quemada',en:'Burned area'},{k:'agricola',es:'Quema agrícola',en:'Agricultural burning'}],
+  hint:{es:'Pequeña: menos de 10 m². Grande: 1 ha o más.',en:'Small: under 10 m². Large: 1 ha or more.'}},
+ {k:'tala',es:'Tala y carbón',en:'Logging and charcoal',iucn:'5.3',d:'M4 20 14 10M13 5l6 6-3 1-4-4 1-3z',
+  subs:[{k:'tala',es:'Tala ilegal',en:'Illegal logging'},{k:'carbon',es:'Horno de carbón',en:'Charcoal kiln'},{k:'lena',es:'Leña',en:'Firewood'}],
+  hint:{es:'Pequeña: 1 o 2 árboles. Grande: más de 10 árboles.',en:'Small: 1 or 2 trees. Large: more than 10 trees.'}},
+ {k:'suelo',es:'Ocupación del suelo',en:'Land occupation',iucn:'2.1',d:'m3 11 9-7 9 7M5 10v10h14V10M10 20v-5h4v5',
+  subs:[{k:'conuco',es:'Conuco',en:'Small farm plot',iucn:'2.1'},{k:'ganado',es:'Ganado',en:'Livestock',iucn:'2.3'},{k:'construccion',es:'Construcción',en:'Construction',iucn:'1.1'},{k:'desmonte',es:'Desmonte',en:'Land clearing',iucn:'2.1'}],
+  hint:{es:'Pequeña: menos de 100 m². Grande: 1 ha o más.',en:'Small: under 100 m². Large: 1 ha or more.'}},
+ {k:'caza',es:'Caza y captura',en:'Hunting and collection',iucn:'5.1',d:'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM12 1v4M12 19v4M1 12h4M19 12h4',
+  subs:[{k:'trampas',es:'Trampas',en:'Traps',iucn:'5.1'},{k:'aves',es:'Captura de aves',en:'Bird capture',iucn:'5.1'},{k:'huevos',es:'Huevos de tortuga',en:'Turtle eggs',iucn:'5.1'},{k:'pesca',es:'Pesca ilegal',en:'Illegal fishing',iucn:'5.4'},{k:'plantas',es:'Extracción de plantas',en:'Plant collection',iucn:'5.2'}],
+  hint:{es:'Pequeña: 1 indicio. Grande: varios en la misma zona.',en:'Small: 1 sign. Large: several in the same area.'}},
+ {k:'arena',es:'Arena y grava',en:'Sand and gravel',iucn:'3.2',d:'M3 19h18M5 19l5-8 3 4 2-2 4 6',
+  subs:[{k:'rio',es:'Río',en:'River'},{k:'playa',es:'Playa',en:'Beach'}],
+  hint:{es:'Pequeña: a mano. Grande: con maquinaria.',en:'Small: by hand. Large: with machinery.'}},
+ {k:'conta',es:'Contaminación',en:'Pollution',iucn:'9',d:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
+  subs:[{k:'basura',es:'Basura',en:'Litter',iucn:'9.4'},{k:'aguas',es:'Aguas residuales',en:'Wastewater',iucn:'9.1'},{k:'quimicos',es:'Químicos o aceite',en:'Chemicals or oil',iucn:'9.2'}],
+  hint:{es:'Pequeña: cabe en una bolsa. Grande: más de un camión.',en:'Small: fits in a bag. Large: more than a truckload.'}},
+ {k:'inv',es:'Especies invasoras',en:'Invasive species',iucn:'8.1',d:'M10 6h4a2 2 0 0 1 2 2v6a4 4 0 0 1-8 0V8a2 2 0 0 1 2-2zM12 6V3M8 10H4M8 14H4M16 10h4M16 14h4',
+  subs:[{k:'pezleon',es:'Pez león',en:'Lionfish'},{k:'plantas',es:'Plantas exóticas',en:'Exotic plants'},{k:'perros',es:'Perros o gatos',en:'Dogs or cats'}],
+  hint:{es:'Pequeña: 1 individuo. Grande: población establecida.',en:'Small: 1 individual. Large: established population.'}},
+ {k:'clima',es:'Impactos del clima',en:'Climate impacts',iucn:'11',grupo:'clima',d:'M7 16a4 4 0 1 1 .5-8A5 5 0 0 1 17 9a3.5 3.5 0 0 1 0 7H7zM9 19l-1 2M13 19l-1 2M17 19l-1 2',
+  subs:[{k:'sequia',es:'Sequía',en:'Drought',iucn:'11.2'},{k:'inundacion',es:'Inundación',en:'Flooding',iucn:'11.4'},{k:'deslizamiento',es:'Deslizamiento',en:'Landslide',iucn:'10.3'},{k:'tormenta',es:'Daño por tormenta',en:'Storm damage',iucn:'11.4'},{k:'blanqueamiento',es:'Blanqueamiento de coral',en:'Coral bleaching',iucn:'11.3'},{k:'sargazo',es:'Sargazo',en:'Sargassum',iucn:'11.5'}],
+  hint:{es:'Pequeña: un punto. Grande: toda una ladera o tramo de costa.',en:'Small: one spot. Large: a whole slope or stretch of coast.'}},
+ {k:'otro',es:'Otro',en:'Other',iucn:'12',grupo:'clima',d:'M5 12h.01M12 12h.01M19 12h.01',subs:[],
+  hint:{es:'Describe lo observado en las notas.',en:'Describe what you saw in the notes.'}}
+];
+const AM_COND=[['curso','En curso','In progress'],['rec','Reciente','Recent'],['ant','Antiguo','Old']];
+const AM_MAGN=[['p','Pequeña','Small'],['m','Mediana','Medium'],['g','Grande','Large']];
+const AM_ACC=[['reg','Solo registro','Record only'],['sit','En el sitio','On site'],['rep','Reportar','Report']];
+const amN=o=>(idioma==='en'?o.en:o.es);
+const AM_SVG=d=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"></path></svg>`;
+const amCat=k=>AMEN.find(c=>c.k===k)||null;
+function amTitulo(r){ const c=amCat(r.amenaza); if(!c) return esc(t('optAm')); const sb=c.subs.find(x=>x.k===r.amenaza_sub); return esc(amN(c)+(sb?': '+amN(sb).toLowerCase():'')); }
+function amMetaTxt(r){ const p=[]; const f=(L,v)=>{ const o=L.find(x=>x[0]===v); if(o) p.push(idioma==='en'?o[2]:o[1]); };
+  f(AM_COND,r.condicion); f(AM_MAGN,r.magnitud); if(!p.length) return t('sinDet'); const x=p.join(', ').toLowerCase(); return x.charAt(0).toUpperCase()+x.slice(1); }
+function marcaHTML(r){
+  if(r.regTipo!=='amenaza') return `<div class="marca" style="background:${iucnMark(r.iucn).bg}"><i class="mdot"></i></div>`;
+  const c=amCat(r.amenaza);
+  return `<div class="marca-am${r.amenaza==='clima'?' clima':''}${r.accion==='rep'?' rep':''}"><span>${AM_SVG(c?c.d:'M5 12h.01M12 12h.01M19 12h.01')}</span></div>`;
+}
+function amItemHTML(r){ const c=amCat(r.amenaza);
+  return `<img src="${mu(r)}" alt="${t('fotoA')}">
+        <div class="info">
+          <h3><span class="am-ic${r.amenaza==='clima'?' clima':''}">${AM_SVG(c?c.d:'M5 12h.01M12 12h.01M19 12h.01')}</span> ${amTitulo(r)}</h3>
+          <span class="pill am-pill">${esc(amMetaTxt(r))}</span>${r.accion==='rep'?`<span class="pill am-rep">${t('reportar')}</span>`:''}${sentTag('p:'+r.id,sigFoto(r))}
+          <p>${esc(r.notas||'')}</p>
+          <button type="button" class="mini editar-btn">${t('editar')}</button>
+          <small>${r.lat!=null?`<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?', EXIF':''}${r.alt!=null?(', '+ALTIC+' '+Math.round(r.alt)+' m'):''}`:`<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span>`}</small>
+          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
+        </div>`; }
+/* estado del formulario */
+let modoTipo='bio', amSel={cat:null,sub:null,condicion:null,magnitud:null,accion:null}, tipoFiltro='all';
+function formListo(){ return !!(borrador||editando) && (modoTipo!=='amenaza' || !!amSel.cat); }
+function amRender(){
+  const g=document.getElementById('amGrid'); if(!g) return;
+  const tile=c=>`<button type="button" class="am-tile${c.grupo==='clima'&&c.k==='clima'?' clima':''}${c.k==='otro'?' otro':''}" data-k="${c.k}" aria-pressed="${amSel.cat===c.k}">${AM_SVG(c.d)}<span>${esc(amN(c))}</span></button>`;
+  g.innerHTML=`<small class="am-gl">${t('presHum')}</small><div class="am-tiles">${AMEN.filter(c=>!c.grupo).map(tile).join('')}</div>`+
+    `<small class="am-gl">${t('climaOtros')}</small><div class="am-tiles">${AMEN.filter(c=>c.grupo).map(tile).join('')}</div>`;
+  const c=amCat(amSel.cat), mas=document.getElementById('amMas'); mas.hidden=!c;
+  document.getElementById('amSub').innerHTML=c?c.subs.map(sb=>`<button type="button" class="g" data-sub="${sb.k}" aria-pressed="${amSel.sub===sb.k}">${esc(amN(sb))}</button>`).join(''):'';
+  const seg=(k,lab,L)=>`<div class="am-seg"><span>${t(lab)}</span><div class="seg">${L.map(o=>`<button type="button" class="${o[0]==='rep'?'rep':''}" data-seg="${k}" data-v="${o[0]}" aria-pressed="${amSel[k]===o[0]}">${idioma==='en'?o[2]:o[1]}</button>`).join('')}</div></div>`;
+  document.getElementById('amSegs').innerHTML=c?seg('condicion','lEstado',AM_COND)+seg('magnitud','lMagn',AM_MAGN)+seg('accion','lAccion',AM_ACC):'';
+  document.getElementById('amHint').textContent=c&&c.hint?(c.hint[idioma]||c.hint.es):'';
+  if(modoTipo==='amenaza'){ $guardar.disabled=!formListo(); $guardar.textContent=amSel.cat?t('bGuardar'):t('amElige'); }
+  else { $guardar.textContent=t('bGuardar'); }
+}
+function amReset(){ amSel={cat:null,sub:null,condicion:null,magnitud:null,accion:null}; amRender(); }
+function prepararForm(tipo,r){
+  modoTipo=tipo==='amenaza'?'amenaza':'bio'; $form.dataset.tipo=modoTipo;
+  amSel=(r&&r.regTipo==='amenaza')?{cat:r.amenaza||null,sub:r.amenaza_sub||null,condicion:r.condicion||null,magnitud:r.magnitud||null,accion:r.accion||null}:{cat:null,sub:null,condicion:null,magnitud:null,accion:null};
+  const ft=document.getElementById('fTit'); if(ft) ft.textContent=r?t('editando'):t(modoTipo==='amenaza'?'nuevaAm':'nuevaObs');
+  amRender();
+}
+function amCampos(tipo){
+  if(tipo!=='amenaza') return {};
+  const c=amCat(amSel.cat), sb=c&&c.subs.find(x=>x.k===amSel.sub);
+  return {regTipo:'amenaza',amenaza:amSel.cat,amenaza_sub:amSel.sub||'',iucn_amenaza:(sb&&sb.iucn)||(c&&c.iucn)||'',
+    condicion:amSel.condicion||'',magnitud:amSel.magnitud||'',accion:amSel.accion||'',especie:'',clase:'',iucn:null,cant:1};
+}
+document.getElementById('amCampo').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.k){ if(amSel.cat!==b.dataset.k){ amSel.cat=b.dataset.k; amSel.sub=null; } }
+  else if(b.dataset.sub){ amSel.sub=(amSel.sub===b.dataset.sub)?null:b.dataset.sub; }
+  else if(b.dataset.seg){ const k=b.dataset.seg; amSel[k]=(amSel[k]===b.dataset.v)?null:b.dataset.v; }
+  else return;
+  amRender();
+});
+(function(){ try{ const ce=document.getElementById('esp'); if(ce) ce.closest('.campo').classList.add('bio-only');
+  const cc=document.getElementById('cant'); if(cc) cc.closest('.campo').classList.add('bio-only'); }catch(_){}
+  const fc=document.getElementById('fCerrar'); if(fc) fc.onclick=()=>document.getElementById('cancelar').click(); })();
+
 /* ── Lista ── */
 const $lista=document.getElementById('lista');
 const urls=new Map();
@@ -4309,7 +4523,7 @@ async function pintar(anim=false){
   const _trkRank=trks.slice().sort((a,b)=>(a.start||0)-(b.start||0));
   regs.forEach(r=>items.push({k:'p',t:r.fecha,r,n:_obsRank.indexOf(r)+1}));
   trks.forEach(tr=>items.push({k:'t',t:tr.start,tr,n:_trkRank.indexOf(tr)+1}));
-  const vis=items.filter(it=>subActivo==='trk'?it.k==='t':it.k==='p');
+  const vis=items;   /* v1.11: una sola lista (registros, amenazas y recorridos) */
   vis.sort((a,b)=>b.t-a.t);
   $lista.innerHTML='';
   if(!vis.length)
@@ -4323,7 +4537,8 @@ async function pintar(anim=false){
       li.className='reg'+(r.lat==null?' sin-ubi':'')+(anim&&i===0?' nuevo-item':'');
       if(r.lat!=null && r.iucn && IUCN_COL[r.iucn]) li.style.borderLeftColor=IUCN_COL[r.iucn];
       if(r.lat!=null) li.style.cursor='pointer';
-      li.innerHTML=`
+      if(r.regTipo==='amenaza'){ li.classList.add('reg-am'); if(r.amenaza==='clima') li.classList.add('clima'); li.style.borderLeftColor=''; li.innerHTML=amItemHTML(r); }
+      else li.innerHTML=`
         <img src="${mu(r)}" alt="${t('fotoA')}">
         <div class="info">
           <h3>${PTIC}${r.clase?` ${esc(r.clase)}`:''}
@@ -4388,7 +4603,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.10.2';
+const APP_VER='1.11.0';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 /* v1.9: los registros de demostracion (id demo-*) no suman ni se envian */
 const esDemoId=id=>/^demo-/.test(String(id||''));
@@ -4407,7 +4622,7 @@ function loadSent(){ try{ const v=JSON.parse(localStorage.getItem(_uk('cg_sent_i
 function saveSent(m){ try{ localStorage.setItem(_uk('cg_sent_ids'),JSON.stringify(m)); }catch(_){} }
 function loadLedger(){ try{ const raw=JSON.parse(localStorage.getItem(_uk('cg_pts_ledger')))||{}; const m={}; for(const k in raw){ m[(k.indexOf(':')>=0?k:('p:'+k))]=raw[k]; } return m; }catch(_){ return {}; } }
 function saveLedger(m){ try{ localStorage.setItem(_uk('cg_pts_ledger'),JSON.stringify(m)); }catch(_){} }
-function sigFoto(r){ return [r.especie||'',r.clase||'',r.iucn||'',r.cant||1,r.notas||'',r.lat,r.lng].join('|'); }
+function sigFoto(r){ return [r.especie||'',r.clase||'',r.iucn||'',r.cant||1,r.notas||'',r.lat,r.lng].join('|')+(r.regTipo==='amenaza'?'|'+[r.amenaza,r.amenaza_sub,r.condicion,r.magnitud,r.accion].map(x=>x||'').join('|'):''); }
 function sigImg(r){ return ((r.foto&&r.foto.size)||0)+'_'+(r.fecha||0); }   /* la foto solo se reenvia si cambio */
 function sigTrack(tr){ return [CGTracks.nombre(tr),tr.coords.length,tr.end||0].join('|'); }
 function sentTag(key,sig){ const m=loadSent(); if(!(key in m))return ''; return m[key]===sig?`<span class="pill enviado">${t('enviadoTag')}</span>`:`<span class="pill modificado">${t('modificadoTag')}</span>`; }
@@ -4738,8 +4953,9 @@ function armarBack(){ try{ history.pushState({cg:1},'',location.href); _cgTrap.s
   function asegurar(){ if(!_cgTrap.set && logueado()) armarBack(); }
   function overlayAbierto(){
     var lb=document.getElementById('galLb'); if(lb && !lb.hidden){ var x=document.getElementById('galLbX'); if(x)x.click(); else lb.hidden=true; return true; }
-    var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal'];
+    var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal','nuevoSheet','cfmModal'];
     for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el && el.classList.contains('on')){ el.classList.remove('on'); return true; } }
+    var fm=document.getElementById('form'); if(fm && !fm.classList.contains('oculta')){ var cc=document.getElementById('cancelar'); if(cc) cc.click(); return true; }
     return false;
   }
   ['pointerdown','keydown','touchstart'].forEach(function(ev){ window.addEventListener(ev, asegurar, true); });
@@ -4762,7 +4978,8 @@ const $avisos=document.getElementById('avisos');
 const aviso=(cl,ic,tx)=>{$avisos.innerHTML=`<div class="alerta ${cl}"><i class="${ic}"></i><div>${tx}</div></div>`};
 
 function dibujarMapa(){
-  const pts=regs.map((r,i)=>({...r,n:regs.length-i})).filter(r=>r.lat!=null);
+  const pts=regs.map((r,i)=>({...r,n:regs.length-i})).filter(r=>r.lat!=null)
+    .filter(r=>tipoFiltro==='all'||(tipoFiltro==='am'?r.regTipo==='amenaza':r.regTipo!=='amenaza'));
   const sin=regs.length-pts.length;
   if(!window.L)return respaldo(pts);
   const bl='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -4811,11 +5028,11 @@ function dibujarMapa(){
   if(heatCapa){mapa.removeLayer(heatCapa);heatCapa=null;}
   if(!navigator.onLine&&!mapa._off){mapa._off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));}
   pts.forEach(r=>{
-    L.marker([r.lat,r.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:`<div class="marca" style="background:${iucnMark(r.iucn).bg}"><i class="mdot"></i></div>`})})
+    L.marker([r.lat,r.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:(r.regTipo==='amenaza'?[13,13]:[13,26]),
+      html:marcaHTML(r)})})
      .bindPopup(`<div class="pop"><img src="${mu(r)}" alt="">
-       <h4>${esc(r.clase||'')}${r.especie?` · <em>${esc(r.especie)}</em>`:''}</h4>
-       <small>${r.cant} ${t('indiv')} ${r.iucn?iucnBadge(r.iucn):''}<br>
+       <h4>${r.regTipo==='amenaza'?amTitulo(r):(esc(r.clase||'')+(r.especie?' · <em>'+esc(r.especie)+'</em>':''))}</h4>
+       <small>${r.regTipo==='amenaza'?(esc(amMetaTxt(r))+(r.accion==='rep'?' <span class="pill am-rep">'+t('reportar')+'</span>':'')):(r.cant+' '+t('indiv')+' '+(r.iucn?iucnBadge(r.iucn):''))}<br>
        ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.accuracy!=null?(' ±'+Math.round(r.accuracy)+' m'):''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'):''}<br>${new Date(r.fecha).toLocaleString(loc())}</small></div>`,{minWidth:200})
      .addTo(capa);
   });
@@ -4851,6 +5068,8 @@ function tab(esMapa){
   document.getElementById('vMap').hidden=!esMapa;
   document.getElementById('vReg').hidden=esMapa;
   $tM.setAttribute('aria-selected',esMapa);$tR.setAttribute('aria-selected',!esMapa);
+  try{ const a=document.getElementById('bnReg'), b=document.getElementById('bnMap');
+    if(esMapa){ b.setAttribute('aria-current','page'); a.removeAttribute('aria-current'); } else { a.setAttribute('aria-current','page'); b.removeAttribute('aria-current'); } }catch(_){}
   if(esMapa)dibujarMapa();
 }
 $tR.onclick=()=>{ubicando=null;tab(false)};
@@ -4864,6 +5083,31 @@ $tM.onclick=()=>tab(true);
     stObs.setAttribute('aria-selected',obs); stTrk.setAttribute('aria-selected',!obs);
     subActivo=obs?'obs':'trk'; try{pintar();}catch(_){} }
   stObs.onclick=()=>sel(true); stTrk.onclick=()=>sel(false); sel(true);
+})();
+/* ── v1.11: barra inferior, selector de registro y banda de recorrido ── */
+(function(){
+  /* entradas de archivo fuera de la tarjeta de captura (que ya no se muestra) */
+  ['cam','galeria'].forEach(id=>{ const el=document.getElementById(id); if(el) document.body.appendChild(el); });
+  /* banda de recorrido fija bajo la cabecera */
+  const band=document.getElementById('trkBand'), trk=document.querySelector('#paneTrk .tracking');
+  if(band&&trk){ band.appendChild(trk); const st=document.getElementById('trkStat'); if(st) st.setAttribute('data-idle',t('trkIdle')); }
+  const sh=document.getElementById('nuevoSheet');
+  const abrirSheet=()=>sh.classList.add('on'), cerrarSheet=()=>sh.classList.remove('on');
+  const capturar=(tipo,gal)=>{ modoTipo=tipo; cerrarSheet(); document.getElementById(gal?'galeria':'cam').click(); };
+  document.getElementById('bnMas').onclick=abrirSheet;
+  document.getElementById('shFondo').onclick=cerrarSheet;
+  document.getElementById('shBio').onclick=()=>capturar('bio',false);
+  document.getElementById('shAm').onclick=()=>capturar('amenaza',false);
+  document.getElementById('shGalBio').onclick=()=>capturar('bio',true);
+  document.getElementById('shGalAm').onclick=()=>capturar('amenaza',true);
+  document.getElementById('bnReg').onclick=()=>{ ubicando=null; tab(false); try{window.scrollTo(0,0);}catch(_){} };
+  document.getElementById('bnMap').onclick=()=>tab(true);
+  /* filtro del mapa: todo / flora y fauna / amenazas */
+  const tf=document.getElementById('tipoFil');
+  const pintaTf=()=>{ if(!tf) return; tf.innerHTML=[['all','filTodo'],['bio','filBio'],['am','filAm']].map(x=>
+    `<button type="button" class="${x[0]==='am'?'am':''}" data-f="${x[0]}" aria-pressed="${tipoFiltro===x[0]}">${t(x[1])}</button>`).join(''); };
+  if(tf){ pintaTf(); tf.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; tipoFiltro=b.dataset.f; pintaTf(); try{dibujarMapa();}catch(_){} }; }
+  window.CGv111Idioma=()=>{ pintaTf(); try{amRender();}catch(_){} const st=document.getElementById('trkStat'); if(st) st.setAttribute('data-idle',t('trkIdle')); };
 })();
 
 /* ── Compartir 1: credencial del investigador (PNG) ─────────
@@ -5320,7 +5564,7 @@ const sello=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');
 
 
 /* ── Idioma ── */
-function aplicarIdioma(){
+function aplicarIdioma(){ setTimeout(()=>{ try{ window.CGv111Idioma&&window.CGv111Idioma(); }catch(_){} },0);
   document.documentElement.lang = idioma==='es' ? 'es-DO' : 'en';
   document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
   document.querySelectorAll('[data-ph]').forEach(el=>el.placeholder=t(el.dataset.ph));
@@ -5526,7 +5770,7 @@ async function enviarTodo(){
         try{ const jb=await aJpeg(r.foto); const du=await b64(jb); fotos.push({name:fn,mime:'image/jpeg',dataB64:du.slice(du.indexOf(',')+1)}); }catch(_){}
       }
       feats.push({type:'Feature',properties:{id:r.id,foto:fn,especie:r.especie||'',clase:r.clase||'',iucn:r.iucn||'',cant:r.cant||1,notas:r.notas||'',
-        accuracy:(r.accuracy!=null?r.accuracy:null),altitude:(r.alt!=null?r.alt:null),alt_accuracy:(r.altAcc!=null?r.altAcc:null),origen:r.origen||'',
+        accuracy:(r.accuracy!=null?r.accuracy:null),altitude:(r.alt!=null?r.alt:null),alt_accuracy:(r.altAcc!=null?r.altAcc:null),origen:r.origen||'',tipo_registro:r.regTipo||'bio',amenaza:r.amenaza||'',amenaza_sub:r.amenaza_sub||'',iucn_amenaza:r.iucn_amenaza||'',condicion:r.condicion||'',magnitud:r.magnitud||'',accion:r.accion||'',
         fecha:new Date(r.fecha).toISOString(),updated_at:new Date(r.updated||r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}});
     }
     const rec={type:'FeatureCollection',features:LT.trk.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString(),end:tr.end?new Date(tr.end).toISOString():null},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
