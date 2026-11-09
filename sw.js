@@ -1,4 +1,4 @@
-/* redeploy nonce: v1.9.0 envio confirmado, foto completa JPEG, datos por usuario */
+/* redeploy nonce: v1.10.2 la nueva version se descarga sin pasar por la cache HTTP */
 /* ClimateGuard Mobile - Service Worker
    Cachea el shell de la app para uso offline. Casi todo (fuentes, iconos,
    datos IUCN, contorno nacional y areas protegidas WDPA) esta embebido en
@@ -12,7 +12,7 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.10.1';
+const CACHE = 'climateguard-v1.10.2';
 const ASSETS = [
   './',
   './index.html',
@@ -29,7 +29,9 @@ const EXTRA = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(ASSETS)
+      /* v1.10.2: cache:'reload' = pedir al servidor, no a la cache HTTP del navegador
+         (GitHub Pages envia max-age=600 y se guardaba otra vez la version vieja) */
+      .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))
         .then(() => Promise.allSettled(EXTRA.map(u => c.add(u).catch(() => {})))))
       .then(() => self.skipWaiting())
   );
@@ -58,7 +60,8 @@ self.addEventListener('fetch', e => {
       // RED PRIMERO: siempre la ultima version cuando hay conexion.
       // v1.9: con senal debil la red puede tardar mucho; si en 4 s no responde
       // se abre la copia guardada y la descarga sigue en segundo plano.
-      const red = fetch(req).then(res => {
+      /* v1.10.2: 'no-cache' = siempre revalidar con el servidor (304 si no cambio) */
+      const red = fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
         if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
       });
