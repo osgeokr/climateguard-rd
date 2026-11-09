@@ -1184,7 +1184,12 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 .asist-sync:disabled{opacity:.6}
 .asist-hoy li em.pend{color:#C77700;font-style:normal;font-weight:700;font-size:11px;vertical-align:middle}
 .carnet .pie-btns{display:flex;gap:9px}
-.carnet .pie-btns .btn{flex:1;width:auto;min-width:0}</style>
+.carnet .pie-btns .btn{flex:1;width:auto;min-width:0}
+/* v1.10: aviso de almacenamiento y confirmacion de borrado */
+.alm-aviso{position:fixed;left:0;right:0;top:0;z-index:300;background:#B00E21;color:#fff;font-size:12.5px;line-height:1.4;padding:9px 14px;display:none;gap:8px;align-items:flex-start}
+.alm-aviso.on{display:flex}.alm-aviso i{font-size:16px}
+#cfmModal p{font-size:13.5px;color:#5C6670;line-height:1.5;margin:8px 0 0}
+.btn-peligro{background:#B00E21!important;color:#fff!important;border-color:#B00E21!important}</style>
 </head>
 <body>
 
@@ -1465,6 +1470,18 @@ footer{padding:20px 16px 30px;font-size:11px;color:var(--txt-2);line-height:1.7;
 </div>
 
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
+<div class="alm-aviso" id="almAviso" role="alert"><i class="ri-error-warning-line"></i><span data-i18n="almErr"></span></div>
+<div class="mini-modal" id="cfmModal" role="dialog" aria-modal="true" aria-labelledby="cfmTit">
+  <div class="mm-card">
+    <i class="ri-error-warning-line mm-ic"></i>
+    <h3 id="cfmTit"></h3>
+    <p id="cfmMsg"></p>
+    <div class="mm-btns">
+      <button type="button" class="btn btn-3" id="cfmNo" data-i18n="cancelar"></button>
+      <button type="button" class="btn btn-1 btn-peligro" id="cfmSi" data-i18n="bEliminar"></button>
+    </div>
+  </div>
+</div>
 
 <div class="ascenso" id="ascenso" role="dialog" aria-modal="true" aria-labelledby="aTit">
   <div class="tarj">
@@ -3887,7 +3904,7 @@ const DIC={
   r4:'Naturalista', r5:'Maestro Naturalista',
   bTomar:'Tomar foto', bGaleria:'Elegir de galería', bCambiarFoto:'Cambiar foto',
   offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
-  piloto:'UNOFFICIAL', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
+  piloto:'UNOFFICIAL', gRevocado:'La sesión se cerró desde la administración. Inicia sesión de nuevo.', almErr:'Este teléfono no está guardando los datos. No cierres la app y envía tus registros cuanto antes.', avErr:'No se pudo guardar la foto en este teléfono.', delObsT:'¿Eliminar este registro?', delTrkT:'¿Eliminar este recorrido?', delEnviado:'Solo se borra de este teléfono. La copia enviada sigue en el servidor.', delNoEnviado:'Aún no se ha enviado. Si lo eliminas, no se podrá recuperar.', bEliminar:'Eliminar', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
   mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor', miUbic:'Mi ubicación',
   sinNombre:'Sin nombre', recortar:'Ajustar foto', bConfirmar:'Confirmar',
   gpsTitulo:'Ubicación desactivada', reintentar:'Reintentar', cerrar:'Cerrar', gpsOk:'Ubicación activada.',
@@ -3972,7 +3989,7 @@ const DIC={
   r4:'Naturalist', r5:'Master Naturalist',
   bTomar:'Take photo', bGaleria:'Choose from gallery', bCambiarFoto:'Change photo',
   offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected areas', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
-  piloto:'UNOFFICIAL', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
+  piloto:'UNOFFICIAL', gRevocado:'Your session was closed by the administrator. Please sign in again.', almErr:'This phone is not saving data. Keep the app open and send your records as soon as possible.', avErr:'The photo could not be saved on this phone.', delObsT:'Delete this record?', delTrkT:'Delete this track?', delEnviado:'It is only removed from this phone. The sent copy stays on the server.', delNoEnviado:'It has not been sent yet. If you delete it, it cannot be recovered.', bEliminar:'Delete', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
   mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap', miUbic:'My location',
   sinNombre:'No name', recortar:'Adjust photo', bConfirmar:'Confirm',
   gpsTitulo:'Location is off', reintentar:'Retry', cerrar:'Close', gpsOk:'Location enabled.',
@@ -4010,27 +4027,50 @@ function iucnMark(k){ return {bg:(k&&IUCN_COL[k])||'#003876', fg:(k&&IUCN_DARK.h
 const loc=()=>idioma==='es'?'es-DO':'en-US';
 
 /* ── Almacenamiento ── */
-const memoria=(()=>{const m=new Map();return{
+const memoria=(()=>{const m=new Map(),k=new Map();return{
   put:async r=>{m.set(r.id,r)}, del:async i=>{m.delete(i)},
   all:async()=>[...m.values()].sort((a,b)=>b.fecha-a.fecha),
-  patch:async(i,f)=>{const r=m.get(i);if(r)m.set(i,{...r,...f})}};})();
+  patch:async(i,f)=>{const r=m.get(i);if(r)m.set(i,{...r,...f})},
+  kget:async key=>k.get(key), kset:async(key,v)=>{k.set(key,v)}, kdel:async key=>{k.delete(key)},
+  roto:()=>true};})();
+/* v1.10: version 2 de la base. Nuevo almacen 'kv' para el avatar de cada
+   cuenta y los recorridos (antes en localStorage, que tiene poco espacio y
+   fallaba en silencio). Si la apertura se bloquea, se avisa en pantalla. */
 const bd=(()=>{let db;
-  const abrir=()=>new Promise((ok,no)=>{const q=indexedDB.open('climateguard-rd',1);
-    q.onupgradeneeded=()=>q.result.createObjectStore('reg',{keyPath:'id'});
-    q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error);});
-  const tx=async(m,fn)=>{db??=await abrir();return new Promise((ok,no)=>{
-    const T=db.transaction('reg',m),q=fn(T.objectStore('reg'));
-    T.oncomplete=()=>ok(q?.result);T.onerror=()=>no(T.error);});};
+  const abrir=()=>new Promise((ok,no)=>{const q=indexedDB.open('climateguard-rd',2);
+    const tmo=setTimeout(()=>no(new Error('idb timeout')),8000);
+    q.onupgradeneeded=()=>{const d=q.result;
+      if(!d.objectStoreNames.contains('reg'))d.createObjectStore('reg',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');};
+    q.onsuccess=()=>{clearTimeout(tmo);const d=q.result;d.onversionchange=()=>{try{d.close();}catch(_){} db=undefined;};ok(d);};
+    q.onerror=()=>{clearTimeout(tmo);no(q.error);};});
+  const tx=async(m,fn,st='reg')=>{db??=await abrir();return new Promise((ok,no)=>{
+    const T=db.transaction(st,m),q=fn(T.objectStore(st));
+    T.oncomplete=()=>ok(q?.result);T.onerror=()=>no(T.error);T.onabort=()=>no(T.error);});};
   return{put:r=>tx('readwrite',s=>s.put(r)),del:i=>tx('readwrite',s=>s.delete(i)),
     all:async()=>(await tx('readonly',s=>s.getAll())).sort((a,b)=>b.fecha-a.fecha),
     patch:async(i,f)=>{const r=await tx('readonly',s=>s.get(i));
-      if(r)await tx('readwrite',s=>s.put({...r,...f}))}};})();
+      if(r)await tx('readwrite',s=>s.put({...r,...f}))},
+    kget:key=>tx('readonly',s=>s.get(key),'kv'),
+    kset:(key,v)=>tx('readwrite',s=>s.put(v,key),'kv'),
+    kdel:key=>tx('readwrite',s=>s.delete(key),'kv')};})();
+function avisoAlmacen(){ try{ const a=document.getElementById('almAviso'); if(a)a.classList.add('on'); }catch(_){} }
 function conRespaldo(pri,resp){const w={};let roto=false;
-  for(const m of ['put','del','all','patch']){w[m]=async(...a)=>{
+  for(const m of ['put','del','all','patch','kget','kset','kdel']){w[m]=async(...a)=>{
     if(roto)return resp[m](...a);
-    try{return await pri[m](...a);}catch(e){roto=true;console.warn('[storage] memoria:',e&&e.message||e);return resp[m](...a);}};}
+    try{return await pri[m](...a);}catch(e){roto=true;console.warn('[storage] memoria:',e&&e.message||e);avisoAlmacen();return resp[m](...a);}};}
+  w.roto=()=>roto;
   return w;}
 const almacen=USE_IDB?conRespaldo(bd,memoria):memoria;
+/* v1.10: pedir almacenamiento persistente (el navegador no lo borra por falta de espacio) */
+try{ if(navigator.storage&&navigator.storage.persist){ navigator.storage.persisted().then(p=>{ if(!p) return navigator.storage.persist(); }).catch(()=>{}); } }catch(_){}
+/* v1.10: confirmacion propia (sin dialogos del navegador) */
+function cgConfirmar(tit,msg){ return new Promise(res=>{ const m=document.getElementById('cfmModal'); if(!m){res(true);return;}
+  document.getElementById('cfmTit').textContent=tit; document.getElementById('cfmMsg').textContent=msg;
+  const si=document.getElementById('cfmSi'), no=document.getElementById('cfmNo');
+  const fin=v=>{ m.classList.remove('on'); si.onclick=null; no.onclick=null; m.onclick=null; res(v); };
+  si.onclick=()=>fin(true); no.onclick=()=>fin(false); m.onclick=e=>{ if(e.target===m) fin(false); };
+  m.classList.add('on'); }); }
 const uid=()=>crypto.randomUUID?crypto.randomUUID()
   :'r-'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
 
@@ -4304,7 +4344,10 @@ async function pintar(anim=false){
       const x=document.createElement('button');
       x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
       x.setAttribute('aria-label',t('borrarA'));
-      x.onclick=async(e)=>{e.stopPropagation();URL.revokeObjectURL(urls.get(r.id));urls.delete(r.id);
+      x.onclick=async(e)=>{e.stopPropagation();
+        const env=loadSent()['p:'+r.id]!==undefined;
+        if(!(await cgConfirmar(t('delObsT'),t(env?'delEnviado':'delNoEnviado'))))return;
+        URL.revokeObjectURL(urls.get(r.id));urls.delete(r.id);
         await almacen.del(r.id);pintar()};
       li.appendChild(x);$lista.appendChild(li);
     } else {
@@ -4326,7 +4369,10 @@ async function pintar(anim=false){
       const x=document.createElement('button');
       x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
       x.setAttribute('aria-label',t('trackDelA'));
-      x.onclick=(e)=>{e.stopPropagation();CGTracks.del(tr.id);};
+      x.onclick=async(e)=>{e.stopPropagation();
+        const env=loadSent()['t:'+tr.id]!==undefined;
+        if(!(await cgConfirmar(t('delTrkT'),t(env?'delEnviado':'delNoEnviado'))))return;
+        CGTracks.del(tr.id);};
       li.appendChild(x);$lista.appendChild(li);
     }
   });
@@ -4342,7 +4388,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.9.0';
+const APP_VER='1.10.0';
 const NIVELES=[{min:0,k:'r1',col:'#6B7A8F',ic:'ri-leaf-line'},{min:100,k:'r2',col:'#003876',ic:'ri-map-pin-fill'},{min:250,k:'r3',col:'#1B7F5A',ic:'ri-map-2-line'},{min:500,k:'r4',col:'#C77700',ic:'ri-camera-line'},{min:1000,k:'r5',col:'#7A3FA0',ic:'ri-shield-check-fill'}];
 /* v1.9: los registros de demostracion (id demo-*) no suman ni se envian */
 const esDemoId=id=>/^demo-/.test(String(id||''));
@@ -4458,6 +4504,38 @@ document.getElementById('aOk').onclick=()=>document.getElementById('ascenso').cl
 const CG_CLIENT_ID='918300818571-39mnd09t4q7k1kro6olhiafjme803k5b.apps.googleusercontent.com';
 let cgSession=(()=>{try{return JSON.parse(localStorage.getItem('cg_gauth')||'null');}catch(_){return null;}})();
 let cgIdToken=null, cgTokenExp=0, onGoogleExtra=null, cgVerificando=false, _pendingSend=false;
+/* v1.10: sesion propia de ClimateGuard, valida hasta cerrar sesion. Google
+   se usa solo la primera vez para verificar la identidad; despues el servidor
+   acepta esta clave firmada (y la invalida si el admin cierra la sesion). */
+const CG_SESS_KEY='cg_sess';
+let cgSessTok=(()=>{try{const v=JSON.parse(localStorage.getItem(CG_SESS_KEY)||'null'); return (v&&v.token&&cgSession&&v.email===cgSession.email)?v.token:null;}catch(_){return null;}})();
+function guardarSesionTok(tok,email){ cgSessTok=tok; try{localStorage.setItem(CG_SESS_KEY,JSON.stringify({token:tok,email:email}));}catch(_){} }
+function borrarSesionTok(){ cgSessTok=null; try{localStorage.removeItem(CG_SESS_KEY);}catch(_){} }
+function authQS(){ return cgSessTok?('&session='+encodeURIComponent(cgSessTok)):(cgIdToken?('&id_token='+encodeURIComponent(cgIdToken)):''); }
+let _cgJ=0;
+function cgJsonp(params,ms){ return new Promise(function(res){
+  try{ var cb='cgj'+Date.now()+'_'+(++_cgJ), sc=document.createElement('script'), done=false;
+    var fin=function(v){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode&&sc.parentNode.removeChild(sc);}catch(_){} res(v); };
+    window[cb]=function(r){ fin(r||null); }; sc.onerror=function(){ fin(null); };
+    sc.src=CG_ENVIO_URL+'?'+params+'&callback='+cb+'&_='+Date.now(); document.body.appendChild(sc);
+    setTimeout(function(){ fin(null); }, ms||10000);
+  }catch(_){ res(null); } }); }
+function sesionRevocada(){ try{cerrarSesion();}catch(_){} var gm=document.getElementById('gateMsg'); if(gm){ gm.style.color=''; gm.textContent=t('gRevocado'); } }
+function obtenerSesion(idToken,email){
+  return cgJsonp('action=login&id_token='+encodeURIComponent(idToken),12000).then(function(r){
+    if(r&&r.ok&&r.session&&curEmail()===email){ guardarSesionTok(r.session,email);
+      try{ if(typeof r.puntos==='number') setSrvPts(r.puntos); }catch(_){}
+      try{ cargarAvatar(); }catch(_){} }
+    return r; }); }
+function comprobarSesion(){
+  if(!cgSessTok||!navigator.onLine) return;
+  cgJsonp('action=me'+authQS(),10000).then(function(r){
+    if(!r) return;
+    if(r.ok){ try{ if(typeof r.puntos==='number') setSrvPts(r.puntos); }catch(_){}
+      var st=String(r.status||'active'); if(st==='blocked') _rechazar('gBloq'); else if(st==='pending') _rechazar('gPend'); return; }
+    if(r.error==='revoked') sesionRevocada();
+    else if(r.error==='auth') borrarSesionTok();
+  }); }
 function _jwtPayload(tok){ try{ var s=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }catch(_){ return null; } }
 function entrarApp(){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); try{armarBack();}catch(_){} }
 function aplicarSesion(s){
@@ -4465,6 +4543,7 @@ function aplicarSesion(s){
   perfilNombre=s.name||s.email; try{localStorage.setItem('cg_name_rd',perfilNombre);}catch(_){}
   try{ asegurarDueno(); }catch(_){}
   try{aplicarNombre();}catch(_){}
+  try{ cargarAvatar(); }catch(_){}
 }
 function onGoogle(resp){
   var cred=resp&&resp.credential; if(!cred)return;
@@ -4472,6 +4551,7 @@ function onGoogle(resp){
   cgIdToken=cred; cgTokenExp=(p.exp||0)*1000;
   aplicarSesion({email:(p.email||'').toLowerCase(), name:p.name||'', picture:p.picture||''});
   if(onGoogleExtra){ var f=onGoogleExtra; onGoogleExtra=null; try{f(cred);}catch(_){} }
+  try{ obtenerSesion(cred,(p.email||'').toLowerCase()); }catch(_){}
   try{ refrescarPuntosServidor(); }catch(_){}
   /* Entrar de INMEDIATO al recibir una credencial valida; el servidor revalida en cada envio. */
   if(!document.getElementById('gate').classList.contains('oculto')){ entrarApp(); }
@@ -4485,7 +4565,7 @@ function onGoogle(resp){
 }
 function _rechazar(msgKey){
   try{google.accounts.id.disableAutoSelect();}catch(_){}
-  cgIdToken=null; cgTokenExp=0; cgSession=null;
+  cgIdToken=null; cgTokenExp=0; cgSession=null; borrarSesionTok(); try{document.documentElement.style.removeProperty('--av');}catch(_){}
   try{localStorage.removeItem('cg_gauth');}catch(_){}
   try{cerrarPerfil();}catch(_){}
   document.getElementById('gate').classList.remove('oculto');
@@ -4508,7 +4588,7 @@ function verificarEstado(idToken, ok, fail){
    subir (ni suman puntos de nuevo). Solo marca items que existen tambien en
    local; no borra ni altera datos. */
 function reconciliarEnviados(idToken){
-  if(!idToken || !navigator.onLine) return;
+  if((!idToken && !cgSessTok) || !navigator.onLine) return;
   try{
     var cb='cgmine'+Date.now(), sc=document.createElement('script'), done=false;
     var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
@@ -4531,7 +4611,7 @@ function reconciliarEnviados(idToken){
       }catch(_){}
     };
     sc.onerror=function(){ fin(); };
-    sc.src=CG_ENVIO_URL+'?action=mine&callback='+cb+'&id_token='+encodeURIComponent(idToken);
+    sc.src=CG_ENVIO_URL+'?action=mine&callback='+cb+(cgSessTok?('&session='+encodeURIComponent(cgSessTok)):('&id_token='+encodeURIComponent(idToken)));
     document.body.appendChild(sc);
     setTimeout(function(){ if(!done) fin(); },25000);
   }catch(_){}
@@ -4542,12 +4622,12 @@ function refrescarPuntosServidor(){
   try{
     if(!navigator.onLine) return;
     var em = cgSession && cgSession.email; if(!em) return;
-    if(!(cgIdToken && cgTokenExp-Date.now()>60000)) return;   /* v1.9: sin token valido no se consulta */
+    if(!cgSessTok && !(cgIdToken && cgTokenExp-Date.now()>60000)) return;   /* v1.9: sin token valido no se consulta */
     var cb='cgpts'+Date.now(), sc=document.createElement('script'), done=false;
     var fin=function(){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc.parentNode.removeChild(sc);}catch(_){} };
     window[cb]=function(r){ fin(); if(r&&r.ok&&typeof r.puntos==='number'){ try{setSrvPts(r.puntos);}catch(_){} } };
     sc.onerror=function(){ fin(); };
-    sc.src=CG_ENVIO_URL+'?action=me&callback='+cb+'&id_token='+encodeURIComponent(cgIdToken)+'&_='+Date.now();
+    sc.src=CG_ENVIO_URL+'?action=me&callback='+cb+authQS()+'&_='+Date.now();
     document.body.appendChild(sc);
     setTimeout(function(){ if(!done) fin(); },8000);
   }catch(_){}
@@ -4582,7 +4662,12 @@ if(cgSession){
   entrarApp();
   try{ asegurarDueno(); }catch(_){}
   (function initBg(n){ if(initGoogle())return; if(n<=0)return; setTimeout(function(){initBg(n-1);},600); })(20);
-  try{ refrescarPuntosServidor(); }catch(_){}
+  /* v1.10: antes se llamaba aqui y fallaba en silencio (CG_ENVIO_URL aun no existia) */
+  window.addEventListener('load',function(){
+    try{ comprobarSesion(); }catch(_){}
+    try{ if(cgSessTok) reconciliarEnviados(null); }catch(_){}
+    try{ refrescarPuntosServidor(); }catch(_){}
+  });
 }else{
   (function waitGIS(n){ if(initGoogle())return; if(!navigator.onLine||n<=0){ var gm=document.getElementById('gateMsg'); if(gm)gm.textContent=t('gOffline'); return; } setTimeout(function(){waitGIS(n-1);},400); })(25);
 }
@@ -4594,7 +4679,7 @@ window.addEventListener('online', function(){
     var readyThen=function(){
       try{ initGoogle(); }catch(_){}
       /* pre-calentar el token si hay sesion y datos pendientes, para no forzar login al enviar */
-      try{ if(cgSession && pendientes()>0 && !(cgIdToken && cgTokenExp-Date.now()>120000)){ setTimeout(function(){ try{ tokenFresco(); }catch(_){} }, 800); } }catch(_){}
+      try{ if(cgSession && !cgSessTok && pendientes()>0 && !(cgIdToken && cgTokenExp-Date.now()>120000)){ setTimeout(function(){ try{ tokenFresco(); }catch(_){} }, 800); } }catch(_){}
       /* refrescar puntos/nivel reales del servidor (sin token) */
       try{ refrescarPuntosServidor(); }catch(_){}
     };
@@ -4624,7 +4709,7 @@ function tokenFresco(){
 }
 function cerrarSesion(){
   try{google.accounts.id.disableAutoSelect();}catch(_){}
-  cgIdToken=null; cgTokenExp=0; cgSession=null;
+  cgIdToken=null; cgTokenExp=0; cgSession=null; borrarSesionTok(); try{document.documentElement.style.removeProperty('--av');}catch(_){}
   try{localStorage.removeItem('cg_gauth');}catch(_){}
   try{localStorage.removeItem('cg_entered');}catch(_){}
   try{cerrarPerfil();}catch(_){}
@@ -4871,7 +4956,30 @@ document.getElementById('cGuardar').onclick=async()=>{
 /* ── v2: cambiar foto de la credencial (persistente) ── */
 const AV_KEY='cg_avatar_rd';
 function aplicarAvatar(uri){document.documentElement.style.setProperty('--av',`url("${uri}")`);}
-(function(){try{const s=localStorage.getItem(AV_KEY);if(s)aplicarAvatar(s);}catch{}})();
+/* v1.10: avatar por cuenta en IndexedDB (antes en localStorage, se perdia al
+   llenarse el espacio). Si falta en el telefono, se recupera del servidor. */
+const avKey=()=>'avatar:'+(curEmail()||'_');
+async function cargarAvatar(){
+  const em=curEmail(); let v=null;
+  try{ v=await almacen.kget(avKey()); }catch(_){}
+  if(!v){ try{ const lg=localStorage.getItem(AV_KEY);
+      if(lg && em){ await almacen.kset(avKey(),lg); v=lg; if(!almacen.roto()) localStorage.removeItem(AV_KEY); }
+      else if(lg){ v=lg; } }catch(_){} }
+  if(curEmail()!==em) return;
+  if(v){ aplicarAvatar(v); }
+  else { document.documentElement.style.removeProperty('--av'); try{ restaurarAvatarServidor(); }catch(_){} }
+}
+function restaurarAvatarServidor(){
+  const em=curEmail(); if(!cgSessTok || !navigator.onLine || !em) return;
+  cgJsonp('action=avatar'+authQS(),20000).then(async function(r){
+    if(!r||!r.ok||!r.dataB64||curEmail()!==em) return;
+    const uri='data:'+(r.mime||'image/jpeg')+';base64,'+r.dataB64;
+    try{ if(await almacen.kget('avatar:'+em)) return; await almacen.kset('avatar:'+em,uri); }catch(_){ return; }
+    aplicarAvatar(uri);
+    try{ const sm=loadSent(); sm['avatar']=uri.length+'_'+uri.slice(-24); saveSent(sm); }catch(_){}
+  });
+}
+cargarAvatar();
 /* v1.5.4: cambiar foto en la credencial removido (usar Editar perfil) */
 /* ── v3: perfil editable (nombre + foto) ── */
 let perfilNombre=(()=>{try{return (cgSession&&(cgSession.name||cgSession.email))||localStorage.getItem('cg_name_rd')||''}catch(_){return ''}})();
@@ -4889,8 +4997,10 @@ document.getElementById('peFotoBtn').onclick=()=>document.getElementById('peFoto
 document.getElementById('peFotoInp').addEventListener('change',e=>{
   const f=e.target.files?.[0];e.target.value='';if(!f)return;
   abrirRecorte(f, async cf=>{ document.getElementById('peMsg').innerHTML=`<i class="ri-loader-4-line"></i>${t('genCred')}`;
-    try{const {mini}=await comprimir(cf);const uri=await b64(mini.blob);aplicarAvatar(uri);
-      try{localStorage.setItem(AV_KEY,uri);}catch{}
+    try{const {mini}=await comprimir(cf);const uri=await b64(mini.blob);
+      let ok=true; try{ await almacen.kset(avKey(),uri); }catch(_){ ok=false; }
+      if(!ok){ document.getElementById('peMsg').innerHTML=`<i class="ri-error-warning-line"></i>${t('avErr')}`; return; }
+      aplicarAvatar(uri);
       document.getElementById('peMsg').innerHTML='<i class="ri-check-line"></i>';
     }catch{document.getElementById('peMsg').innerHTML=`<i class="ri-error-warning-line"></i>${t('errImg')}`;} });
 });
@@ -5390,11 +5500,12 @@ async function enviarTodo(){
   const trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1&&!esDemoId(x.id));
   const nt=trAll.filter(tr=>sentMap['t:'+tr.id]!==sigTrack(tr));
   let _avPayload=null, _avSig='';
-  try{ const _av=localStorage.getItem(AV_KEY); if(_av){ _avSig=_av.length+'_'+_av.slice(-24); if(sentMap['avatar']!==_avSig){ const mm=(_av.match(/^data:([^;]+);/)||[])[1]||'image/jpeg'; _avPayload={mime:mm,dataB64:_av.slice(_av.indexOf(',')+1)}; } } }catch(_){}
+  try{ const _av=await almacen.kget(avKey()); if(_av){ _avSig=_av.length+'_'+_av.slice(-24); if(sentMap['avatar']!==_avSig){ const mm=(_av.match(/^data:([^;]+);/)||[])[1]||'image/jpeg'; _avPayload={mime:mm,dataB64:_av.slice(_av.indexOf(',')+1)}; } } }catch(_){}
   if(!nf.length && !nt.length && !_avPayload){ aviso('a-info','ri-information-line',t('envNada')); return; }
   if(!navigator.onLine){ aviso('a-info','ri-cloud-off-line',t('envOffline')); return; }
-  const _idt=await tokenFresco();
-  if(!_idt){ try{reautenticarEnviar();}catch(_){} return; }
+  let _cred=null, _conSes=false;
+  if(cgSessTok){ _cred={session:cgSessTok}; _conSes=true; }
+  else { const _idt=await tokenFresco(); if(!_idt){ try{reautenticarEnviar();}catch(_){} return; } _cred={idToken:_idt}; }
   aviso('a-info','ri-loader-4-line',t('envEnviando'));
 
   const LOTE=4, lotes=[];
@@ -5415,7 +5526,7 @@ async function enviarTodo(){
         fecha:new Date(r.fecha).toISOString(),updated_at:new Date(r.updated||r.fecha).toISOString()},geometry:{type:'Point',coordinates:[r.lng,r.lat]}});
     }
     const rec={type:'FeatureCollection',features:LT.trk.map(tr=>({type:'Feature',properties:{id:tr.id,name:CGTracks.nombre(tr),points:tr.coords.length,distance_m:Math.round(CGTracks.dist(tr.coords)),start:new Date(tr.start).toISOString(),end:tr.end?new Date(tr.end).toISOString():null},geometry:{type:'LineString',coordinates:tr.coords.map(c=>[c[0],c[1]])}}))};
-    const payload={idToken:_idt,app:'ClimateGuard',schema:2,ver:APP_VER,submissionId:uid(),fecha:new Date().toISOString(),
+    const payload={..._cred,app:'ClimateGuard',schema:2,ver:APP_VER,submissionId:uid(),fecha:new Date().toISOString(),
       observaciones:{type:'FeatureCollection',features:feats},recorridos:rec,fotos:fotos,avatar:(li===0?_avPayload:null)};
     const res=await postServidor(payload,150000);
     if(!res){ fallo='red'; break; }
@@ -5438,7 +5549,8 @@ async function enviarTodo(){
   }
   try{ await pintar(); }catch(_){}   /* repintar ANTES del aviso final (dibujarMapa reescribe los avisos) */
 
-  if(fallo==='auth'){ try{reautenticarEnviar();}catch(_){} return; }
+  if(fallo==='revoked'){ sesionRevocada(); return; }
+  if(fallo==='auth'){ if(_conSes) borrarSesionTok(); try{reautenticarEnviar();}catch(_){} return; }
   if(fallo && okN>0){ aviso('a-av','ri-error-warning-line',t('envParcial').replace('{ok}',okN).replace('{tot}',tot)); return; }
   if(fallo){ const m={rate:'envRate',busy:'envBusy',blocked:'envBloq',pending:'envBloq'}[fallo]||'envErr'; aviso('a-er','ri-error-warning-line',t(m)); return; }
   aviso('a-ok','ri-check-line',`${t('envOk')}: ${okObs} ${t('fotos')}, ${okTrk} ${t('recorridosN')}${recon>0?` · ${recon} ${t('ptsRecon')}`:''}`);
@@ -5534,7 +5646,10 @@ var CGTracks = (function(){
   const btn=document.getElementById('trkBtn'), pauseBtn=document.getElementById('trkPause'),
         exp=document.getElementById('trkExport'), stat=document.getElementById('trkStat');
   const KEY='cg_tracks_rd';
+  /* v1.10: recorridos en IndexedDB (almacen 'kv'); localStorage queda solo como
+     copia de emergencia. Los recorridos antiguos se migran solos al abrir. */
   let tracks=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return []}})();
+  const _legacyTrk=tracks.length>0;
   /* v1.9: el recorrido en curso se guarda cada 20 s; si la app se cerro o se
      actualizo durante la grabacion, se recupera como recorrido guardado. */
   const LIVE='cg_trk_live'; let _lastLive=0;
@@ -5544,7 +5659,14 @@ var CGTracks = (function(){
     if(lv&&lv.coords&&lv.coords.length>1&&!tracks.some(x=>x.id===lv.id)){ lv.end=lv.coords[lv.coords.length-1][2]||Date.now(); lv.name=(lv.name||'')+(lv.name?' ':'')+'(recuperado)'; tracks.push(lv); }
     clearLive(); }catch(_){}
   let rec=null, watchId=null, trkLayer=null, liveLine=null, paused=false;
-  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(tracks));}catch{}};
+  const save=()=>{ const snap=tracks.slice();
+    const lsSave=()=>{ try{localStorage.setItem(KEY,JSON.stringify(snap));}catch(_){ avisoAlmacen(); } };
+    almacen.kset('tracks',snap).then(()=>{ if(almacen.roto()) lsSave(); else { try{localStorage.removeItem(KEY);}catch(_){} } }).catch(lsSave); };
+  almacen.kget('tracks').then(v=>{
+    if(Array.isArray(v)){ const ids={}; v.forEach(x=>{ids[x.id]=1;}); tracks=v.concat(tracks.filter(x=>!ids[x.id])); }
+    if(_legacyTrk || (!Array.isArray(v) && tracks.length)) save();
+    try{statLive();}catch(_){} try{pintar();}catch(_){} try{ if(mapa) drawSaved(); }catch(_){}
+  }).catch(()=>{});
   function hav(a,b){const R=6371000,toR=x=>x*Math.PI/180;
     const dLat=toR(b[1]-a[1]),dLng=toR(b[0]-a[0]);
     const s=Math.sin(dLat/2)**2+Math.cos(toR(a[1]))*Math.cos(toR(b[1]))*Math.sin(dLng/2)**2;
@@ -5576,7 +5698,7 @@ var CGTracks = (function(){
   function iniciarWatch(){
     watchId=navigator.geolocation.watchPosition(p=>{
       if(paused){return;}
-      const c=[p.coords.longitude,p.coords.latitude,Date.now(),Math.round(p.coords.accuracy||0)];
+      const c=[+p.coords.longitude.toFixed(6),+p.coords.latitude.toFixed(6),Date.now(),Math.round(p.coords.accuracy||0)];   /* v1.10: 6 decimales (~10 cm) */
       const last=rec.coords[rec.coords.length-1];
       if(!last||hav(last,c)>=3){rec.coords.push(c); saveLive(false);
         if(liveLine)liveLine.setLatLngs(rec.coords.map(x=>[x[1],x[0]]));
@@ -5734,14 +5856,14 @@ try{
   function syncOne(d,hash){
     return new Promise(function(resolve){
       if(!navigator.onLine){ resolve(false); return; }
-      Promise.resolve().then(tokenFresco).then(function(idt){
-        if(!idt){ resolve(false); return; }
+      Promise.resolve().then(function(){ return cgSessTok?null:tokenFresco(); }).then(function(idt){
+        if(!idt && !cgSessTok){ resolve(false); return; }
         const cb='cgat'+(++cbN); let sc, done=false;
         const finish=function(r){ if(done)return; done=true; try{delete window[cb];}catch(_){} try{sc&&sc.parentNode&&sc.parentNode.removeChild(sc);}catch(_){}
           if(r&&r.ok){ markSynced(d,hash,r.name||''); renderList(); resolve(true); } else { resolve(false); } };
         window[cb]=function(r){ finish(r); };
         sc=document.createElement('script'); sc.onerror=function(){ finish(null); };
-        sc.src=CG_ENVIO_URL+'?action=attend&callback='+cb+'&id_token='+encodeURIComponent(idt)+'&hash='+hash+'&date='+d;
+        sc.src=CG_ENVIO_URL+'?action=attend&callback='+cb+(cgSessTok?('&session='+encodeURIComponent(cgSessTok)):('&id_token='+encodeURIComponent(idt)))+'&hash='+hash+'&date='+d;
         document.body.appendChild(sc);
         setTimeout(function(){ finish(null); },9000);
       }).catch(function(){ resolve(false); });
@@ -5899,7 +6021,7 @@ async function seedDemo(){
     localStorage.setItem('cg_demo_seeded','1');
     try{if(typeof CGTracks!=='undefined'&&CGTracks.seed&&!localStorage.getItem('cg_demo_tracks')){CGTracks.seed(SAMPLE_TRACKS);localStorage.setItem('cg_demo_tracks','1');}}catch(_){}
     pintar();
-    try{ if(cgIdToken) reconciliarEnviados(cgIdToken); }catch(_){}
+    try{ if(cgIdToken||cgSessTok) reconciliarEnviados(cgIdToken); }catch(_){}
   }catch(_){}
 }
 seedDemo();
