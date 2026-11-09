@@ -193,8 +193,12 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .net-chip{margin-left:auto;display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:99px;
   padding:3px 9px;font:600 10.5px/1.2 var(--cpo);cursor:pointer;white-space:nowrap}
 .net-chip i,.net-chip .oh-svg{font-size:12px}
+body.oh-open .inst-banner{display:none!important}
 .oh-svg{vertical-align:-.15em}.oh-est .oh-svg{font-size:26px;color:#1E7A34;flex:none}.oh-del .oh-svg{font-size:18px}.net-chip.off{background:#F2B33D;color:#2B2100}
 .net-chip b{background:#CE1126;color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px;font-weight:700}
+.net-chip b em{font-style:normal}
+.gob .idioma{flex:none}
+@media (max-width:420px){.net-chip.pend>span,.net-chip b em{display:none}.net-chip{padding:3px 7px;margin-left:auto}}
 .off-ctl a{display:flex!important;align-items:center;justify-content:center;font-size:17px;color:var(--azul-osc)!important}
 #offHub{position:fixed;inset:0;z-index:210;background:rgba(0,20,45,.55);display:none;align-items:flex-end;justify-content:center}
 #offHub.on{display:flex}
@@ -4423,7 +4427,7 @@ async function procesarArchivo(file,deGaleria){
     $datos.innerHTML=
       `${orig.w}×${orig.h} · ${kb(file.size)}<br>`+
       `<b>${foto.w}×${foto.h} · ${kb(foto.blob.size)}</b><br>`+
-      `<span class="ok">${foto.type.replace('image/','').toUpperCase()} q${foto.q} · −${baja}%</span> · ${ms} ms<br>`+
+      `<span class="ok">${foto.type.replace('image/','').toUpperCase()} q${foto.q} · ${baja>=0?'−'+baja:'+'+(-baja)}%</span> · ${ms} ms<br>`+
       (borrador.lat!=null
         ? `<i class="ri-map-pin-fill"></i> ${borrador.lat.toFixed(5)}, ${borrador.lng.toFixed(5)}`
           +(borrador.origen==='exif'?' (EXIF)':'')
@@ -4671,7 +4675,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.1';
+const APP_VER='1.13.2';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5339,7 +5343,8 @@ async function credencialPng(){
   const _email=((typeof cgSession!=='undefined'&&cgSession&&cgSession.email)||'').toLowerCase().trim();
   let _hid='';
   if(_email){try{const _hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(_email));_hid=[...new Uint8Array(_hb)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(_){}}
-  const n=regs.length, pts=ptsMostrados(), i=nivelDe(pts), sig=NIVELES[i+1];
+  const _mios=regs.filter(r=>!esDemoId(r.id)), n=_mios.filter(r=>r.regTipo!=='amenaza').length, _nam=_mios.length-n;
+  const pts=ptsMostrados(), i=nivelDe(pts), sig=NIVELES[i+1];
   const TH=NIVELES[i];
   const W=780, H=1330, M=44;
   const cv=document.getElementById('lienzo'); cv.width=W; cv.height=H;
@@ -5402,8 +5407,8 @@ async function credencialPng(){
   c.strokeStyle='#E4E7EA'; c.lineWidth=1;
   c.beginPath();c.moveTo(M,by);c.lineTo(W-M,by);c.stroke();
   c.beginPath();c.moveTo(M,by+BH);c.lineTo(W-M,by+BH);c.stroke();
-  const _ntrk=(typeof CGTracks!=='undefined'&&CGTracks?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1).length;
-  const _st=[[String(pts),t('pts')],[String(n),t('observ')],[String(_ntrk),t('tracksStat')]];
+  /* v1.13.2: sin recorridos (desactivados) ni ejemplos: observaciones y amenazas propias */
+  const _st=[[String(pts),t('pts')],[String(n),t('observ')],[String(_nam),t('amenazasStat')]];
   const _cw=(W-2*M)/_st.length;
   _st.forEach(([val,lab],j)=>{const cx=M+_cw*(j+0.5);
     if(j>0){c.strokeStyle='#E4E7EA';c.beginPath();c.moveTo(M+_cw*j,by+14);c.lineTo(M+_cw*j,by+BH-14);c.stroke();}
@@ -6125,6 +6130,7 @@ var CGTracks = (function(){
     almacen.kset('tracks',snap).then(()=>{ if(almacen.roto()) lsSave(); else { try{localStorage.removeItem(KEY);}catch(_){} } }).catch(lsSave); };
   almacen.kget('tracks').then(v=>{
     if(Array.isArray(v)){ const ids={}; v.forEach(x=>{ids[x.id]=1;}); tracks=v.concat(tracks.filter(x=>!ids[x.id])); }
+    if(tracks.some(x=>esDemoId(x.id))){ tracks=tracks.filter(x=>!esDemoId(x.id)); save(); }
     if(_legacyTrk || (!Array.isArray(v) && tracks.length)) save();
     try{statLive();}catch(_){} try{pintar();}catch(_){} try{ if(mapa) drawSaved(); }catch(_){}
   }).catch(()=>{});
@@ -6219,7 +6225,8 @@ var CGTracks = (function(){
   setTimeout(()=>{try{pintar();}catch(_){}} ,0);
 
   return {
-    all:()=>tracks.filter(esMio), grabando:()=>!!rec,
+    /* v1.13.2: recorridos desactivados en el practico: no se muestran, no se cuentan, no se envian */
+    all:()=>TRACKS_ON?tracks.filter(esMio):[], grabando:()=>!!rec,
     reclamar(em){ let ch=false; tracks.forEach(x=>{ if(!x.owner){ x.owner=em; ch=true; } }); if(ch)save(); return ch; },
     nombre:nombreDe, dist:dist, fmtD:fmtD,
     seed(arr){ if(tracks.length)return false; tracks=arr.slice(); save(); statLive(); try{pintar();}catch(_){} if(mapa)drawSaved(); return true; },
@@ -6488,7 +6495,7 @@ async function seedDemo(){
       especie:'Dermochelys coriacea',notas:'Tortuga tinglar (baula) — monitoreo nocturno de anidaci\u00f3n, Parque Nacional Cotubanam\u00e1.',cant:1});
     { const pF=_durl2blob(DEMO_PINO_FOTO),pM=_durl2blob(DEMO_PINO_MINI); await almacen.put({id:'demo-obs-pino',foto:pF,mini:pM,w:1200,h:900,origW:4000,origH:3000,bytes:pF.size,tipo:'image/jpeg',q:80,fecha:Date.now()-1*3600*1000,lat:19.100956,lng:-70.598132,accuracy:6,origen:'demo',clase:'Pinopsida',iucn:'EN',especie:'Pinus occidentalis',notas:'Pinar de pino criollo en el Recinto Jimenoa (ITESMARENA), Jarabacoa. Registro de ejemplo para la pr\u00e1ctica.',cant:12}); localStorage.setItem('cg_demo_pino','1'); }
     localStorage.setItem('cg_demo_seeded','1');
-    try{if(typeof CGTracks!=='undefined'&&CGTracks.seed&&!localStorage.getItem('cg_demo_tracks')){CGTracks.seed(SAMPLE_TRACKS);localStorage.setItem('cg_demo_tracks','1');}}catch(_){}
+    
     pintar();
     try{ if(cgIdToken||cgSessTok) reconciliarEnviados(cgIdToken); }catch(_){}
   }catch(_){}
@@ -6511,7 +6518,7 @@ const CGOff=(function(){
   Object.assign(DIC.es,{offTit:'Sin conexión', offEnLinea:'En línea', offSinRed:'Sin conexión', offPend:'por enviar',
     offEstOn:'Hay conexión. Puedes descargar mapas y enviar tus registros.',
     offEstOff:'Modo sin conexión. Puedes registrar, ver el mapa y guardar todo en el teléfono. Compartir y Enviar necesitan conexión.',
-    offPendTit:'Pendientes de envío', offPendNada:'Todo está enviado.', offPendTxt:'{n} registros, aprox. {mb}',
+    offPendTit:'Pendientes de envío', offPendNada:'Todo está enviado.', offPendTxt:'{reg}, aprox. {mb}', regUno:'1 registro', regVarios:'{n} registros', amenazasStat:'Amenazas',
     offEnviarYa:'Enviar ahora', offMapasTit:'Mapas sin conexión', offMapasHint:'Descarga con Wi-Fi antes de salir al campo.',
     offCapaMapa:'Mapa', offCapaSat:'Satélite', offBajar:'Descargar', offBajarTodo:'Descargar todo', offListo:'Guardado',
     offBorrar:'Eliminar', offActualizar:'Actualizar', offVer:'Ver', offSinCat:'Conéctate una vez para ver los mapas disponibles.',
@@ -6520,11 +6527,11 @@ const CGOff=(function(){
     offBorrarTit:'¿Eliminar este mapa?', offBorrarMsg:'Podrás descargarlo otra vez cuando tengas conexión.',
     offPregTit:'Mapa para usar sin conexión', offPregMsg:'¿Descargar el mapa y la imagen satelital de {z} ({mb})? Así el mapa funcionará en modo avión. Mejor con Wi-Fi.',
     offPregSi:'Descargar', offPregNo:'Ahora no', offPackMapa:'Sin conexión: usando los mapas descargados.',
-    envConfTit:'¿Enviar ahora?', envConfMsg:'{n} registros, aprox. {mb}. Usa datos móviles si no hay Wi-Fi.', envConfSi:'Enviar', offDl:'Mapas sin conexión'});
+    envConfTit:'¿Enviar ahora?', envConfMsg:'{reg}, aprox. {mb}. Usa datos móviles si no hay Wi-Fi.', envConfSi:'Enviar', offDl:'Mapas sin conexión'});
   Object.assign(DIC.en,{offTit:'Offline', offEnLinea:'Online', offSinRed:'Offline', offPend:'to send',
     offEstOn:'You are online. You can download maps and send your records.',
     offEstOff:'Offline mode. You can record, view the map and keep everything on the phone. Share and Send need a connection.',
-    offPendTit:'Waiting to be sent', offPendNada:'Everything has been sent.', offPendTxt:'{n} records, about {mb}',
+    offPendTit:'Waiting to be sent', offPendNada:'Everything has been sent.', offPendTxt:'{reg}, about {mb}', regUno:'1 record', regVarios:'{n} records', amenazasStat:'Threats',
     offEnviarYa:'Send now', offMapasTit:'Offline maps', offMapasHint:'Download on Wi-Fi before going to the field.',
     offCapaMapa:'Map', offCapaSat:'Satellite', offBajar:'Download', offBajarTodo:'Download all', offListo:'Saved',
     offBorrar:'Delete', offActualizar:'Update', offVer:'View', offSinCat:'Connect once to see the available maps.',
@@ -6533,8 +6540,9 @@ const CGOff=(function(){
     offBorrarTit:'Delete this map?', offBorrarMsg:'You can download it again when you are online.',
     offPregTit:'Map for offline use', offPregMsg:'Download the map and satellite image of {z} ({mb})? The map will then work in airplane mode. Wi-Fi is best.',
     offPregSi:'Download', offPregNo:'Not now', offPackMapa:'Offline: using the downloaded maps.',
-    envConfTit:'Send now?', envConfMsg:'{n} records, about {mb}. Mobile data is used if there is no Wi-Fi.', envConfSi:'Send', offDl:'Offline maps'});
+    envConfTit:'Send now?', envConfMsg:'{reg}, about {mb}. Mobile data is used if there is no Wi-Fi.', envConfSi:'Send', offDl:'Offline maps'});
 
+  const regN=n=>n===1?t('regUno'):t('regVarios').replace('{n}',n);
   const mb=b=>b>=1e6?(b/1e6).toFixed(b>=1e8?0:1)+' MB':Math.max(1,Math.round(b/1e3))+' KB';
   const nom=p=>(p.name&&(p.name[idioma]||p.name.es))||p.id;
   const urlDe=l=>new URL(l.url,BASE).href;
@@ -6668,21 +6676,22 @@ const CGOff=(function(){
   /* ── chip de estado en la barra superior ── */
   function pintarChip(){ const c=document.getElementById('netChip'); if(!c) return;
     const on=navigator.onLine, P=pendientes();
-    c.classList.toggle('off',!on);
-    c.innerHTML=(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<span>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</span>'+(P.n?'<b>'+P.n+' '+esc(t('offPend'))+'</b>':'');
+    c.classList.toggle('off',!on); c.classList.toggle('pend',P.n>0);
+    c.innerHTML=(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<span>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</span>'+(P.n?'<b>'+P.n+'<em> '+esc(t('offPend'))+'</em></b>':'');
+    c.title=(on?t('offEnLinea'):t('offSinRed'))+(P.n?' · '+P.n+' '+t('offPend'):'');
     c.setAttribute('aria-label',t('offTit')); }
 
   /* ── hub ── */
-  function abrirHub(){ const h=document.getElementById('offHub'); if(!h) return; h.classList.add('on'); h.setAttribute('aria-hidden','false');
+  function abrirHub(){ const h=document.getElementById('offHub'); if(!h) return; h.classList.add('on'); document.body.classList.add('oh-open'); h.setAttribute('aria-hidden','false');
     pintarHub(); catalogo().then(pintarHub,()=>{ h.dataset.err='1'; pintarHub(); }); }
-  function cerrarHub(){ const h=document.getElementById('offHub'); h.classList.remove('on'); h.setAttribute('aria-hidden','true'); }
+  function cerrarHub(){ const h=document.getElementById('offHub'); h.classList.remove('on'); document.body.classList.remove('oh-open'); h.setAttribute('aria-hidden','true'); }
   function pintarProg(k){ const el=document.querySelector('[data-prog="'+k+'"]'); if(el) el.style.setProperty('--p',Math.round((prog[k]||0)*100)+'%');
     const tx=document.querySelector('[data-progt="'+k+'"]'); if(tx) tx.textContent=Math.round((prog[k]||0)*100)+'%'; }
   async function pintarHub(){ const h=document.getElementById('offHub'); if(!h||!h.classList.contains('on')) return;
     const on=navigator.onLine, P=pendientes();
     document.getElementById('ohTit').textContent=t('offTit');
     let H='<section class="oh-est '+(on?'on':'off')+'">'+(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<div><b>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</b><p>'+esc(on?t('offEstOn'):t('offEstOff'))+'</p></div></section>';
-    H+='<section><h4>'+esc(t('offPendTit'))+'</h4>'+(P.n?'<div class="oh-row"><span>'+esc(t('offPendTxt').replace('{n}',P.n).replace('{mb}',mb(P.b)))+'</span><button type="button" class="btn btn-2 oh-b" id="ohEnviar"'+(on?'':' disabled')+'>'+esc(t('offEnviarYa'))+'</button></div>':'<p class="oh-m">'+esc(t('offPendNada'))+'</p>')+'</section>';
+    H+='<section><h4>'+esc(t('offPendTit'))+'</h4>'+(P.n?'<div class="oh-row"><span>'+esc(t('offPendTxt').replace('{reg}',regN(P.n)).replace('{mb}',mb(P.b)))+'</span><button type="button" class="btn btn-2 oh-b" id="ohEnviar"'+(on?'':' disabled')+'>'+esc(t('offEnviarYa'))+'</button></div>':'<p class="oh-m">'+esc(t('offPendNada'))+'</p>')+'</section>';
     H+='<section><h4>'+esc(t('offMapasTit'))+'</h4><p class="oh-m">'+esc(t('offMapasHint'))+'</p>';
     const packs=(cat&&cat.packs)||[];
     if(!packs.length) H+='<p class="oh-m oh-av">'+esc(h.dataset.err?t('offCatErr'):t('offSinCat'))+'</p>';
@@ -6736,7 +6745,7 @@ const CGOff=(function(){
     if(window._cgOffPend) enMapa.apply(null,window._cgOffPend);
     setTimeout(preguntar,4000);
   }
-  return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,_tileId:tileId,_abrir:abrir};
+  return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,regN,_tileId:tileId,_abrir:abrir};
 })();
 /* el mapa se crea más tarde (al abrir la pestaña Mapa) */
 (function(){ const _p=pintar; pintar=async function(){ const r=await _p.apply(this,arguments); try{ CGOff.pintarChip(); }catch(_){} return r; }; })();
@@ -6744,7 +6753,7 @@ const CGOff=(function(){
 /* confirmación antes de Enviar: cuántos registros y cuánto pesa (datos móviles) */
 (function(){ const b=document.getElementById('btnEnviar'); if(!b) return; const orig=b.onclick;
   b.onclick=async function(ev){ if(b.disabled) return; const P=CGOff.pendientes();
-    if(P.n&&navigator.onLine){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{n}',P.n).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
+    if(P.n&&navigator.onLine){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{reg}',CGOff.regN(P.n)).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
     return orig&&orig.call(this,ev); }; })();
 CGOff.init();
 </script>
