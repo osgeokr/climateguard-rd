@@ -1274,6 +1274,8 @@ header{padding-bottom:12px}
 body.en-mapa .tira{display:none!important}
 body.en-mapa #mapa{height:clamp(220px,calc(100dvh - 390px),560px)}
 #avisos:empty{display:none}
+.mini.compartir-btn{display:inline-flex;align-items:center;gap:5px;margin:6px 0 0 12px;background:#E7F3EC;border:0;color:#1B7F5A;font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:999px;cursor:pointer;text-decoration:none;vertical-align:middle}
+.mini.compartir-btn:disabled{opacity:.6}
 #mapShare .mm-card{max-width:420px;padding:16px}
 #msImg{display:block;width:100%;border-radius:8px;border:1px solid var(--borde);margin-bottom:10px;background:#DDE6EE;min-height:120px}
 #msTxt{font-size:12.5px;color:var(--txt-2);margin:0 0 12px;line-height:1.45}
@@ -4482,7 +4484,7 @@ function amItemHTML(r){ const c=amCat(r.amenaza);
           <h3><span class="am-ic${r.amenaza==='clima'?' clima':''}">${AM_SVG(c?c.d:'M5 12h.01M12 12h.01M19 12h.01')}</span> ${amTitulo(r)}</h3>
           <span class="pill am-pill">${esc(amMetaTxt(r))}</span>${r.accion==='rep'?`<span class="pill am-rep">${t('reportar')}</span>`:''}${sentTag('p:'+r.id,sigFoto(r))}
           <p>${esc(r.notas||'')}</p>
-          <button type="button" class="mini editar-btn">${t('editar')}</button>
+          <button type="button" class="mini editar-btn">${t('editar')}</button><button type="button" class="mini compartir-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></svg>${t('bCompartir')}</button>
           <small>${r.lat!=null?`<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?', EXIF':''}${r.alt!=null?(', '+ALTIC+' '+Math.round(r.alt)+' m'):''}`:`<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span>`}</small>
           ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
         </div>`; }
@@ -4564,7 +4566,7 @@ async function pintar(anim=false){
             ${r.especie?`<em>${esc(r.especie)}</em>`:''}</h3>
           <span class="pill">${r.cant} ${t('ind')}</span>${r.iucn?iucnBadge(r.iucn):''}${sentTag('p:'+r.id,sigFoto(r))}
           <p>${esc(r.notas||'')}</p>
-          <button type="button" class="mini editar-btn">${t('editar')}</button>
+          <button type="button" class="mini editar-btn">${t('editar')}</button><button type="button" class="mini compartir-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></svg>${t('bCompartir')}</button>
           <small>${r.lat!=null
             ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
             : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
@@ -4572,6 +4574,7 @@ async function pintar(anim=false){
         </div>`;
       if(r.lat!=null) li.onclick=()=>focusFoto(r);
       {const ed=li.querySelector('.editar-btn'); if(ed)ed.onclick=(e)=>{e.stopPropagation();abrirEdicion(r);};}
+      {const cp=li.querySelector('.compartir-btn'); if(cp)cp.onclick=(e)=>{e.stopPropagation();compartirFoto(r,cp);};}
       const ub=li.querySelector('.ubicar-btn');
       if(ub)ub.onclick=(e)=>{e.stopPropagation();ubicando=r.id;tab(true);
         aviso('a-av','ri-cursor-line',`${t('toque')}. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
@@ -4622,7 +4625,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.12.1';
+const APP_VER='1.12.2';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5430,8 +5433,9 @@ const b64=blob=>new Promise((ok,no)=>{const r=new FileReader();
 
 /* v1.12.1: vista previa antes de compartir (el boton Compartir da un gesto nuevo
    al navegador, necesario para la hoja de compartir) */
-function vistaCompartir(files,texto){
+function vistaCompartir(files,texto,info){
   const m=document.getElementById('mapShare'), img=document.getElementById('msImg');
+  document.getElementById('msTxt').textContent=info||t('msInfo');
   const u=URL.createObjectURL(files[0]); img.src=u;
   const fin=()=>{ m.classList.remove('on'); setTimeout(()=>{ try{URL.revokeObjectURL(u);}catch(_){} img.removeAttribute('src'); },500); };
   document.getElementById('msNo').onclick=fin;
@@ -5448,6 +5452,52 @@ async function entregarVarios(files,texto){
 }
 /* v1.12.1: imagen ligera del mapa (JPEG 1200x900) con mosaicos CARTO (CORS) y,
    sin conexion, con el contorno nacional y las areas protegidas embebidos */
+/* v1.12.2: compartir una sola foto desde Registros (imagen con banda de datos) */
+async function fotoMarca(r){
+  const bmp=await createImageBitmap(r.foto);
+  const W=1200, H=Math.max(1,Math.round(bmp.height*(1200/bmp.width))), band=Math.round(W*0.20);
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H+band; const c=cv.getContext('2d');
+  c.drawImage(bmp,0,0,W,H); try{ bmp.close(); }catch(_){}
+  const am=r.regTipo==='amenaza';
+  c.fillStyle='#003876'; c.fillRect(0,H,W,band);
+  c.fillStyle=am?'#A15C00':'#C77700'; c.fillRect(0,H,W,Math.max(4,Math.round(band*0.035)));
+  const pad=Math.round(band*0.16), rr=band*0.19, cx=pad+rr, cy=H+band*0.45, s=rr/27;
+  c.fillStyle='#fff'; c.beginPath(); c.arc(cx,cy,rr+s*4.5,0,7); c.fill();
+  c.lineWidth=s*3; c.strokeStyle='#AEC1D4'; c.beginPath(); c.arc(cx,cy,s*27,0,7); c.stroke();
+  c.strokeStyle='#6688AD'; c.beginPath(); c.arc(cx,cy,s*19,0,7); c.stroke();
+  c.lineWidth=s*3.4; c.strokeStyle='#003876'; c.beginPath(); c.arc(cx,cy,s*12,0,7); c.stroke();
+  c.fillStyle='#1B7F5A'; c.beginPath(); c.moveTo(cx,cy-s*10.5); c.bezierCurveTo(cx+s*4.8,cy-s*5.5,cx+s*4.8,cy+s*5.5,cx,cy+s*10.5); c.bezierCurveTo(cx-s*4.8,cy+s*5.5,cx-s*4.8,cy-s*5.5,cx,cy-s*10.5); c.fill();
+  const tx=cx+rr+pad*0.8, avail=W-tx-pad;
+  const L2=am?amTituloTxt(r):((r.especie?r.especie+'  ':'')+(r.clase||''));
+  const L3=r.lat!=null?(r.lat.toFixed(5)+', '+r.lng.toFixed(5)):t('sinUbi');
+  const L4=(am?amMetaTxt(r)+',  ':((r.iucn?r.iucn+',  ':'')+(r.cant?r.cant+' ind,  ':'')))+new Date(r.fecha).toLocaleString(loc());
+  const fit=(txt,font,size,min)=>{ c.font=font.replace('#',size); const w=c.measureText(txt).width; if(w>avail){ size=Math.max(min,Math.floor(size*avail/w)); c.font=font.replace('#',size); } };
+  c.textBaseline='alphabetic'; let y=H+band*0.24;
+  fit('ClimateGuard Mobile','700 #px system-ui,sans-serif',Math.round(band*0.13),14); c.fillStyle='#fff'; c.fillText('ClimateGuard Mobile',tx,y);
+  y+=band*0.19; fit(L2,'italic 600 #px system-ui,sans-serif',Math.round(band*0.125),12); c.fillStyle='#DCE7F5'; c.fillText(L2,tx,y);
+  y+=band*0.25; fit(L3,'700 #px system-ui,sans-serif',Math.round(band*0.17),16); c.fillStyle='#FFD27A'; c.fillText(L3,tx,y);
+  y+=band*0.19; fit(L4,'400 #px system-ui,sans-serif',Math.round(band*0.095),11); c.fillStyle='#9FB6D6'; c.fillText(L4,tx,y);
+  return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',0.86));
+}
+async function compartirFoto(r,btn){
+  if(btn) btn.disabled=true;
+  try{
+    const am=r.regTipo==='amenaza';
+    const titulo=am?amTituloTxt(r):([r.especie,r.clase].filter(Boolean).join(', ')||t('optBio'));
+    const bl=await fotoMarca(r);
+    const nom=(am?'amenaza_'+(r.amenaza||''):(r.especie||'foto')).replace(/[^A-Za-z0-9]+/g,'_');
+    const f=new File([bl],`ClimateGuard_${nom}_${sello()}.jpg`,{type:'image/jpeg'});
+    const texto=titulo+(r.lat!=null?`\n${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}\nhttps://maps.google.com/?q=${r.lat.toFixed(6)},${r.lng.toFixed(6)}`:'');
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      try{ await navigator.share({files:[f],text:texto}); return; }
+      catch(e){ if(e&&e.name==='AbortError') return;
+        /* el gesto del usuario caduco mientras se generaba la imagen: pedir un toque mas */
+        vistaCompartir([f],texto,titulo); return; }
+    }
+    descargar(f); flash(t('guardado'));
+  }catch(_){ flash(t('errImg')); }
+  finally{ if(btn) btn.disabled=false; }
+}
 async function mapaPng(){
   const _B=(mapa&&mapa.getBounds)?mapa.getBounds():null;
   const P=regs.filter(r=>r.lat!=null&&(!_B||_B.contains([r.lat,r.lng]))).filter(r=>tipoFiltro==='all'||(tipoFiltro==='am'?r.regTipo==='amenaza':r.regTipo!=='amenaza'));
