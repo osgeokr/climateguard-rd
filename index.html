@@ -1271,6 +1271,12 @@ header{padding-bottom:12px}
 .tipo-fil button[aria-pressed=true]{background:var(--azul);color:#fff}
 .tipo-fil button.am[aria-pressed=true]{background:var(--am)}
 .trk-band [hidden]{display:none!important}
+body.en-mapa .tira{display:none!important}
+body.en-mapa #mapa{height:clamp(220px,calc(100dvh - 390px),560px)}
+#avisos:empty{display:none}
+#mapShare .mm-card{max-width:420px;padding:16px}
+#msImg{display:block;width:100%;border-radius:8px;border:1px solid var(--borde);margin-bottom:10px;background:#DDE6EE;min-height:120px}
+#msTxt{font-size:12.5px;color:var(--txt-2);margin:0 0 12px;line-height:1.45}
 .trk-band:has(#trkPause.on){background:#5C6670}
 .trk-band:has(#trkPause.on) #trkBtn{color:#5C6670}
 .flash{bottom:calc(92px + env(safe-area-inset-bottom))}
@@ -1582,6 +1588,16 @@ header{padding-bottom:12px}
     </div>
     <div class="sh-gal"><button type="button" id="shGalBio" data-i18n="oGalBio"></button><button type="button" id="shGalAm" data-i18n="oGalAm"></button></div>
     <p class="sh-seg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6l8-3z"></path></svg><span data-i18n="segAm"></span></p>
+  </div>
+</div>
+<div class="mini-modal" id="mapShare" role="dialog" aria-modal="true">
+  <div class="mm-card">
+    <img id="msImg" alt="">
+    <p id="msTxt" data-i18n="msInfo"></p>
+    <div class="mm-btns">
+      <button type="button" class="btn btn-3" id="msNo" data-i18n="cancelar"></button>
+      <button type="button" class="btn btn-1" id="msSi" data-i18n="bCompartir"></button>
+    </div>
   </div>
 </div>
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
@@ -4019,7 +4035,7 @@ const DIC={
   r4:'Naturalista', r5:'Maestro Naturalista',
   bTomar:'Tomar foto', bGaleria:'Elegir de galería', bCambiarFoto:'Cambiar foto',
   offlineMapa:'Sin conexión: base offline (RD y áreas protegidas).', wdpaTit:'Áreas protegidas', wdpaTer:'Terrestres / aguas continentales', wdpaMar:'Marinas / costeras', wdpaCat:'Cat.', aliados:'Con el apoyo de',
-  piloto:'UNOFFICIAL', gRevocado:'La sesión se cerró desde la administración. Inicia sesión de nuevo.', almErr:'Este teléfono no está guardando los datos. No cierres la app y envía tus registros cuanto antes.', avErr:'No se pudo guardar la foto en este teléfono.', delObsT:'¿Eliminar este registro?', delTrkT:'¿Eliminar este recorrido?', delEnviado:'Solo se borra de este teléfono. La copia enviada sigue en el servidor.', delNoEnviado:'Aún no se ha enviado. Si lo eliminas, no se podrá recuperar.', bEliminar:'Eliminar', nuevoReg:'Nuevo registro', queReg:'¿Qué vas a registrar?', optBio:'Flora y fauna', optBioS:'Especie observada', optAm:'Amenaza', optAmS:'Presión o daño', oGalBio:'Galería: flora y fauna', oGalAm:'Galería: amenaza', segAm:'Si la actividad está en curso, no te acerques. Toma la foto desde un lugar seguro.', nuevaObs:'Nueva observación', nuevaAm:'Nueva amenaza', queViste:'¿Qué viste?', presHum:'Presión humana', climaOtros:'Clima y otros', masDet:'Más detalles', lEstado:'Estado', lMagn:'Magnitud', lAccion:'Acción', amElige:'Elige qué viste', reportar:'Reportar', filTodo:'Todo', filBio:'Flora y fauna', filAm:'Amenazas', trkIdle:'Sin recorrido activo', trkGap:'La pantalla estuvo apagada unos {m} min: en ese tiempo no se registró el recorrido.', sinDet:'Sin detalles', amenazaN:'amenazas', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
+  piloto:'UNOFFICIAL', gRevocado:'La sesión se cerró desde la administración. Inicia sesión de nuevo.', almErr:'Este teléfono no está guardando los datos. No cierres la app y envía tus registros cuanto antes.', avErr:'No se pudo guardar la foto en este teléfono.', delObsT:'¿Eliminar este registro?', delTrkT:'¿Eliminar este recorrido?', delEnviado:'Solo se borra de este teléfono. La copia enviada sigue en el servidor.', delNoEnviado:'Aún no se ha enviado. Si lo eliminas, no se podrá recuperar.', bEliminar:'Eliminar', nuevoReg:'Nuevo registro', queReg:'¿Qué vas a registrar?', optBio:'Flora y fauna', optBioS:'Especie observada', optAm:'Amenaza', optAmS:'Presión o daño', oGalBio:'Galería: flora y fauna', oGalAm:'Galería: amenaza', segAm:'Si la actividad está en curso, no te acerques. Toma la foto desde un lugar seguro.', nuevaObs:'Nueva observación', nuevaAm:'Nueva amenaza', queViste:'¿Qué viste?', presHum:'Presión humana', climaOtros:'Clima y otros', masDet:'Más detalles', lEstado:'Estado', lMagn:'Magnitud', lAccion:'Acción', amElige:'Elige qué viste', reportar:'Reportar', filTodo:'Todo', filBio:'Flora y fauna', filAm:'Amenazas', trkIdle:'Sin recorrido activo', bCompartir:'Compartir', msInfo:'Se comparte esta imagen y el mapa interactivo (archivo HTML).', trkGap:'La pantalla estuvo apagada unos {m} min: en ese tiempo no se registró el recorrido.', sinDet:'Sin detalles', amenazaN:'amenazas', editarPerfil:'Editar perfil', lNombre:'Nombre', bEditar:'Editar',
   mapaNormal:'Mapa', mapaSat:'Satélite', mover:'Reubicar', cancelar:'Cancelar', heatmap:'Mapa de calor', miUbic:'Mi ubicación',
   sinNombre:'Sin nombre', recortar:'Ajustar foto', bConfirmar:'Confirmar',
   gpsTitulo:'Ubicación desactivada', reintentar:'Reintentar', cerrar:'Cerrar', gpsOk:'Ubicación activada.',
@@ -4104,7 +4120,7 @@ const DIC={
   r4:'Naturalist', r5:'Master Naturalist',
   bTomar:'Take photo', bGaleria:'Choose from gallery', bCambiarFoto:'Change photo',
   offlineMapa:'Offline: base map (RD and protected areas).', wdpaTit:'Protected areas', wdpaTer:'Terrestrial / Inland Waters', wdpaMar:'Marine / Coastal', wdpaCat:'Cat.', aliados:'Supported by',
-  piloto:'UNOFFICIAL', gRevocado:'Your session was closed by the administrator. Please sign in again.', almErr:'This phone is not saving data. Keep the app open and send your records as soon as possible.', avErr:'The photo could not be saved on this phone.', delObsT:'Delete this record?', delTrkT:'Delete this track?', delEnviado:'It is only removed from this phone. The sent copy stays on the server.', delNoEnviado:'It has not been sent yet. If you delete it, it cannot be recovered.', bEliminar:'Delete', nuevoReg:'New record', queReg:'What are you recording?', optBio:'Flora and fauna', optBioS:'Observed species', optAm:'Threat', optAmS:'Pressure or damage', oGalBio:'Gallery: flora and fauna', oGalAm:'Gallery: threat', segAm:'If the activity is in progress, do not get close. Take the photo from a safe place.', nuevaObs:'New observation', nuevaAm:'New threat', queViste:'What did you see?', presHum:'Human pressure', climaOtros:'Climate and other', masDet:'More details', lEstado:'Status', lMagn:'Size', lAccion:'Action', amElige:'Choose what you saw', reportar:'Report', filTodo:'All', filBio:'Flora and fauna', filAm:'Threats', trkIdle:'No active track', trkGap:'The screen was off for about {m} min: the track was not recorded during that time.', sinDet:'No details', amenazaN:'threats', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
+  piloto:'UNOFFICIAL', gRevocado:'Your session was closed by the administrator. Please sign in again.', almErr:'This phone is not saving data. Keep the app open and send your records as soon as possible.', avErr:'The photo could not be saved on this phone.', delObsT:'Delete this record?', delTrkT:'Delete this track?', delEnviado:'It is only removed from this phone. The sent copy stays on the server.', delNoEnviado:'It has not been sent yet. If you delete it, it cannot be recovered.', bEliminar:'Delete', nuevoReg:'New record', queReg:'What are you recording?', optBio:'Flora and fauna', optBioS:'Observed species', optAm:'Threat', optAmS:'Pressure or damage', oGalBio:'Gallery: flora and fauna', oGalAm:'Gallery: threat', segAm:'If the activity is in progress, do not get close. Take the photo from a safe place.', nuevaObs:'New observation', nuevaAm:'New threat', queViste:'What did you see?', presHum:'Human pressure', climaOtros:'Climate and other', masDet:'More details', lEstado:'Status', lMagn:'Size', lAccion:'Action', amElige:'Choose what you saw', reportar:'Report', filTodo:'All', filBio:'Flora and fauna', filAm:'Threats', trkIdle:'No active track', bCompartir:'Share', msInfo:'This image and the interactive map (HTML file) will be shared.', trkGap:'The screen was off for about {m} min: the track was not recorded during that time.', sinDet:'No details', amenazaN:'threats', editarPerfil:'Edit profile', lNombre:'Name', bEditar:'Edit',
   mapaNormal:'Map', mapaSat:'Satellite', mover:'Move', cancelar:'Cancel', heatmap:'Heatmap', miUbic:'My location',
   sinNombre:'No name', recortar:'Adjust photo', bConfirmar:'Confirm',
   gpsTitulo:'Location is off', reintentar:'Retry', cerrar:'Close', gpsOk:'Location enabled.',
@@ -4451,7 +4467,8 @@ const AM_ACC=[['reg','Solo registro','Record only'],['sit','En el sitio','On sit
 const amN=o=>(idioma==='en'?o.en:o.es);
 const AM_SVG=d=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"></path></svg>`;
 const amCat=k=>AMEN.find(c=>c.k===k)||null;
-function amTitulo(r){ const c=amCat(r.amenaza); if(!c) return esc(t('optAm')); const sb=c.subs.find(x=>x.k===r.amenaza_sub); return esc(amN(c)+(sb?': '+amN(sb).toLowerCase():'')); }
+function amTituloTxt(r){ const c=amCat(r.amenaza); if(!c) return t('optAm'); const sb=c.subs.find(x=>x.k===r.amenaza_sub); return amN(c)+(sb?': '+amN(sb).toLowerCase():''); }
+function amTitulo(r){ return esc(amTituloTxt(r)); }
 function amMetaTxt(r){ const p=[]; const f=(L,v)=>{ const o=L.find(x=>x[0]===v); if(o) p.push(idioma==='en'?o[2]:o[1]); };
   f(AM_COND,r.condicion); f(AM_MAGN,r.magnitud); if(!p.length) return t('sinDet'); const x=p.join(', ').toLowerCase(); return x.charAt(0).toUpperCase()+x.slice(1); }
 function marcaHTML(r){
@@ -4605,7 +4622,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.12.0';
+const APP_VER='1.12.1';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -4960,7 +4977,7 @@ function armarBack(){ try{ history.pushState({cg:1},'',location.href); _cgTrap.s
   function asegurar(){ if(!_cgTrap.set && logueado()) armarBack(); }
   function overlayAbierto(){
     var lb=document.getElementById('galLb'); if(lb && !lb.hidden){ var x=document.getElementById('galLbX'); if(x)x.click(); else lb.hidden=true; return true; }
-    var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal','nuevoSheet','cfmModal'];
+    var ids=['carnet','perfilEdit','ascenso','cropper','trkNameModal','nuevoSheet','cfmModal','mapShare'];
     for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el && el.classList.contains('on')){ el.classList.remove('on'); return true; } }
     var fm=document.getElementById('form'); if(fm && !fm.classList.contains('oculta')){ var cc=document.getElementById('cancelar'); if(cc) cc.click(); return true; }
     return false;
@@ -4985,6 +5002,7 @@ const $avisos=document.getElementById('avisos');
 const aviso=(cl,ic,tx)=>{$avisos.innerHTML=`<div class="alerta ${cl}"><i class="${ic}"></i><div>${tx}</div></div>`};
 
 function dibujarMapa(){
+  try{ window.pintarFiltro&&window.pintarFiltro(); }catch(_){}
   const pts=regs.map((r,i)=>({...r,n:regs.length-i})).filter(r=>r.lat!=null)
     .filter(r=>tipoFiltro==='all'||(tipoFiltro==='am'?r.regTipo==='amenaza':r.regTipo!=='amenaza'));
   const sin=regs.length-pts.length;
@@ -5054,8 +5072,7 @@ function dibujarMapa(){
   const ntrk=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1).length;
   if(!pts.length && !ntrk)
     aviso('a-av','ri-map-pin-off-line',`${t('ningunaC')}<br>`+(motivo?`${t('gpsEs')} <b>${t(motivo)}</b>. `:'')+t('useUbicar'));
-  else
-    aviso('a-info','ri-map-2-line',`${pts.length} ${t('obsN')} · ${ntrk} ${t('recorridosN')}`);
+  /* v1.12.1: sin linea de conteo; los conteos van en el filtro */
 }
 function respaldo(pts){
   let el=document.getElementById('mapa');
@@ -5073,6 +5090,7 @@ function respaldo(pts){
 const $tR=document.getElementById('tabReg'),$tM=document.getElementById('tabMap');
 function tab(esMapa){
   document.getElementById('vMap').hidden=!esMapa;
+  document.body.classList.toggle('en-mapa',!!esMapa);
   document.getElementById('vReg').hidden=esMapa;
   $tM.setAttribute('aria-selected',esMapa);$tR.setAttribute('aria-selected',!esMapa);
   try{ const a=document.getElementById('bnReg'), b=document.getElementById('bnMap');
@@ -5113,8 +5131,11 @@ $tM.onclick=()=>tab(true);
   /* filtro del mapa: todo / flora y fauna / amenazas */
   const tf=document.getElementById('tipoFil');
   if(tf){ const mw=tf.closest('.mapa-wrap'); if(mw) mw.parentNode.insertBefore(tf,mw); }   /* v1.11.1: encima del mapa */
-  const pintaTf=()=>{ if(!tf) return; tf.innerHTML=[['all','filTodo'],['bio','filBio'],['am','filAm']].map(x=>
-    `<button type="button" class="${x[0]==='am'?'am':''}" data-f="${x[0]}" aria-pressed="${tipoFiltro===x[0]}">${t(x[1])}</button>`).join(''); };
+  const pintaTf=()=>{ if(!tf) return; const con=(typeof regs!=='undefined'?regs:[]).filter(r=>r.lat!=null);
+    const n={all:con.length, am:con.filter(r=>r.regTipo==='amenaza').length}; n.bio=n.all-n.am;
+    tf.innerHTML=[['all','filTodo'],['bio','filBio'],['am','filAm']].map(x=>
+    `<button type="button" class="${x[0]==='am'?'am':''}" data-f="${x[0]}" aria-pressed="${tipoFiltro===x[0]}">${t(x[1])} (${n[x[0]]})</button>`).join(''); };
+  window.pintarFiltro=pintaTf;
   if(tf){ pintaTf(); tf.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; tipoFiltro=b.dataset.f; pintaTf(); try{dibujarMapa();}catch(_){} }; }
   window.CGv111Idioma=()=>{ pintaTf(); try{amRender();}catch(_){} const st=document.getElementById('trkStat'); if(st) st.setAttribute('data-idle',t('trkIdle')); };
 })();
@@ -5396,15 +5417,82 @@ document.getElementById('btnHtml').onclick=async()=>{
   const b=document.getElementById('btnHtml');b.disabled=true;
   aviso('a-info','ri-loader-4-line',t('genMapa'));
   try{
-    const html=await mapaHtml();
-    await entregar(new File([html],`ClimateGuard_Mapa_${sello()}.html`,{type:'text/html'}),
-      `${t('asunto')} · ${regs.length} ${t('tarjReg')}`);
+    const [html,_bl]=await Promise.all([mapaHtml(), mapaPng().catch(()=>null)]);
+    const _fh=new File([html],`ClimateGuard_Mapa_${sello()}.html`,{type:'text/html'});
+    const _txt=`${t('asunto')} · ${regs.length} ${t('tarjReg')}`;
+    if(_bl){ const _fi=new File([_bl],`ClimateGuard_Mapa_${sello()}.jpg`,{type:'image/jpeg'}); vistaCompartir([_fi,_fh],_txt); $avisos.innerHTML=''; }
+    else await entregar(_fh,_txt);
   }catch{aviso('a-er','ri-error-warning-line',t('errGenMapa'))}
   b.disabled=false;
 };
 const b64=blob=>new Promise((ok,no)=>{const r=new FileReader();
   r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsDataURL(blob)});
 
+/* v1.12.1: vista previa antes de compartir (el boton Compartir da un gesto nuevo
+   al navegador, necesario para la hoja de compartir) */
+function vistaCompartir(files,texto){
+  const m=document.getElementById('mapShare'), img=document.getElementById('msImg');
+  const u=URL.createObjectURL(files[0]); img.src=u;
+  const fin=()=>{ m.classList.remove('on'); setTimeout(()=>{ try{URL.revokeObjectURL(u);}catch(_){} img.removeAttribute('src'); },500); };
+  document.getElementById('msNo').onclick=fin;
+  document.getElementById('msSi').onclick=async()=>{ fin(); await entregarVarios(files,texto); };
+  m.classList.add('on');
+}
+async function entregarVarios(files,texto){
+  if(navigator.canShare&&navigator.canShare({files})){
+    try{ await navigator.share({files,text:texto}); aviso('a-ok','ri-whatsapp-line',t('elijaWa')); return; }
+    catch(e){ if(e&&e.name==='AbortError'){ aviso('a-info','ri-information-line',t('cancelado')); return; } }
+  }
+  files.forEach(f=>descargar(f));
+  aviso('a-av','ri-download-2-line',`${t('noComp')} <b>${files.map(f=>f.name).join(', ')}</b>. ${t('adjunte')}`);
+}
+/* v1.12.1: imagen ligera del mapa (JPEG 1200x900) con mosaicos CARTO (CORS) y,
+   sin conexion, con el contorno nacional y las areas protegidas embebidos */
+async function mapaPng(){
+  const _B=(mapa&&mapa.getBounds)?mapa.getBounds():null;
+  const P=regs.filter(r=>r.lat!=null&&(!_B||_B.contains([r.lat,r.lng]))).filter(r=>tipoFiltro==='all'||(tipoFiltro==='am'?r.regTipo==='amenaza':r.regTipo!=='amenaza'));
+  if(!P.length) return null;
+  const W=1200,H=900,TOP=118,MH=H-TOP;
+  const px=(lat,lng,z)=>{ const k=256*Math.pow(2,z), sn=Math.sin(lat*Math.PI/180); return [(lng+180)/360*k,(0.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*k]; };
+  const caja=z=>{ const a=P.map(r=>px(r.lat,r.lng,z)), xs=a.map(p=>p[0]), ys=a.map(p=>p[1]); return [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)]; };
+  let z=16;
+  if(P.length>1){ for(z=17;z>4;z--){ const b=caja(z); if(b[1]-b[0]<=W*0.78&&b[3]-b[2]<=MH*0.72) break; } }
+  const b=caja(z), ox=(b[0]+b[1])/2-W/2, oy=(b[2]+b[3])/2-MH/2, n=Math.pow(2,z);
+  const cargar=u=>new Promise(ok=>{ const im=new Image(); im.crossOrigin='anonymous'; const tm=setTimeout(()=>ok(null),5000);
+    im.onload=()=>{ clearTimeout(tm); ok(im); }; im.onerror=()=>{ clearTimeout(tm); ok(null); }; im.src=u; });
+  const pend=[];
+  if(navigator.onLine){ for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+W)/256);tx++) for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+MH)/256);ty++){
+    if(ty<0||ty>=n) continue; const xx=((tx%n)+n)%n;
+    pend.push(cargar('https://'+'abcd'[(xx+ty)&3]+'.basemaps.cartocdn.com/rastertiles/voyager/'+z+'/'+xx+'/'+ty+'.png').then(im=>({im,tx,ty}))); } }
+  const T=await Promise.all(pend), hay=T.some(o=>o.im);
+  const dibujar=mos=>{
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
+    c.fillStyle='#DDE6EE'; c.fillRect(0,TOP,W,MH);
+    c.save(); c.beginPath(); c.rect(0,TOP,W,MH); c.clip();
+    const poli=(g,fill,stroke)=>{ const P2=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]); c.beginPath();
+      P2.forEach(pg=>pg.forEach(rg=>{ rg.forEach((q,i)=>{ const p=px(q[1],q[0],z), X=p[0]-ox, Y=p[1]-oy+TOP; if(i) c.lineTo(X,Y); else c.moveTo(X,Y); }); c.closePath(); }));
+      if(fill){ c.fillStyle=fill; c.fill('evenodd'); } if(stroke){ c.strokeStyle=stroke; c.lineWidth=1.5; c.stroke(); } };
+    if(mos) T.forEach(o=>{ if(o.im) c.drawImage(o.im,o.tx*256-ox,o.ty*256-oy+TOP,256,256); });
+    else { try{ poli(DR_ADMIN.geometry,'#F4F1EA','#9AA7B4'); }catch(_){} }
+    try{ DR_WDPA.features.forEach(f=>poli(f.geometry,f.properties.k==='M'?'rgba(31,114,230,.16)':'rgba(55,162,74,.18)',f.properties.k==='M'?'#0B57D0':'#1E7A34')); }catch(_){}
+    P.forEach(r=>{ const p=px(r.lat,r.lng,z), X=p[0]-ox, Y=p[1]-oy+TOP;
+      if(r.regTipo==='amenaza'){ c.save(); c.translate(X,Y); c.rotate(Math.PI/4);
+        if(r.accion==='rep'){ c.fillStyle='#B00E21'; c.fillRect(-18,-18,36,36); }
+        c.fillStyle='#fff'; c.fillRect(-14,-14,28,28); c.fillStyle=r.amenaza==='clima'?'#0B5A66':'#A15C00'; c.fillRect(-11,-11,22,22); c.restore(); }
+      else { c.beginPath(); c.arc(X,Y,14,0,7); c.fillStyle='#fff'; c.fill(); c.beginPath(); c.arc(X,Y,10.5,0,7); c.fillStyle=iucnMark(r.iucn).bg; c.fill(); } });
+    c.restore();
+    c.fillStyle='#003876'; c.fillRect(0,0,W,TOP); c.fillStyle='#C77700'; c.fillRect(0,TOP-5,W,5);
+    [[30,'rgba(255,255,255,.45)'],[21,'rgba(255,255,255,.7)'],[13,'#fff']].forEach(q=>{ c.beginPath(); c.arc(62,58,q[0],0,7); c.strokeStyle=q[1]; c.lineWidth=3.4; c.stroke(); });
+    c.fillStyle='#1B7F5A'; c.beginPath(); c.moveTo(62,47); c.bezierCurveTo(67,52,67,64,62,69); c.bezierCurveTo(57,64,57,52,62,47); c.fill();
+    const nA=P.filter(r=>r.regTipo==='amenaza').length, nB=P.length-nA;
+    c.textBaseline='alphabetic'; c.fillStyle='#fff'; c.font='700 40px Poppins, system-ui, sans-serif'; c.fillText('ClimateGuard Mobile',112,58);
+    c.fillStyle='#DCE7F5'; c.font='400 24px "Open Sans", system-ui, sans-serif';
+    c.fillText(`${t('filBio')}: ${nB},  ${t('filAm')}: ${nA},  ${new Date().toLocaleDateString(loc())}`,112,95);
+    if(mos){ c.font='400 15px system-ui, sans-serif'; c.fillStyle='rgba(0,0,0,.6)'; c.textAlign='right'; c.fillText('© OpenStreetMap, © CARTO',W-10,H-10); c.textAlign='left'; }
+    return cv; };
+  const aBlob=cv=>new Promise((ok,no)=>{ try{ cv.toBlob(x=>x?ok(x):no(new Error('blob')),'image/jpeg',0.82); }catch(e){ no(e); } });
+  try{ return await aBlob(dibujar(hay)); }catch(_){ return await aBlob(dibujar(false)); }
+}
 async function mapaHtml(){
   const d=[];
   const _B=(mapa&&mapa.getBounds)?mapa.getBounds():null;
@@ -5412,6 +5500,8 @@ async function mapaHtml(){
   for(let ri=0;ri<regs.length;ri++){const r=regs[ri];const n=regs.length-ri;if(r.lat==null)continue;if(!_en(r.lat,r.lng))continue;
     d.push({n,lat:r.lat,lng:r.lng,grupo:esc(r.clase||''),especie:esc(r.especie||''),
       cant:r.cant,notas:esc(r.notas||''),iucn:esc(r.iucn||''),
+      am:r.regTipo==='amenaza'?1:0,cl:r.amenaza==='clima'?1:0,rep:r.accion==='rep'?1:0,
+      tt:r.regTipo==='amenaza'?amTituloTxt(r):'',mt:r.regTipo==='amenaza'?amMetaTxt(r):'',
       fecha:new Date(r.fecha).toLocaleString(loc()),img:await b64(r.foto)})}
   const datos=JSON.stringify(d).replace(/</g,'\\u003c');
   const _trAll=(typeof CGTracks!=='undefined'?CGTracks.all():[]).filter(x=>x.coords&&x.coords.length>1&&x.coords.some(p=>_en(p[1],p[0])));
@@ -5437,6 +5527,8 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 #hd b{font-size:17px;display:block;line-height:1.12}
 #hd span{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
 #m{height:calc(100% - 92px);background:#DDE3E8}
+.marca-am{width:22px;height:22px;transform:rotate(45deg);background:#A15C00;border:2px solid #fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.marca-am.clima{background:#0B5A66}.marca-am.rep{box-shadow:0 0 0 3px #B00E21}
 .wlg{background:rgba(255,255,255,.94);border:1px solid #cfd6dd;border-radius:7px;padding:7px 9px;font:600 10.5px system-ui,sans-serif;color:#1A1A1A;box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:200px;line-height:1.5}
 .wlg b{display:block;color:#003876;margin-bottom:4px}
 .wlg div{display:flex;align-items:center;gap:6px}
@@ -5472,14 +5564,14 @@ window.guardarFoto=function(n){
   im.onload=function(){
     var OW=(im.naturalWidth||im.width)||1200, OH=(im.naturalHeight||im.height)||OW;
     var W=1200, H=Math.max(1,Math.round(OH*(1200/OW)));
-    var band=Math.round(W*0.09);
+    var band=Math.round(W*0.20);
     var cv=document.createElement('canvas'); cv.width=W; cv.height=H+band;
     var c=cv.getContext('2d');
     c.drawImage(im,0,0,W,H);
     c.fillStyle='#003876'; c.fillRect(0,H,W,band);
-    c.fillStyle='#C77700'; c.fillRect(0,H,W,Math.max(3,Math.round(band*0.05)));
-    var pad=Math.round(band*0.30);
-    var r=band*0.30, cx=pad+r, cy=H+band*0.5;
+    c.fillStyle=d.am?'#A15C00':'#C77700'; c.fillRect(0,H,W,Math.max(4,Math.round(band*0.035)));
+    var pad=Math.round(band*0.16);
+    var r=band*0.19, cx=pad+r, cy=H+band*0.45;
     var s=r/27;
     c.fillStyle='#fff'; c.beginPath(); c.arc(cx,cy,r+s*4.5,0,7); c.fill();
     c.lineWidth=s*3;
@@ -5491,22 +5583,20 @@ window.guardarFoto=function(n){
     c.beginPath(); c.moveTo(cx,cy-s*10.5);
     c.bezierCurveTo(cx+s*4.8,cy-s*5.5,cx+s*4.8,cy+s*5.5,cx,cy+s*10.5);
     c.bezierCurveTo(cx-s*4.8,cy+s*5.5,cx-s*4.8,cy-s*5.5,cx,cy-s*10.5); c.fill();
-    var tx=cx+r+pad*0.7, avail=W-tx-pad;
-    var f1=Math.round(band*0.26), f2=Math.round(band*0.185), f3=Math.round(band*0.16);
+    var tx=cx+r+pad*0.8, avail=W-tx-pad;
     var L1='ClimateGuard Mobile';
-    var L2=(d.especie?d.especie+'  ':'')+(d.grupo||'');
-    var l3=(d.iucn?d.iucn+' · ':'')+(d.cant?d.cant+' ind · ':'')+d.fecha+' · '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);
+    var L2=d.am?d.tt:((d.especie?d.especie+'  ':'')+(d.grupo||''));
+    var L3=d.lat.toFixed(5)+', '+d.lng.toFixed(5);
+    var L4=(d.am?(d.mt?d.mt+',  ':''):((d.iucn?d.iucn+',  ':'')+(d.cant?d.cant+' ind,  ':'')))+d.fecha;
+    function fit(txt,font,size,min){ c.font=font.replace('#',size); var w=c.measureText(txt).width; if(w>avail){ size=Math.max(min,Math.floor(size*avail/w)); c.font=font.replace('#',size); } }
     c.textBaseline='alphabetic';
-    c.font='700 '+f1+'px system-ui,sans-serif'; var w1=c.measureText(L1).width;
-    c.font='italic 600 '+f2+'px system-ui,sans-serif'; var w2=c.measureText(L2).width;
-    c.font='400 '+f3+'px system-ui,sans-serif'; var w3=c.measureText(l3).width;
-    var sc=Math.min(1, avail/Math.max(w1,w2,w3,1));
-    if(sc<1){ f1=Math.max(9,Math.floor(f1*sc)); f2=Math.max(8,Math.floor(f2*sc)); f3=Math.max(7,Math.floor(f3*sc)); }
-    c.fillStyle='#fff'; c.font='700 '+f1+'px system-ui,sans-serif'; c.fillText(L1, tx, H+band*0.40);
-    c.fillStyle='#DCE7F5'; c.font='italic 600 '+f2+'px system-ui,sans-serif'; c.fillText(L2, tx, H+band*0.64);
-    c.fillStyle='#9FB6D6'; c.font='400 '+f3+'px system-ui,sans-serif'; c.fillText(l3, tx, H+band*0.86);
+    var y=H+band*0.24;
+    fit(L1,'700 #px system-ui,sans-serif',Math.round(band*0.13),14); c.fillStyle='#fff'; c.fillText(L1,tx,y);
+    y+=band*0.19; fit(L2,'italic 600 #px system-ui,sans-serif',Math.round(band*0.125),12); c.fillStyle='#DCE7F5'; c.fillText(L2,tx,y);
+    y+=band*0.25; fit(L3,'700 #px system-ui,sans-serif',Math.round(band*0.17),16); c.fillStyle='#FFD27A'; c.fillText(L3,tx,y);
+    y+=band*0.19; fit(L4,'400 #px system-ui,sans-serif',Math.round(band*0.095),11); c.fillStyle='#9FB6D6'; c.fillText(L4,tx,y);
     cv.toBlob(function(bl){ var a=document.createElement('a'); a.href=URL.createObjectURL(bl);
-      a.download='ClimateGuard_'+((d.especie||'foto').split(' ').join('_'))+'_'+('0'+d.n).slice(-2)+'.jpg';
+      a.download='ClimateGuard_'+((d.am?'amenaza':(d.especie||'foto')).split(' ').join('_'))+'_'+('0'+d.n).slice(-2)+'.jpg';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
     },'image/jpeg',0.9);
@@ -5517,6 +5607,7 @@ var IC={EX:'#000',CR:'#d81e05',EN:'#fc7f3f',VU:'#f9e814',NT:'#cce226','LR/nt':'#
 var ID2=['VU','NT','LR/nt','LC','DD'];
 function ib(k){if(!k||!IC[k])return '';return '<span class="iucn" style="background:'+IC[k]+';color:'+(ID2.indexOf(k)>=0?'#1a1a1a':'#fff')+'">'+k+'</span>';}
 function mk(k){return {bg:(k&&IC[k])||'#003876', fg:(k&&ID2.indexOf(k)>=0)?'#1a1a1a':'#fff'};}
+function E(x){return String(x==null?'':x).replace(/[&<>"]/g,function(q){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[q];});}
 if(window.L&&(D.length||TR.length)){
   var m=L.map('m'),g=L.layerGroup().addTo(m);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m);
@@ -5525,10 +5616,10 @@ if(window.L&&(D.length||TR.length)){
   try{L.geoJSON(BG_W,{pane:'wp',style:function(f){return f.properties.k==='M'?{color:'#0B57D0',weight:1,fillColor:'#1F72E6',fillOpacity:.26}:{color:'#1E7A34',weight:1,fillColor:'#37A24A',fillOpacity:.28};},onEachFeature:function(f,l){var p=f.properties;l.bindPopup('<div class="tp"><b>'+(p.n||'')+'</b>'+(p.d?'<br>'+p.d:'')+(p.c?' · '+p.c:'')+'</div>');}}).addTo(m);}catch(e){}
   var _lg=L.control({position:'bottomleft'});_lg.onAdd=function(){var el=L.DomUtil.create('div','wlg');el.innerHTML='<b>'+WTIT+'</b><div><span class="s ter"></span>'+WTER+'</div><div><span class="s mar"></span>'+WMAR+'</div>';return el;};_lg.addTo(m);
   D.forEach(function(d){
-    L.marker([d.lat,d.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:[13,26],
-      html:'<div class="marca" style="background:'+mk(d.iucn).bg+'"><i class="mdot"></i></div>'})})
-     .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+d.grupo+
-       (d.especie?' <em>'+d.especie+'</em>':'')+'</h4><small>'+d.cant+' '+IND+' '+ib(d.iucn)+
+    L.marker([d.lat,d.lng],{zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[27,27],iconAnchor:(d.am?[13,13]:[13,26]),
+      html:(d.am?'<div class="marca-am'+(d.cl?' clima':'')+(d.rep?' rep':'')+'"></div>':'<div class="marca" style="background:'+mk(d.iucn).bg+'"><i class="mdot"></i></div>')})})
+     .bindPopup('<div class="p"><img src="'+d.img+'"><h4>'+(d.am?E(d.tt):d.grupo+
+       (d.especie?' <em>'+d.especie+'</em>':''))+'</h4><small>'+(d.am?E(d.mt):d.cant+' '+IND+' '+ib(d.iucn))+
        '<br>'+(d.notas||SN)+'<br>'+d.lat.toFixed(5)+', '+d.lng.toFixed(5)+'<br>'+d.fecha+
        '</small><button type="button" class="dl" onclick="guardarFoto('+d.n+')">\u2b07 '+SAVE+'</button><span class="hint">'+HINT+'</span></div>',{minWidth:196}).addTo(g);
   });
