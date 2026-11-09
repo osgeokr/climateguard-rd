@@ -188,6 +188,38 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .gal-lb-info{padding:12px 16px calc(env(safe-area-inset-bottom) + 16px);color:#cfe0f2}
 .gal-lb-info .atr{font-size:11.5px;color:#9fb6d6}
 .gal-lb-info a{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:7px 11px;text-decoration:none}
+
+/* ══ v1.13 sin conexión ══ */
+.net-chip{margin-left:auto;display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:99px;
+  padding:3px 9px;font:600 10.5px/1.2 var(--cpo);cursor:pointer;white-space:nowrap}
+.net-chip i,.net-chip .oh-svg{font-size:12px}
+.oh-svg{vertical-align:-.15em}.oh-est .oh-svg{font-size:26px;color:#1E7A34;flex:none}.oh-del .oh-svg{font-size:18px}.net-chip.off{background:#F2B33D;color:#2B2100}
+.net-chip b{background:#CE1126;color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px;font-weight:700}
+.off-ctl a{display:flex!important;align-items:center;justify-content:center;font-size:17px;color:var(--azul-osc)!important}
+#offHub{position:fixed;inset:0;z-index:210;background:rgba(0,20,45,.55);display:none;align-items:flex-end;justify-content:center}
+#offHub.on{display:flex}
+.oh-card{background:#fff;width:100%;max-width:560px;max-height:88dvh;overflow:auto;border-radius:16px 16px 0 0;padding:0 18px calc(18px + env(safe-area-inset-bottom))}
+.oh-bar{position:sticky;top:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px;z-index:1}
+.oh-bar h3{font-size:18px}
+.oh-bar button{background:none;border:0;font-size:24px;color:var(--txt-2);cursor:pointer;padding:4px}
+#offHub section{border-top:1px solid var(--borde);padding:12px 0}
+#offHub h4{font:700 12px var(--cpo);letter-spacing:.05em;text-transform:uppercase;color:var(--txt-2);margin:0 0 8px}
+.oh-est{display:flex;gap:12px;align-items:flex-start;border-top:0!important}
+.oh-est i{font-size:26px;color:#1E7A34}.oh-est.off i{color:#B7791F}
+.oh-est p{margin:3px 0 0;font-size:13px;color:var(--txt-2);line-height:1.45}
+.oh-m{font-size:13px;color:var(--txt-2);margin:0 0 8px}.oh-av{background:#FFF6E0;padding:9px 11px;border-radius:8px}
+.oh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:14px}
+.oh-row small{color:var(--txt-2);margin-left:4px}
+.oh-act{display:flex;align-items:center;gap:6px}
+.oh-b{padding:6px 12px!important;font-size:13px!important;min-height:0!important}
+.oh-pack{border:1px solid var(--borde);border-radius:10px;padding:10px 12px;margin:8px 0}
+.oh-ph{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14.5px}
+.oh-ver{background:none;border:0;color:var(--azul);font:600 12.5px var(--cpo);cursor:pointer;display:flex;align-items:center;gap:3px}
+.oh-ok{color:#1E7A34;font-weight:600;font-size:13px;display:flex;align-items:center;gap:3px}
+.oh-del{background:none;border:0;color:#8A939C;font-size:18px;cursor:pointer;padding:4px}
+.oh-prog{--p:0%;display:inline-block;width:92px;height:22px;border-radius:99px;background:linear-gradient(90deg,var(--azul) var(--p),#E3E8EE var(--p));
+  color:#fff;font:700 11.5px/22px var(--cpo);text-align:center;text-shadow:0 0 3px rgba(0,0,0,.5)}
+.oh-todo{width:100%;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
 </style>
 <style>/* required styles */
 
@@ -1611,6 +1643,10 @@ body.en-mapa main{padding-top:10px}
 </div>
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
 <div class="alm-aviso" id="almAviso" role="alert"><i class="ri-error-warning-line"></i><span data-i18n="almErr"></span></div>
+<div id="offHub" role="dialog" aria-modal="true" aria-labelledby="ohTit" aria-hidden="true">
+  <div class="oh-card"><div class="oh-bar"><h3 id="ohTit"></h3><button type="button" id="ohCerrar" aria-label="Cerrar"><i class="ri-close-line"></i></button></div>
+  <div id="ohCuerpo"></div></div>
+</div>
 <div class="mini-modal" id="cfmModal" role="dialog" aria-modal="true" aria-labelledby="cfmTit">
   <div class="mm-card">
     <i class="ri-error-warning-line mm-ic"></i>
@@ -4205,9 +4241,12 @@ const almacen=USE_IDB?conRespaldo(bd,memoria):memoria;
 /* v1.10: pedir almacenamiento persistente (el navegador no lo borra por falta de espacio) */
 try{ if(navigator.storage&&navigator.storage.persist){ navigator.storage.persisted().then(p=>{ if(!p) return navigator.storage.persist(); }).catch(()=>{}); } }catch(_){}
 /* v1.10: confirmacion propia (sin dialogos del navegador) */
-function cgConfirmar(tit,msg){ return new Promise(res=>{ const m=document.getElementById('cfmModal'); if(!m){res(true);return;}
+function cgConfirmar(tit,msg,o){ return new Promise(res=>{ const m=document.getElementById('cfmModal'); if(!m){res(true);return;}
   document.getElementById('cfmTit').textContent=tit; document.getElementById('cfmMsg').textContent=msg;
-  const si=document.getElementById('cfmSi'), no=document.getElementById('cfmNo');
+  const si=document.getElementById('cfmSi'), no=document.getElementById('cfmNo'), ic=m.querySelector('.mm-ic');
+  /* v1.13: o={si,no,ic} para preguntas que no son de borrar */
+  si.textContent=o&&o.si||t('bEliminar'); no.textContent=o&&o.no||t('cancelar'); si.classList.toggle('btn-peligro',!o);
+  if(ic) ic.className=(o&&o.ic||'ri-error-warning-line')+' mm-ic';
   const fin=v=>{ m.classList.remove('on'); si.onclick=null; no.onclick=null; m.onclick=null; res(v); };
   si.onclick=()=>fin(true); no.onclick=()=>fin(false); m.onclick=e=>{ if(e.target===m) fin(false); };
   m.classList.add('on'); }); }
@@ -4632,7 +4671,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.12.4';
+const APP_VER='1.13.0';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5026,6 +5065,7 @@ function dibujarMapa(){
     const _bs=document.getElementById('baseSel');
     if(_bs){_bs.innerHTML=`<option value="osm">${t('mapaNormal')}</option><option value="sat">${t('mapaSat')}</option>`;_bs.value='osm';
       _bs.onchange=()=>{ if(_bs.value==='sat'){if(mapa.hasLayer(osm))mapa.removeLayer(osm);sat.addTo(mapa);} else {if(mapa.hasLayer(sat))mapa.removeLayer(sat);osm.addTo(mapa);} };}
+    try{ CGOff.enMapa(mapa,_bs); }catch(_){ window._cgOffPend=[mapa,_bs]; }
     mapa.createPane('drpane'); mapa.getPane('drpane').style.zIndex=150;
     mapa.createPane('wdpapane'); mapa.getPane('wdpapane').style.zIndex=250;
     /* base offline: contorno nacional (real, simplificado) bajo los mosaicos */
@@ -5048,7 +5088,7 @@ function dibujarMapa(){
       try{L.DomEvent.disableClickPropagation(d);}catch(_){}
       return d;};
     _leg.addTo(mapa);
-    let off=false;const mo=()=>{if(off)return;off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',t('offlineMapa'));};
+    let off=false;const mo=()=>{if(off)return;off=true;if(!ubicando)aviso('a-av','ri-wifi-off-line',(window.CGOff&&CGOff.hayPacks())?t('offPackMapa'):t('offlineMapa'));};
     osm.on('tileerror',mo);sat.on('tileerror',mo);
     capa=(typeof L.markerClusterGroup==='function'?L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:45,spiderfyDistanceMultiplier:1.5,iconCreateFunction:function(c){return L.divIcon({html:'<div class="cg-cluster">'+c.getChildCount()+'</div>',className:'',iconSize:[36,36]});}}):L.layerGroup()).addTo(mapa);
     mapa.on('click',async ev=>{
@@ -6447,6 +6487,259 @@ async function seedDemo(){
   }catch(_){}
 }
 seedDemo();
+</script>
+<script>
+/* ══ v1.13: mapas sin conexión (paquetes PMTiles) + estado de red + pendientes de envío ══
+   Los paquetes vienen de https://osgeokr.github.io/climateguard-tiles/ (packs.json).
+   Se guardan completos en Cache Storage ('cg-packs') y se leen por rangos (Blob.slice),
+   así el mapa base funciona en modo avión. Nada se envía solo: el envío sigue siendo manual. */
+const CGOff=(function(){
+  const BASE=(()=>{ try{ return localStorage.getItem('cg_tiles_base')||'https://osgeokr.github.io/climateguard-tiles/'; }catch(_){ return 'https://osgeokr.github.io/climateguard-tiles/'; } })();
+  const CN='cg-packs', K_CAT='cg_packs_cat', K_INST='cg_packs_inst', K_ASK='cg_packs_ask';
+  const jget=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(_){ return null; } };
+  const jset=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(_){} };
+  let cat=jget(K_CAT), inst=jget(K_INST)||{}, prog={}, abiertos={};
+  const LAYS=['mapa','sat'];
+
+  Object.assign(DIC.es,{offTit:'Sin conexión', offEnLinea:'En línea', offSinRed:'Sin conexión', offPend:'por enviar',
+    offEstOn:'Hay conexión. Puedes descargar mapas y enviar tus registros.',
+    offEstOff:'Modo sin conexión. Puedes registrar, ver el mapa y guardar todo en el teléfono. Compartir y Enviar necesitan conexión.',
+    offPendTit:'Pendientes de envío', offPendNada:'Todo está enviado.', offPendTxt:'{n} registros, aprox. {mb}',
+    offEnviarYa:'Enviar ahora', offMapasTit:'Mapas sin conexión', offMapasHint:'Descarga con Wi-Fi antes de salir al campo.',
+    offCapaMapa:'Mapa', offCapaSat:'Satélite', offBajar:'Descargar', offBajarTodo:'Descargar todo', offListo:'Guardado',
+    offBorrar:'Eliminar', offActualizar:'Actualizar', offVer:'Ver', offSinCat:'Conéctate una vez para ver los mapas disponibles.',
+    offCatErr:'No se pudo cargar la lista de mapas.', offAlmTit:'Espacio en el teléfono', offAlmTxt:'Mapas: {m}. Usado por la app: {u} de {q} disponibles.',
+    offFaltaEsp:'No hay espacio suficiente para este mapa.', offDescErr:'La descarga falló. Inténtalo otra vez con Wi-Fi.',
+    offBorrarTit:'¿Eliminar este mapa?', offBorrarMsg:'Podrás descargarlo otra vez cuando tengas conexión.',
+    offPregTit:'Mapa para usar sin conexión', offPregMsg:'¿Descargar el mapa y la imagen satelital de {z} ({mb})? Así el mapa funcionará en modo avión. Mejor con Wi-Fi.',
+    offPregSi:'Descargar', offPregNo:'Ahora no', offPackMapa:'Sin conexión: usando los mapas descargados.',
+    envConfTit:'¿Enviar ahora?', envConfMsg:'{n} registros, aprox. {mb}. Usa datos móviles si no hay Wi-Fi.', envConfSi:'Enviar', offDl:'Mapas sin conexión'});
+  Object.assign(DIC.en,{offTit:'Offline', offEnLinea:'Online', offSinRed:'Offline', offPend:'to send',
+    offEstOn:'You are online. You can download maps and send your records.',
+    offEstOff:'Offline mode. You can record, view the map and keep everything on the phone. Share and Send need a connection.',
+    offPendTit:'Waiting to be sent', offPendNada:'Everything has been sent.', offPendTxt:'{n} records, about {mb}',
+    offEnviarYa:'Send now', offMapasTit:'Offline maps', offMapasHint:'Download on Wi-Fi before going to the field.',
+    offCapaMapa:'Map', offCapaSat:'Satellite', offBajar:'Download', offBajarTodo:'Download all', offListo:'Saved',
+    offBorrar:'Delete', offActualizar:'Update', offVer:'View', offSinCat:'Connect once to see the available maps.',
+    offCatErr:'Could not load the list of maps.', offAlmTit:'Space on the phone', offAlmTxt:'Maps: {m}. Used by the app: {u} of {q} available.',
+    offFaltaEsp:'Not enough space for this map.', offDescErr:'The download failed. Try again on Wi-Fi.',
+    offBorrarTit:'Delete this map?', offBorrarMsg:'You can download it again when you are online.',
+    offPregTit:'Map for offline use', offPregMsg:'Download the map and satellite image of {z} ({mb})? The map will then work in airplane mode. Wi-Fi is best.',
+    offPregSi:'Download', offPregNo:'Not now', offPackMapa:'Offline: using the downloaded maps.',
+    envConfTit:'Send now?', envConfMsg:'{n} records, about {mb}. Mobile data is used if there is no Wi-Fi.', envConfSi:'Send', offDl:'Offline maps'});
+
+  const mb=b=>b>=1e6?(b/1e6).toFixed(b>=1e8?0:1)+' MB':Math.max(1,Math.round(b/1e3))+' KB';
+  const nom=p=>(p.name&&(p.name[idioma]||p.name.es))||p.id;
+  const urlDe=l=>new URL(l.url,BASE).href;
+
+  /* ── lector PMTiles v3 mínimo (sobre un Blob) ── */
+  function u64(dv,o){ return dv.getUint32(o,true)+dv.getUint32(o+4,true)*4294967296; }
+  async function inflar(buf,comp){ if(comp!==2) return buf;
+    const s=new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip')); return await new Response(s).arrayBuffer(); }
+  function dirLeer(buf){ const a=new Uint8Array(buf); let p=0;
+    const v=()=>{ let r=0,m=1,b; do{ b=a[p++]; r+=(b&0x7f)*m; m*=128; }while(b&0x80); return r; };
+    const n=v(), E=new Array(n); let last=0;
+    for(let i=0;i<n;i++){ last+=v(); E[i]={id:last,rl:1,len:0,off:0}; }
+    for(let i=0;i<n;i++) E[i].rl=v();
+    for(let i=0;i<n;i++) E[i].len=v();
+    for(let i=0;i<n;i++){ const o=v(); E[i].off=(o===0&&i>0)?E[i-1].off+E[i-1].len:o-1; }
+    return E; }
+  function buscar(E,id){ let lo=0,hi=E.length-1;
+    while(lo<=hi){ const m=(lo+hi)>>1; if(E[m].id<id) lo=m+1; else if(E[m].id>id) hi=m-1; else return E[m]; }
+    if(hi>=0){ const e=E[hi]; if(e.rl===0) return e; if(id-e.id<e.rl) return e; } return null; }
+  const TZ=[0]; for(let z=1;z<=26;z++) TZ[z]=TZ[z-1]+Math.pow(4,z-1);
+  function tileId(z,x,y){ let d=0; const xy=[x,y]; for(let s=Math.pow(2,z-1);s>=1;s/=2){
+      const rx=(xy[0]&s)?1:0, ry=(xy[1]&s)?1:0; d+=s*s*((3*rx)^ry);
+      if(ry===0){ if(rx===1){ xy[0]=s-1-xy[0]; xy[1]=s-1-xy[1]; } const t0=xy[0]; xy[0]=xy[1]; xy[1]=t0; } }
+    return TZ[z]+d; }
+  async function abrir(blob){
+    const hb=await blob.slice(0,127).arrayBuffer(), dv=new DataView(hb);
+    if(new TextDecoder().decode(new Uint8Array(hb,0,7))!=='PMTiles') throw new Error('no pmtiles');
+    const H={rootOff:u64(dv,8),rootLen:u64(dv,16),leafOff:u64(dv,40),dataOff:u64(dv,56),ic:dv.getUint8(97),tc:dv.getUint8(98),
+      minz:dv.getUint8(100),maxz:dv.getUint8(101)};
+    const dirs=new Map();
+    const dir=async(off,len)=>{ const k=off+':'+len; if(!dirs.has(k)){ if(dirs.size>64) dirs.clear(); dirs.set(k,blob.slice(off,off+len).arrayBuffer().then(b=>inflar(b,H.ic)).then(dirLeer)); } return dirs.get(k); };
+    async function get(z,x,y){ const id=tileId(z,x,y); let off=H.rootOff,len=H.rootLen;
+      for(let d=0;d<4;d++){ const e=buscar(await dir(off,len),id); if(!e) return null;
+        if(e.rl>0) return blob.slice(H.dataOff+e.off,H.dataOff+e.off+e.len);
+        off=H.leafOff+e.off; len=e.len; }
+      return null; }
+    return {H,get}; }
+
+  /* ── paquetes instalados ── */
+  async function lector(pid,lay){ const k=pid+'/'+lay; if(abiertos[k]) return abiertos[k];
+    const i=inst[pid]&&inst[pid][lay]; if(!i) return null;
+    abiertos[k]=(async()=>{ const c=await caches.open(CN); const r=await c.match(i.key); if(!r) throw new Error('falta'); return abrir(await r.blob()); })()
+      .catch(e=>{ delete abiertos[k]; return null; });
+    return abiertos[k]; }
+  const instalados=lay=>Object.keys(inst).filter(p=>inst[p][lay]).map(p=>({id:p,...inst[p][lay]}));
+  const hayPacks=()=>Object.keys(inst).some(p=>LAYS.some(l=>inst[p][l]));
+
+  async function bajar(p,lay){
+    const l=p.layers[lay]; if(!l||prog[p.id+'/'+lay]!=null) return;
+    const k=p.id+'/'+lay;
+    try{ const e=navigator.storage&&navigator.storage.estimate?await navigator.storage.estimate():null;
+      if(e&&e.quota&&e.quota-e.usage<l.bytes*1.2){ aviso('a-er','ri-error-warning-line',t('offFaltaEsp')); return; } }catch(_){}
+    prog[k]=0; pintarHub();
+    try{
+      const key=urlDe(l)+'?b='+encodeURIComponent(l.built||l.bytes);
+      const r=await fetch(urlDe(l),{cache:'no-store'}); if(!r.ok) throw new Error('http '+r.status);
+      const tot=+r.headers.get('content-length')||l.bytes, rd=r.body.getReader(), ch=[]; let n=0, tp=0;
+      for(;;){ const {done,value}=await rd.read(); if(done) break; ch.push(value); n+=value.length;
+        const now=Date.now(); if(now-tp>250){ tp=now; prog[k]=Math.min(.99,n/tot); pintarProg(k); } }
+      const blob=new Blob(ch,{type:'application/octet-stream'});
+      await abrir(blob);   /* valida el archivo antes de guardarlo */
+      const c=await caches.open(CN);
+      const viejo=inst[p.id]&&inst[p.id][lay];
+      await c.put(key,new Response(blob,{headers:{'Content-Type':'application/octet-stream'}}));
+      if(viejo&&viejo.key!==key) try{ await c.delete(viejo.key); }catch(_){}
+      inst[p.id]=inst[p.id]||{}; inst[p.id][lay]={key,bytes:blob.size,built:l.built||'',bounds:p.bounds,minzoom:l.minzoom,maxzoom:l.maxzoom,attribution:l.attribution||''};
+      jset(K_INST,inst); delete abiertos[k];
+      try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(_){}
+      refrescarCapas();
+    }catch(e){ aviso('a-er','ri-error-warning-line',t('offDescErr')); }
+    delete prog[k]; pintarHub(); }
+
+  async function borrar(pid,lay){
+    if(!(await cgConfirmar(t('offBorrarTit'),t('offBorrarMsg')))) return;
+    try{ const c=await caches.open(CN); for(const l of (lay?[lay]:LAYS)){ const i=inst[pid]&&inst[pid][l]; if(i) await c.delete(i.key); if(inst[pid]) delete inst[pid][l]; delete abiertos[pid+'/'+l]; } }catch(_){}
+    if(inst[pid]&&!Object.keys(inst[pid]).length) delete inst[pid];
+    jset(K_INST,inst); refrescarCapas(); pintarHub(); }
+
+  async function catalogo(){
+    if(!navigator.onLine) return cat;
+    try{ const r=await fetch(BASE+'packs.json',{cache:'no-cache'}); if(!r.ok) throw 0; cat=await r.json(); jset(K_CAT,cat); }catch(_){ if(!cat) throw new Error('cat'); }
+    return cat; }
+
+  /* ── capa Leaflet: dibuja desde los paquetes; si el zoom supera el del paquete, amplía el mosaico padre ── */
+  const capas={};
+  function hacerCapa(lay){
+    const C=L.GridLayer.extend({ createTile(co,done){
+      const cv=document.createElement('canvas'); cv.width=cv.height=256;
+      (async()=>{
+        const n=Math.pow(2,co.z), lon=(co.x+.5)/n*360-180, lat=Math.atan(Math.sinh(Math.PI*(1-2*(co.y+.5)/n)))*180/Math.PI;
+        const p=instalados(lay).find(i=>i.bounds&&lon>=i.bounds[0]-.05&&lon<=i.bounds[2]+.05&&lat>=i.bounds[1]-.05&&lat<=i.bounds[3]+.05&&co.z>=(i.minzoom||0));
+        if(!p) return;
+        const R=await lector(p.id,lay); if(!R) return;
+        const zz=Math.min(co.z,R.H.maxz), d=co.z-zz, f=Math.pow(2,d);
+        const b=await R.get(zz,Math.floor(co.x/f),Math.floor(co.y/f)); if(!b) return;
+        const im=await createImageBitmap(new Blob([b],{type:'image/webp'}));
+        const ctx=cv.getContext('2d'), s=256/f;
+        if(d===0) ctx.drawImage(im,0,0); else { ctx.imageSmoothingEnabled=true; ctx.drawImage(im,(co.x%f)*s,(co.y%f)*s,s,s,0,0,256,256); }
+        try{ im.close(); }catch(_){}
+      })().then(()=>done(null,cv),()=>done(null,cv));
+      return cv; } });
+    return new C({maxZoom:19,zIndex:0,tileSize:256,updateWhenIdle:true,keepBuffer:1});
+  }
+  let mapaRef=null, selRef=null;
+  function refrescarCapas(){ if(!mapaRef) return;
+    const kind=selRef&&selRef.value==='sat'?'sat':'mapa';
+    for(const l of LAYS){ if(!capas[l]) capas[l]=hacerCapa(l);
+      const on=l===kind&&instalados(l).length>0;
+      if(on&&!mapaRef.hasLayer(capas[l])) capas[l].addTo(mapaRef);
+      if(!on&&mapaRef.hasLayer(capas[l])) mapaRef.removeLayer(capas[l]);
+      if(on) capas[l].redraw(); }
+    /* sin conexión: quitar el mapa en línea para no gastar batería en mosaicos que fallan */
+    try{ mapaRef.eachLayer(x=>{ if(x instanceof L.TileLayer&&x._url) x.setOpacity(navigator.onLine||!hayPacks()?1:0); }); }catch(_){}
+    pintarAtrib(); }
+  function pintarAtrib(){ if(!mapaRef) return; const kind=selRef&&selRef.value==='sat'?'sat':'mapa';
+    const a=[...new Set(instalados(kind).map(i=>i.attribution).filter(Boolean))].join(' | ');
+    try{ const ac=mapaRef.attributionControl; if(ac){ if(pintarAtrib._a) ac.removeAttribution(pintarAtrib._a); if(a) ac.addAttribution(a); pintarAtrib._a=a; } }catch(_){} }
+  function enMapa(m,sel){ mapaRef=m; selRef=sel;
+    if(sel) sel.addEventListener('change',refrescarCapas);
+    const Ctl=L.Control.extend({options:{position:'topleft'},onAdd(){ const d=L.DomUtil.create('div','leaflet-bar off-ctl');
+      d.innerHTML='<a href="#" role="button" title="'+esc(t('offDl'))+'" aria-label="'+esc(t('offDl'))+'"><i class="ri-download-2-line"></i></a>';
+      L.DomEvent.disableClickPropagation(d); d.firstChild.onclick=e=>{ e.preventDefault(); abrirHub(); }; return d; }});
+    new Ctl().addTo(m); refrescarCapas(); }
+
+  /* ── pendientes de envío (misma regla que enviarTodo) ── */
+  function pendientes(){ let n=0,b=0;
+    try{ const s=loadSent(); for(const r of regs){ if(r.lat==null||esDemoId(r.id)||s['p:'+r.id]===sigFoto(r)) continue;
+      n++; b+=1500; if(r.foto&&s['f:'+r.id]!==sigImg(r)) b+=Math.round((r.foto.size||0)*1.37); } }catch(_){}
+    return {n,b}; }
+
+  /* ── chip de estado en la barra superior ── */
+  function pintarChip(){ const c=document.getElementById('netChip'); if(!c) return;
+    const on=navigator.onLine, P=pendientes();
+    c.classList.toggle('off',!on);
+    c.innerHTML=(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<span>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</span>'+(P.n?'<b>'+P.n+' '+esc(t('offPend'))+'</b>':'');
+    c.setAttribute('aria-label',t('offTit')); }
+
+  /* ── hub ── */
+  function abrirHub(){ const h=document.getElementById('offHub'); if(!h) return; h.classList.add('on'); h.setAttribute('aria-hidden','false');
+    pintarHub(); catalogo().then(pintarHub,()=>{ h.dataset.err='1'; pintarHub(); }); }
+  function cerrarHub(){ const h=document.getElementById('offHub'); h.classList.remove('on'); h.setAttribute('aria-hidden','true'); }
+  function pintarProg(k){ const el=document.querySelector('[data-prog="'+k+'"]'); if(el) el.style.setProperty('--p',Math.round((prog[k]||0)*100)+'%');
+    const tx=document.querySelector('[data-progt="'+k+'"]'); if(tx) tx.textContent=Math.round((prog[k]||0)*100)+'%'; }
+  async function pintarHub(){ const h=document.getElementById('offHub'); if(!h||!h.classList.contains('on')) return;
+    const on=navigator.onLine, P=pendientes();
+    document.getElementById('ohTit').textContent=t('offTit');
+    let H='<section class="oh-est '+(on?'on':'off')+'">'+(on?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>':'<i class="ri-wifi-off-line"></i>')+'<div><b>'+esc(on?t('offEnLinea'):t('offSinRed'))+'</b><p>'+esc(on?t('offEstOn'):t('offEstOff'))+'</p></div></section>';
+    H+='<section><h4>'+esc(t('offPendTit'))+'</h4>'+(P.n?'<div class="oh-row"><span>'+esc(t('offPendTxt').replace('{n}',P.n).replace('{mb}',mb(P.b)))+'</span><button type="button" class="btn btn-2 oh-b" id="ohEnviar"'+(on?'':' disabled')+'>'+esc(t('offEnviarYa'))+'</button></div>':'<p class="oh-m">'+esc(t('offPendNada'))+'</p>')+'</section>';
+    H+='<section><h4>'+esc(t('offMapasTit'))+'</h4><p class="oh-m">'+esc(t('offMapasHint'))+'</p>';
+    const packs=(cat&&cat.packs)||[];
+    if(!packs.length) H+='<p class="oh-m oh-av">'+esc(h.dataset.err?t('offCatErr'):t('offSinCat'))+'</p>';
+    for(const p of packs){
+      const falta=LAYS.filter(l=>p.layers[l]&&!(inst[p.id]&&inst[p.id][l]));
+      const totF=falta.reduce((s,l)=>s+p.layers[l].bytes,0);
+      H+='<div class="oh-pack"><div class="oh-ph"><b>'+esc(nom(p))+'</b>'+(inst[p.id]?'<button type="button" class="oh-ver" data-ver="'+esc(p.id)+'"><i class="ri-map-pin-fill"></i>'+esc(t('offVer'))+'</button>':'')+'</div>';
+      for(const l of LAYS){ const L0=p.layers[l]; if(!L0) continue; const k=p.id+'/'+l, i=inst[p.id]&&inst[p.id][l];
+        const upd=i&&L0.built&&i.built&&i.built!==L0.built;
+        let act;
+        if(prog[k]!=null) act='<span class="oh-prog" data-prog="'+k+'" style="--p:'+Math.round(prog[k]*100)+'%"><span data-progt="'+k+'">'+Math.round(prog[k]*100)+'%</span></span>';
+        else if(i) act=(upd?'<button type="button" class="btn btn-2 oh-b" data-dl="'+k+'"'+(on?'':' disabled')+'>'+esc(t('offActualizar'))+'</button>':'<span class="oh-ok"><i class="ri-check-line"></i>'+esc(t('offListo'))+'</span>')
+          +'<button type="button" class="oh-del" data-del="'+k+'" aria-label="'+esc(t('offBorrar'))+'"><svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>';
+        else act='<button type="button" class="btn btn-2 oh-b" data-dl="'+k+'"'+(on?'':' disabled')+'>'+esc(t('offBajar'))+'</button>';
+        H+='<div class="oh-row"><span>'+(l==='sat'?'<svg class="oh-svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>':'<i class="ri-map-2-line"></i>')+' '+esc(t(l==='sat'?'offCapaSat':'offCapaMapa'))+' <small>'+mb(i?i.bytes:L0.bytes)+'</small></span><span class="oh-act">'+act+'</span></div>'; }
+      if(falta.length>1&&!falta.some(l=>prog[p.id+'/'+l]!=null)) H+='<button type="button" class="btn btn-1 oh-todo" data-todo="'+esc(p.id)+'"'+(on?'':' disabled')+'><i class="ri-download-2-line"></i>'+esc(t('offBajarTodo'))+' ('+mb(totF)+')</button>';
+      H+='</div>'; }
+    H+='</section><section><h4>'+esc(t('offAlmTit'))+'</h4><p class="oh-m" id="ohAlm"></p></section>';
+    const cu=document.getElementById('ohCuerpo'); cu.innerHTML=H;
+    const pk=id=>packs.find(x=>x.id===id);
+    cu.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{ const [id,l]=b.dataset.dl.split('/'); bajar(pk(id),l); });
+    cu.querySelectorAll('[data-todo]').forEach(b=>b.onclick=async()=>{ const p=pk(b.dataset.todo); for(const l of LAYS) if(p.layers[l]&&!(inst[p.id]&&inst[p.id][l])) await bajar(p,l); });
+    cu.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const [id,l]=b.dataset.del.split('/'); borrar(id,l); });
+    cu.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>verPack(b.dataset.ver));
+    const be=document.getElementById('ohEnviar'); if(be) be.onclick=()=>{ cerrarHub(); try{ document.getElementById('bnMap').click(); }catch(_){} setTimeout(()=>document.getElementById('btnEnviar').click(),150); };
+    try{ const e=await navigator.storage.estimate(); let m=0; for(const p in inst) for(const l in inst[p]) m+=inst[p][l].bytes||0;
+      const el=document.getElementById('ohAlm'); if(el) el.textContent=t('offAlmTxt').replace('{m}',mb(m)).replace('{u}',mb(e.usage||0)).replace('{q}',mb(e.quota||0)); }catch(_){} }
+  function verPack(id){ const i=inst[id]&&(inst[id].mapa||inst[id].sat); if(!i) return; cerrarHub();
+    try{ document.getElementById('bnMap').click(); }catch(_){}
+    setTimeout(()=>{ try{ mapa.invalidateSize(); mapa.fitBounds([[i.bounds[1],i.bounds[0]],[i.bounds[3],i.bounds[2]]]); }catch(_){} },350); }
+
+  /* ── primera vez: ofrecer el mapa del campus de práctica ── */
+  async function preguntar(){
+    if(!navigator.onLine||jget(K_ASK)||!(typeof cgSessTok!=='undefined'&&cgSessTok)) return;
+    try{ await catalogo(); }catch(_){ return; }
+    const p=(cat&&cat.packs||[]).find(x=>x.id==='jimenoa'); if(!p||inst[p.id]) return;
+    jset(K_ASK,1);
+    const tot=LAYS.reduce((s,l)=>s+(p.layers[l]?p.layers[l].bytes:0),0);
+    if(await cgConfirmar(t('offPregTit'),t('offPregMsg').replace('{z}',nom(p)).replace('{mb}',mb(tot)),{si:t('offPregSi'),no:t('offPregNo'),ic:'ri-download-2-line'})){
+      abrirHub(); for(const l of LAYS) if(p.layers[l]) await bajar(p,l); } }
+
+  function init(){
+    const g=document.querySelector('.gob'), idi=g&&g.querySelector('.idioma');
+    if(g&&!document.getElementById('netChip')){ const c=document.createElement('button'); c.type='button'; c.id='netChip'; c.className='net-chip'; c.onclick=abrirHub; g.insertBefore(c,idi); }
+    document.getElementById('ohCerrar').onclick=cerrarHub;
+    document.getElementById('offHub').addEventListener('click',e=>{ if(e.target.id==='offHub') cerrarHub(); });
+    const red=()=>{ pintarChip(); pintarHub(); refrescarCapas(); };
+    addEventListener('online',red); addEventListener('offline',red);
+    ['btnEs','btnEn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(()=>{ pintarChip(); pintarHub(); },0)); });
+    setInterval(pintarChip,8000); pintarChip();
+    if(window._cgOffPend) enMapa.apply(null,window._cgOffPend);
+    setTimeout(preguntar,4000);
+  }
+  return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,_tileId:tileId,_abrir:abrir};
+})();
+/* el mapa se crea más tarde (al abrir la pestaña Mapa) */
+(function(){ const _p=pintar; pintar=async function(){ const r=await _p.apply(this,arguments); try{ CGOff.pintarChip(); }catch(_){} return r; }; })();
+(function(){ const _g=guardarSesionTok; guardarSesionTok=function(){ const r=_g.apply(this,arguments); setTimeout(()=>CGOff.preguntar(),2500); return r; }; })();
+/* confirmación antes de Enviar: cuántos registros y cuánto pesa (datos móviles) */
+(function(){ const b=document.getElementById('btnEnviar'); if(!b) return; const orig=b.onclick;
+  b.onclick=async function(ev){ if(b.disabled) return; const P=CGOff.pendientes();
+    if(P.n&&navigator.onLine){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{n}',P.n).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
+    return orig&&orig.call(this,ev); }; })();
+CGOff.init();
 </script>
 </body>
 </html>

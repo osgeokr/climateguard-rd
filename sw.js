@@ -12,7 +12,8 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.12.4';
+const CACHE = 'climateguard-v1.13.0';
+const PACKS = 'cg-packs';   /* v1.13: mapas sin conexión, no se borra al actualizar */
 const ASSETS = [
   './',
   './index.html',
@@ -40,7 +41,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== PACKS).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -49,6 +50,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  /* v1.13: paquetes de mapa (otro repo del mismo dominio): los maneja la app */
+  if (url.pathname.indexOf('/climateguard-tiles/') === 0) return;
 
   if (url.origin === location.origin) {
     // ¿Es el shell de la app (documento / index.html)?
