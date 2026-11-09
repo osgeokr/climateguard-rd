@@ -4421,7 +4421,8 @@ async function procesarArchivo(file,deGaleria){
     const pos=fresh??exif??{lat:null,lng:null,accuracy:null,alt:null,altAcc:null};
     borrador={id:uid(),foto:foto.blob,mini:mini.blob,w:foto.w,h:foto.h,
       origW:orig.w,origH:orig.h,bytes:file.size,tipo:foto.type,q:foto.q,
-      fecha:(deGaleria&&exifRaw&&exifRaw.fecha)?exifRaw.fecha:Date.now(),owner:curEmail(),lat:pos.lat,lng:pos.lng,accuracy:pos.accuracy,alt:(pos.alt!=null?pos.alt:null),altAcc:(pos.altAcc!=null?pos.altAcc:null),
+      /* v1.13.3: la fecha EXIF solo se usa si la foto trae tambien su GPS; sin GPS el registro se ubica a mano y toma la hora actual */
+      fecha:(deGaleria&&exif&&exifRaw.fecha)?exifRaw.fecha:Date.now(),fotoFecha:(exifRaw&&exifRaw.fecha)||null,owner:curEmail(),lat:pos.lat,lng:pos.lng,accuracy:pos.accuracy,alt:(pos.alt!=null?pos.alt:null),altAcc:(pos.altAcc!=null?pos.altAcc:null),
       origen:fresh?'gps':exif?'exif':null};
     $vistaImg.src=URL.createObjectURL(mini.blob);
     $datos.innerHTML=
@@ -4675,7 +4676,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.2';
+const APP_VER='1.13.3';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
