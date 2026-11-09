@@ -4680,7 +4680,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.5';
+const APP_VER='1.13.6';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -6736,8 +6736,8 @@ const CGOff=(function(){
     try{ document.getElementById('bnMap').click(); }catch(_){}
     setTimeout(()=>{ try{ mapa.invalidateSize(); mapa.fitBounds([[i.bounds[1],i.bounds[0]],[i.bounds[3],i.bounds[2]]]); }catch(_){} },350); }
 
-  /* ── primera vez: ofrecer el mapa del campus de práctica ── */
-  async function preguntar(){
+  /* ── v1.13.6: ya no se ofrece el mapa automáticamente; se descarga desde el panel Sin conexión ── */
+  async function preguntar(){ return; /* desactivado */
     if(!enLinea()||jget(K_ASK)||!(typeof cgSessTok!=='undefined'&&cgSessTok)) return;
     try{ await catalogo(); }catch(_){ return; }
     const p=(cat&&cat.packs||[]).find(x=>x.id==='jimenoa'); if(!p||inst[p.id]) return;
@@ -6756,13 +6756,11 @@ const CGOff=(function(){
     ['btnEs','btnEn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(()=>{ pintarChip(); pintarHub(); },0)); });
     setInterval(pintarChip,8000); pintarChip();
     if(window._cgOffPend) enMapa.apply(null,window._cgOffPend);
-    setTimeout(preguntar,4000);
   }
   return {init,enMapa,abrirHub,pintarChip,pendientes,hayPacks,preguntar,mb,regN,enLinea,simulando:()=>sim,_tileId:tileId,_abrir:abrir};
 })();
 /* el mapa se crea más tarde (al abrir la pestaña Mapa) */
 (function(){ const _p=pintar; pintar=async function(){ const r=await _p.apply(this,arguments); try{ CGOff.pintarChip(); }catch(_){} return r; }; })();
-(function(){ const _g=guardarSesionTok; guardarSesionTok=function(){ const r=_g.apply(this,arguments); setTimeout(()=>CGOff.preguntar(),2500); return r; }; })();
 /* confirmación antes de Enviar: cuántos registros y cuánto pesa (datos móviles) */
 (function(){ const b=document.getElementById('btnEnviar'); if(!b) return; const orig=b.onclick;
   b.onclick=async function(ev){ if(b.disabled) return; if(CGOff.simulando()){ aviso('a-av','ri-wifi-off-line',t('offSimEnv')); return; } const P=CGOff.pendientes();
