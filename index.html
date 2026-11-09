@@ -4676,7 +4676,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.3';
+const APP_VER='1.13.4';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5083,7 +5083,9 @@ function dibujarMapa(){
     wdpaCapa=L.geoJSON(DR_WDPA,{pane:'wdpapane',style:_stW,onEachFeature:(f,l)=>{
       const p=f.properties, tipo=p.k==='M'?t('wdpaMar'):t('wdpaTer');
       l.bindPopup('<div class="pop-wdpa"><b>'+esc(p.n||'')+'</b>'+(p.d?'<br>'+esc(p.d):'')+(p.c?' · '+t('wdpaCat')+' '+esc(p.c):'')+'<br><span class="wdpa-tag '+(p.k==='M'?'mar':'ter')+'">'+esc(tipo)+'</span></div>',{minWidth:180});
-      l.on('popupopen',()=>{try{l.setStyle({weight:3});if(l.bringToFront)l.bringToFront();}catch(_){}});
+      /* v1.13.4: al ubicar un registro, tocar dentro de un area protegida coloca el registro (no abre la ficha) */
+      l.on('click',ev=>{ if(ubicando){ try{l.closePopup();}catch(_){} mapa.fire('click',{latlng:ev.latlng}); } });
+      l.on('popupopen',()=>{ if(ubicando){ setTimeout(()=>{try{l.closePopup();}catch(_){}},0); return; } try{l.setStyle({weight:3});if(l.bringToFront)l.bringToFront();}catch(_){}});
       l.on('popupclose',()=>{try{wdpaCapa.resetStyle(l);}catch(_){}});
     }}).addTo(mapa);
     /* leyenda */
