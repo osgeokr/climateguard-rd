@@ -4740,7 +4740,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.15.0';
+const APP_VER='1.15.1';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -4758,7 +4758,8 @@ const CG_PTS_BONUS=1;
    veia (y enviaba) lo del anterior. Ahora cada clave lleva el email y cada
    registro/recorrido lleva su duenno (owner). */
 function curEmail(){ try{ return (cgSession&&cgSession.email)?String(cgSession.email).toLowerCase():''; }catch(_){ return ''; } }
-function esMio(r){ if(!r)return false; const em=curEmail(); return !r.owner || r.owner===em; }
+/* v1.15.1: los registros de ejemplo (demo-*) son de todas las cuentas del telefono */
+function esMio(r){ if(!r)return false; if(esDemoId(r.id))return true; const em=curEmail(); return !r.owner || r.owner===em; }
 function _uk(base){ const em=curEmail(); return em?(base+':'+em):base; }
 function loadSent(){ try{ const v=JSON.parse(localStorage.getItem(_uk('cg_sent_ids'))); if(Array.isArray(v)){ const m={}; v.forEach(k=>m[k]='1'); return m; } return v&&typeof v==='object'?v:{}; }catch(_){ return {}; } }
 function saveSent(m){ try{ localStorage.setItem(_uk('cg_sent_ids'),JSON.stringify(m)); }catch(_){} }
@@ -4797,7 +4798,7 @@ async function asegurarDueno(){
   const em=curEmail(); if(!em)return;
   try{ if(!localStorage.getItem('cg_legacy_owner')){ localStorage.setItem('cg_legacy_owner',em);
     ['cg_sent_ids','cg_pts_ledger','cg_srv_pts'].forEach(b=>{ const v=localStorage.getItem(b); if(v!=null && localStorage.getItem(b+':'+em)==null) localStorage.setItem(b+':'+em,v); }); } }catch(_){}
-  try{ const all=await almacen.all(); for(const r of all){ if(!r.owner) await almacen.patch(r.id,{owner:em}); } }catch(_){}
+  try{ const all=await almacen.all(); for(const r of all){ if(!r.owner && !esDemoId(r.id)) await almacen.patch(r.id,{owner:em}); } }catch(_){}
   try{ if(typeof CGTracks!=='undefined'&&CGTracks.reclamar) CGTracks.reclamar(em); }catch(_){}
   try{ nivelActual=null; }catch(_){}
   try{ pintar(); }catch(_){}
