@@ -7,6 +7,15 @@
  * solo entonces guarda los datos. Ademas mantiene un padron "Usuarios" con
  * estado por usuario (active / blocked / pending) y limita la tasa de envios.
  *
+ * v3.9 (sesion): clave de sesion propia sin caducidad; action=login/avatar/
+ *   logoutuser/logoutall. Codigo en Sesion.gs (archivo aparte del proyecto).
+ * v3.8 (app v1.9): envio robusto. LockService; la fila solo se actualiza si
+ *   el id es del MISMO usuario (si no, error 'owner'); ids de demostracion
+ *   (demo-*) se rechazan y no suman puntos; una sola lectura de la hoja
+ *   (indice) en vez de recorrerla por cada registro; respuesta con resultado
+ *   por registro (items) que la app v1.9 lee para marcar 'enviado'. Se
+ *   elimina la consulta publica ?usuario= y el token compartido antiguo.
+ *   Nuevas columnas: origen, app_ver. Ejecutar actualizarEsquema una vez.
  * v3.7 (admin): nuevo action=resetuser (solo admin) para reiniciar una
  *   cuenta de prueba: borra sus filas en las 5 pestanas (Usuarios opcional)
  *   y envia su carpeta de Drive a la papelera.
@@ -62,19 +71,14 @@ const ADMIN_EMAILS = ['bhyu@knps.or.kr'];
 const RATE_PER_HOUR = 200;
 const RATE_PER_DAY  = 1000;
 
-// ── TRANSICION (despliegue v1.5.0) ─────────────────────────────────────────
-// Mientras queden usuarios con la app vieja (v1.4.7) en cache, se admite el
-// token compartido anterior para que sus envios NO fallen durante el cambio.
-// Esos envios se guardan pero NO pasan por el padron ni el limite de tasa.
-// >>> Cuando TODOS usen v1.5.0, pon esto en false para seguridad total. <<<
-const ACEPTAR_TOKEN_LEGADO = false;
-const TOKEN_LEGADO = 'cg-kLVvRhNatYBkOTphQmCOx585YIiM';
-
 const BONO        = 1;                    // los puntos se "reconocen" al enviar
 const NIVELES_MIN = [0, 100, 250, 500, 1000];
 
-const HEAD_OBS = ['id','usuario','especie','clase','iucn','cant','notas','lat','lng','accuracy','fecha','updated_at','foto','submissionId','recibido','estado','altitude','alt_accuracy','foto_url'];
-const HEAD_REC = ['id','usuario','name','points','distance_m','start','end','submissionId','recibido','geo_url'];
+const HEAD_OBS = ['id','usuario','especie','clase','iucn','cant','notas','lat','lng','accuracy','fecha','updated_at','foto','submissionId','recibido','estado','altitude','alt_accuracy','foto_url','origen','app_ver'];
+const COL_OBS_ESTADO = 16, COL_OBS_FOTOURL = 19;   // 1-based, fijos (no dependen del largo del encabezado)
+const COL_REC_GEOURL = 10;
+const HEAD_REC = ['id','usuario','name','points','distance_m','start','end','submissionId','recibido','geo_url','app_ver'];
+function _esDemo(id){ return /^demo-/i.test(String(id||'')); }
 const HEAD_PTS = ['usuario','puntos','nivel','observaciones','actualizado'];
 const HEAD_USR = ['email','name','picture','status','role','sub','created_at','last_login','submissions','folder_id','avatar_url'];
 const HEAD_ASIST = ['fecha','email','nombre','recibido','registrado_por'];   // v3 asistencia
@@ -99,9 +103,11 @@ function actualizarEsquema(){
   var id=getSheetId(); if(!id){Logger.log('Ejecuta primero crearBaseDeDatos()');return;}
   var ss=SpreadsheetApp.openById(id);
   var shO=ss.getSheetByName('Observaciones'); if(shO) shO.getRange(1,1,1,HEAD_OBS.length).setValues([HEAD_OBS]);
+  var shR=ss.getSheetByName('Recorridos'); if(shR) shR.getRange(1,1,1,HEAD_REC.length).setValues([HEAD_REC]);
   _sheet(ss,'Usuarios',HEAD_USR);
   _sheet(ss,'Asistencia',HEAD_ASIST);
   Logger.log('Esquema actualizado (Usuarios + Asistencia + encabezados).');
+  marcarDemo();
 }
 
 function verificar() {
@@ -117,6 +123,7 @@ function getSheetId() {
 // ── AUTENTICACION: verificar el ID token de Google ─────────────────────────
 function verifyIdToken(idToken) {
   if (!idToken) return null;
+  if (String(idToken).indexOf('cgs1.') === 0) return verifySession(idToken);   // v3.9: sesion propia (Sesion.gs)
   try {
     var resp = UrlFetchApp.fetch(
       'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
@@ -226,101 +233,103 @@ function doPost(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) return _json({ ok:false, error:'sin datos' });
     var body = JSON.parse(e.postData.contents);
+    var _sesP = sesionPost(body); if (_sesP) return _sesP;   // v3.9: sesion propia (Sesion.gs)
 
-    // 1) Autenticacion: ID token de Google (preferente). Durante la transicion
-    //    se acepta tambien el token compartido de la app vieja (v1.4.7).
+    // 1) Autenticacion: ID token de Google (unico metodo desde v3.8)
     var user = verifyIdToken(body.idToken);
-    var usuario;
-    if (user && user.email) {
-      usuario = user.email;
-    } else if (ACEPTAR_TOKEN_LEGADO && body.token === TOKEN_LEGADO) {
-      usuario = String(body.usuario || 'anonimo');
-      user = null;   // cliente viejo: se salta padron y limite de tasa
-    } else {
-      return _json({ ok:false, error:'auth' });
-    }
-    var sid     = String(body.submissionId || '');
+    if (!user || !user.email) return _json({ ok:false, error:'auth' });
+    var usuario = user.email;
+    var sid = String(body.submissionId || '');
+    var appVer = String(body.ver || '');
 
     var sheetId = getSheetId();
     var ss = sheetId ? SpreadsheetApp.openById(sheetId) : null;
+    if (!ss) return _json({ ok:false, error:'no_sheet' });
 
-    // 2) Padron: registrar/actualizar y comprobar estado (solo login Google)
-    if (ss && user) {
-      var st = String(_touchUser(ss, user)).toLowerCase();
-      if (st === 'blocked') return _json({ ok:false, error:'blocked' });
-      if (st === 'pending') return _json({ ok:false, error:'pending' });
-      // 3) Limite de tasa
-      var shOrate = _sheet(ss, 'Observaciones', HEAD_OBS);
-      if (!_rateOk(shOrate, usuario)) return _json({ ok:false, error:'rate' });
-    }
+    // 2) Padron: registrar/actualizar y comprobar estado
+    var st = String(_touchUser(ss, user)).toLowerCase();
+    if (st === 'blocked') return _json({ ok:false, error:'blocked' });
+    if (st === 'pending') return _json({ ok:false, error:'pending' });
 
-    // 4) Carpeta del usuario (UNA por usuario) + avatar
-    var carpeta = _carpetaUsuario(ss, usuario);
-    var fotosByName = {};
-    if (body.fotos && body.fotos.length) {
-      for (var i = 0; i < body.fotos.length; i++) { var ff = body.fotos[i]; if (ff && ff.name) fotosByName[ff.name] = ff; }
-    }
-    if (carpeta && body.avatar && body.avatar.dataB64) {
-      try {
-        var avBlob = Utilities.newBlob(Utilities.base64Decode(body.avatar.dataB64), body.avatar.mime || 'image/jpeg', 'avatar.jpg');
-        var avFile = _upsertFile(carpeta, 'avatar.jpg', avBlob);
-        /* privado: sin compartir publicamente; el sitio web usa el proxy action=file */
-        if (ss) _setUsuarioAvatar(ss, usuario, avFile.getUrl());
-      } catch (eav) {}
-    }
+    // 3) Seccion critica: evita filas duplicadas si llegan dos envios a la vez
+    var lock = LockService.getScriptLock();
+    try { lock.waitLock(25000); } catch (eL) { return _json({ ok:false, error:'busy' }); }
+    try {
+      var shO = _sheet(ss, 'Observaciones', HEAD_OBS);
+      var shR = _sheet(ss, 'Recorridos', HEAD_REC);
+      var ixO = _indice(shO), ixR = _indice(shR);   // UNA lectura por hoja
 
-    // 5) Base de datos en Sheets (upsert por id) — usuario = email verificado
-    var puntosCert = null, nivelCert = null;
-    if (ss) {
+      if (!_rateOkIdx(ixO, usuario)) return _json({ ok:false, error:'rate' });
+
+      var carpeta = _carpetaUsuario(ss, usuario);
+      var fotosByName = {};
+      (body.fotos || []).forEach(function(ff){ if (ff && ff.name) fotosByName[ff.name] = ff; });
+      if (carpeta && body.avatar && body.avatar.dataB64) {
+        try {
+          var avBlob = Utilities.newBlob(Utilities.base64Decode(body.avatar.dataB64), body.avatar.mime || 'image/jpeg', 'avatar.jpg');
+          var avFile = _upsertFile(carpeta, 'avatar.jpg', avBlob);
+          _setUsuarioAvatar(ss, usuario, avFile.getUrl());
+        } catch (eav) {}
+      }
+
+      var items = [];
       var obsF = (body.observaciones && body.observaciones.features) || [];
       var recF = (body.recorridos && body.recorridos.features) || [];
-      var COL_OBS_FOTOURL = HEAD_OBS.length;   // 1-based col (foto_url)
-      var COL_REC_GEOURL  = HEAD_REC.length;   // 1-based col (geo_url)
+      var ahora = new Date().toISOString();
 
-      var shO = _sheet(ss, 'Observaciones', HEAD_OBS);
       obsF.forEach(function(ft){
-        var p = ft.properties || {}, g = ft.geometry || {}, c = (g.coordinates||[null,null]);
-        var id = String(p.id||'');
-        var estado = _valorActual(shO, id, 16) || 'valido';
-        var fotoUrl = _valorActual(shO, id, COL_OBS_FOTOURL) || '';
+        var p = ft.properties || {}, g = ft.geometry || {}, c = (g.coordinates || [null, null]);
+        var id = String(p.id || '');
+        if (!id) { items.push({ tipo:'obs', id:id, saved:false, error:'no_id' }); return; }
+        if (_esDemo(id)) { items.push({ tipo:'obs', id:id, saved:false, error:'demo' }); return; }
+        var prev = ixO.byId[id];
+        if (prev && prev.usuario && prev.usuario !== usuario) { items.push({ tipo:'obs', id:id, saved:false, error:'owner' }); return; }
+        var estado = prev ? (prev.row[COL_OBS_ESTADO-1] || 'valido') : 'valido';
+        var fotoUrl = prev ? (prev.row[COL_OBS_FOTOURL-1] || '') : '';
+        var fotoOk = !p.foto;
         if (carpeta && p.foto && fotosByName[p.foto]) {
           try {
-            var fb = Utilities.newBlob(Utilities.base64Decode(fotosByName[p.foto].dataB64), fotosByName[p.foto].mime || 'image/jpeg', 'obs_'+id+'.jpg');
-            var fFile = _upsertFile(carpeta, 'obs_'+id+'.jpg', fb);
-            /* privado */
-            fotoUrl = fFile.getUrl();
-          } catch (e2) {}
-        }
-        _upsert(shO, id, [id, usuario, p.especie||'', p.clase||'', p.iucn||'',
-          p.cant||1, p.notas||'', c[1], c[0], (p.accuracy==null?'':p.accuracy), p.fecha||'', p.updated_at||'',
-          p.foto||'', sid, new Date().toISOString(), estado,
-          (p.altitude==null?'':p.altitude), (p.alt_accuracy==null?'':p.alt_accuracy), fotoUrl]);
+            var fx = fotosByName[p.foto];
+            var mime = fx.mime || 'image/jpeg';
+            var ext = mime === 'image/webp' ? '.webp' : (mime === 'image/png' ? '.png' : '.jpg');
+            var fb = Utilities.newBlob(Utilities.base64Decode(fx.dataB64), mime, 'obs_' + id + ext);
+            fotoUrl = _upsertFile(carpeta, 'obs_' + id + ext, fb, 'obs_' + id + '.').getUrl();
+            fotoOk = true;
+          } catch (e2) { fotoOk = false; }
+        } else if (p.foto && fotoUrl) { fotoOk = true; }   // foto ya guardada (edicion sin reenviar foto)
+        var fila = [id, usuario, p.especie || '', p.clase || '', p.iucn || '',
+          p.cant || 1, p.notas || '', c[1], c[0], (p.accuracy == null ? '' : p.accuracy), p.fecha || '', p.updated_at || '',
+          p.foto || '', sid, ahora, estado,
+          (p.altitude == null ? '' : p.altitude), (p.alt_accuracy == null ? '' : p.alt_accuracy), fotoUrl,
+          p.origen || '', appVer];
+        _upsertIdx(shO, ixO, id, usuario, fila);
+        items.push({ tipo:'obs', id:id, saved:true, foto:fotoOk, foto_url:fotoUrl });
       });
 
-      var shR = _sheet(ss, 'Recorridos', HEAD_REC);
       recF.forEach(function(ft){
         var p = ft.properties || {};
-        var id = String(p.id||'');
-        var geoUrl = _valorActual(shR, id, COL_REC_GEOURL) || '';
+        var id = String(p.id || '');
+        if (!id) { items.push({ tipo:'trk', id:id, saved:false, error:'no_id' }); return; }
+        if (_esDemo(id)) { items.push({ tipo:'trk', id:id, saved:false, error:'demo' }); return; }
+        var prev = ixR.byId[id];
+        if (prev && prev.usuario && prev.usuario !== usuario) { items.push({ tipo:'trk', id:id, saved:false, error:'owner' }); return; }
+        var geoUrl = prev ? (prev.row[COL_REC_GEOURL-1] || '') : '';
         if (carpeta) {
           try {
-            var one = { type:'FeatureCollection', features:[ft] };
-            var gb = Utilities.newBlob(JSON.stringify(one), 'application/geo+json', 'track_'+id+'.geojson');
-            var gFile = _upsertFile(carpeta, 'track_'+id+'.geojson', gb);
-            /* privado */
-            geoUrl = gFile.getUrl();
+            var gb = Utilities.newBlob(JSON.stringify({ type:'FeatureCollection', features:[ft] }), 'application/geo+json', 'track_' + id + '.geojson');
+            geoUrl = _upsertFile(carpeta, 'track_' + id + '.geojson', gb).getUrl();
           } catch (e4) {}
         }
-        _upsert(shR, id, [id, usuario, p.name||'', p.points||'', p.distance_m||'',
-          p.start||'', p.end||'', sid, new Date().toISOString(), geoUrl]);
+        _upsertIdx(shR, ixR, id, usuario, [id, usuario, p.name || '', p.points || '', p.distance_m || '',
+          p.start || '', p.end || '', sid, ahora, geoUrl, appVer]);
+        items.push({ tipo:'trk', id:id, saved:true, geo_url:geoUrl });
       });
 
       var r = _certificarPuntos(shO, ss, usuario);
-      puntosCert = r.puntos; nivelCert = r.nivel;
       _bumpSubmissions(ss, usuario);
-    }
-
-    return _json({ ok:true, usuario:usuario, carpeta:(carpeta?carpeta.getName():''), url:(carpeta?carpeta.getUrl():''), puntos:puntosCert, nivel:nivelCert, sheet: !!sheetId });
+      return _json({ ok:true, usuario:usuario, items:items, puntos:r.puntos, nivel:r.nivel, server:'3.8',
+        carpeta:(carpeta ? carpeta.getName() : ''), sheet:true });
+    } finally { try { lock.releaseLock(); } catch (eR) {} }
   } catch (err) {
     return _json({ ok:false, error:String(err) });
   }
@@ -330,6 +339,7 @@ function doPost(e) {
 function doGet(e) {
   var cb = e && e.parameter && e.parameter.callback;
   try {
+    var _ses = sesionGet(e, cb); if (_ses) return _ses;   // v3.9: login/avatar/logout + ?session= (Sesion.gs)
     var action = e && e.parameter && e.parameter.action;
     var sheetId = getSheetId();
     var ss = sheetId ? SpreadsheetApp.openById(sheetId) : null;
@@ -341,7 +351,7 @@ function doGet(e) {
       var st = ss ? _touchUser(ss, user) : 'active';
       var puntos = null, nivel = null;
       if (ss) { var pr = _certificarPuntos(_sheet(ss,'Observaciones',HEAD_OBS), ss, user.email); puntos = pr.puntos; nivel = pr.nivel; }
-      return _json({ ok:true, email:user.email, name:user.name, picture:user.picture, status:st, puntos:puntos, nivel:nivel }, cb);
+      return _json({ ok:true, email:user.email, name:user.name, picture:user.picture, status:st, puntos:puntos, nivel:nivel, admin:_esAdmin(user.email), server:'3.8' }, cb);
     }
 
     // Registro de asistencia (solo administrador): la app escanea la QR de la
@@ -380,7 +390,7 @@ function doGet(e) {
       var _trk = {};
       var shRc = _sheet(ss,'Recorridos',HEAD_REC); var lrc = shRc.getLastRow();
       if (lrc>=2){ var vrc = shRc.getRange(2,1,lrc-1,HEAD_REC.length).getValues();
-        for (var kc=0;kc<vrc.length;kc++){ var uc=String(vrc[kc][1]||'').toLowerCase(); if(uc) _trk[uc]=(_trk[uc]||0)+1; } }
+        for (var kc=0;kc<vrc.length;kc++){ var uc=String(vrc[kc][1]||'').toLowerCase(); if(uc && !_esDemo(vrc[kc][0])) _trk[uc]=(_trk[uc]||0)+1; } }
       if (lp>=2){ var vp=shPs.getRange(2,1,lp-1,HEAD_PTS.length).getValues();
         for (var ip=0;ip<vp.length;ip++){ var upe=String(vp[ip][0]||'').toLowerCase();
           stats.push({ usuario:vp[ip][0], puntos:vp[ip][1], nivel:vp[ip][2], observaciones:vp[ip][3], recorridos:(_trk[upe]||0), actualizado:vp[ip][4] }); } }
@@ -448,13 +458,10 @@ function doGet(e) {
         return _json({ ok:true, mime:blob.getContentType(), name:file.getName(), dataB64:Utilities.base64Encode(blob.getBytes()) }, cb);
       } catch (ef) { return _json({ ok:false, error:'not_found' }, cb); }
     }
-    // Consulta de puntos por email (?usuario=email[&callback=fn])
-    var u = e && e.parameter && e.parameter.usuario;
-    if (u && ss) {
-      var r = _certificarPuntos(_sheet(ss,'Observaciones',HEAD_OBS), ss, String(u).toLowerCase());
-      return _json({ ok:true, usuario:u, puntos:r.puntos, nivel:r.nivel }, cb);
-    }
-    return _json({ ok:true, servicio:'ClimateGuard receptor', sheet: !!sheetId }, cb);
+    // v3.8: la consulta publica ?usuario= se elimino (exponia puntos sin login
+    // y escribia en la hoja). Las apps usan action=me con id_token.
+    if (e && e.parameter && e.parameter.usuario) return _json({ ok:false, error:'removed' }, cb);
+    return _json({ ok:true, servicio:'ClimateGuard receptor', version:'3.8', sheet: !!sheetId }, cb);
   } catch (err) {
     return _json({ ok:false, error:String(err) }, cb);
   }
@@ -518,7 +525,8 @@ function _certificarPuntos(shO, ss, usuario) {
     for (var i = 0; i < vals.length; i++) {
       if (String(vals[i][1]).toLowerCase() !== usuario) continue;   // col B = usuario
       var estado = String(vals[i][15]||'').toLowerCase();           // col P = estado
-      if (estado.indexOf('invalid')===0 || estado.indexOf('falso')===0) continue;
+      if (estado.indexOf('invalid')===0 || estado.indexOf('falso')===0 || estado==='demo') continue;
+      if (_esDemo(vals[i][0])) continue;                            // v3.8: demo no suma
       var lat = vals[i][7], especie = vals[i][2];
       var base = 10 + (lat!=='' && lat!=null ? 5:0) + (especie ? 5:0);
       pts += base * BONO; cnt += 1;
@@ -532,6 +540,7 @@ function _certificarPuntos(shO, ss, usuario) {
       var vr = shR.getRange(2,1,lastR-1,shR.getLastColumn()).getValues();
       for (var r = 0; r < vr.length; r++) {
         if (String(vr[r][1]).toLowerCase() !== usuario) continue;   // col B = usuario
+        if (_esDemo(vr[r][0])) continue;
         var dm = Number(vr[r][4] || 0);                             // col E = distance_m
         pts += (10 + (dm >= 200 ? 5 : 0)) * BONO;
       }
@@ -543,10 +552,59 @@ function _certificarPuntos(shO, ss, usuario) {
   _upsert(shP, usuario, [usuario, pts, nivel, cnt, new Date().toISOString()]);
   return { puntos: pts, nivel: nivel };
 }
-function _upsertFile(folder, name, blob){
+function _upsertFile(folder, name, blob, prefijo){
   var it = folder.getFilesByName(name);
   while (it.hasNext()) { try { it.next().setTrashed(true); } catch(_){} }
+  if (prefijo) {   // v3.8: borra tambien la version con otra extension del mismo registro
+    var it2 = folder.searchFiles('title contains "' + String(prefijo).replace(/"/g,'') + '" and trashed = false');
+    while (it2.hasNext()) { var f2 = it2.next(); if (f2.getName().indexOf(prefijo) === 0 && f2.getName() !== name) { try { f2.setTrashed(true); } catch(_){} } }
+  }
   return folder.createFile(blob.setName(name));
+}
+/* v3.8: una sola lectura de la hoja -> indice por id (fila, usuario, valores). */
+function _indice(sh){
+  var last = sh.getLastRow(), w = Math.max(sh.getLastColumn(), 1);
+  var idx = { byId:{}, rows:[], last:last };
+  if (last < 2) { idx.last = Math.max(last, 1); return idx; }
+  var vals = sh.getRange(2, 1, last-1, w).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    var id = String(vals[i][0] || ''); idx.rows.push(vals[i]);
+    if (id && !idx.byId[id]) idx.byId[id] = { r:i+2, usuario:String(vals[i][1]||'').toLowerCase(), row:vals[i] };
+  }
+  return idx;
+}
+function _upsertIdx(sh, idx, id, usuario, fila){
+  var prev = idx.byId[id];
+  if (prev) { sh.getRange(prev.r, 1, 1, fila.length).setValues([fila]); prev.row = fila; prev.usuario = usuario; return; }
+  sh.appendRow(fila);
+  idx.last += 1; idx.byId[id] = { r:idx.last, usuario:usuario, row:fila }; idx.rows.push(fila);
+}
+function _rateOkIdx(ix, email){
+  var now = Date.now(), h = 0, d = 0;
+  for (var i = 0; i < ix.rows.length; i++) {
+    if (String(ix.rows[i][1]).toLowerCase() !== email) continue;
+    var v = ix.rows[i][14]; var t = v ? (v instanceof Date ? v.getTime() : Date.parse(v)) : 0; if (!t) continue;
+    if (now - t < 3600e3) h++;
+    if (now - t < 86400e3) d++;
+  }
+  return h < RATE_PER_HOUR && d < RATE_PER_DAY;
+}
+/* v3.8: ejecutar UNA vez (lo llama actualizarEsquema). Marca las filas de
+   demostracion (id demo-*) con estado 'demo' y recalcula los puntos de los
+   usuarios afectados: dejan de sumar y de verse en la web. */
+function marcarDemo(){
+  var id = getSheetId(); if (!id) return;
+  var ss = SpreadsheetApp.openById(id);
+  var shO = _sheet(ss, 'Observaciones', HEAD_OBS);
+  var last = shO.getLastRow(); var afect = {}; var n = 0;
+  if (last >= 2) {
+    var v = shO.getRange(2, 1, last-1, COL_OBS_ESTADO).getValues();
+    for (var i = 0; i < v.length; i++) if (_esDemo(v[i][0])) { shO.getRange(i+2, COL_OBS_ESTADO).setValue('demo'); afect[String(v[i][1]).toLowerCase()] = 1; n++; }
+  }
+  var shR = _sheet(ss, 'Recorridos', HEAD_REC); var lr = shR.getLastRow();
+  if (lr >= 2) { var vr = shR.getRange(2, 1, lr-1, 2).getValues(); for (var k = 0; k < vr.length; k++) if (_esDemo(vr[k][0])) afect[String(vr[k][1]).toLowerCase()] = 1; }
+  Object.keys(afect).forEach(function(u){ if (u) _certificarPuntos(shO, ss, u); });
+  Logger.log('marcarDemo: filas demo=' + n + ', usuarios recalculados=' + Object.keys(afect).length);
 }
 function _carpetaUsuario(ss, email){
   email = String(email).toLowerCase();
@@ -570,6 +628,7 @@ function _rowsFor(sh, usuarioCol0, email, header){
   var w=sh.getLastColumn(); var vals=sh.getRange(2,1,last-1,w).getValues();
   email=String(email).toLowerCase(); var out=[];
   for(var i=0;i<vals.length;i++){ if(String(vals[i][usuarioCol0]).toLowerCase()!==email) continue;
+    if(_esDemo(vals[i][0])) continue;   // v3.8: sin datos de demostracion
     var o={}; for(var j=0;j<header.length;j++){ o[header[j]]=vals[i][j]; } out.push(o); }
   return out;
 }
