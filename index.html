@@ -163,6 +163,30 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 @keyframes ptsSpin{to{transform:rotate(360deg)}}
 @keyframes ptsUpPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 .gsi-wrap{display:flex;justify-content:center;margin:8px 0 4px;min-height:44px}
+/* v1.14: acceso con codigo de practica */
+.gate-o{display:flex;align-items:center;gap:10px;margin:10px 0 8px;color:var(--txt-2);font-size:11.5px}
+.gate-o:before,.gate-o:after{content:'';flex:1;height:1px;background:var(--borde)}
+.gate #gCodBtn{margin-top:0;display:flex;align-items:center;justify-content:center;gap:7px}
+#gCodBox{margin-top:12px;text-align:left}
+#gCodIn{text-align:center;font:600 20px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;padding:10px 8px}
+.gcod-row{display:flex;gap:8px;margin-top:8px}.gate .gcod-row .btn{margin-top:0;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.gate .gcod-row #gCodScan{flex:none;width:auto;padding-left:14px;padding-right:14px}
+#gCodCam{position:relative;margin-top:10px;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3}
+#gCodCam video{width:100%;height:100%;object-fit:cover;display:block}
+#gCodCam:after{content:'';position:absolute;inset:16% 22%;border:2px solid rgba(255,255,255,.9);border-radius:10px;pointer-events:none}
+#codHub{position:fixed;inset:0;z-index:215;background:rgba(0,20,45,.55);display:none;align-items:flex-end;justify-content:center}
+#codHub.on{display:flex}
+#codHub section{border-top:1px solid var(--borde);padding:12px 0}
+#codHub h4{font:700 12px var(--cpo);letter-spacing:.05em;text-transform:uppercase;color:var(--txt-2);margin:0 0 8px}
+.cod-form{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.cod-form label{font-size:11.5px;color:var(--txt-2);display:block;margin-bottom:3px}
+.cod-form .w4{grid-column:1/-1}.cod-form input{padding:8px 9px;font-size:14px}
+.cod-cod{font:600 19px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--azul-osc)}
+.cod-est{font:600 11px var(--cpo);border-radius:999px;padding:2px 9px;background:#E6F4EA;color:#1E7A34;white-space:nowrap}
+.cod-est.pau{background:#FFF6E0;color:#8A5A00}.cod-est.ven{background:#ECEEF1;color:#5B6570}
+.cod-uso{height:6px;border-radius:3px;background:var(--azul-cl);overflow:hidden;margin:7px 0 3px}.cod-uso i{display:block;height:100%;background:var(--azul)}
+.cod-uso.lleno i{background:#CE1126}
+.cod-qr{text-align:center;padding:6px 0 2px}.cod-qr canvas{width:100%;max-width:300px;height:auto;border:1px solid var(--borde);border-radius:10px}
+.carnet .pie .pie-adm{margin-top:8px}
 .gate-msg{color:var(--rojo,#CE1126);font-size:12px;text-align:center;min-height:15px;margin:4px 0}
 @keyframes ptsBump{0%{transform:scale(1)}25%{transform:scale(1.4);color:#1B7F5A}55%{transform:scale(1)}100%{transform:scale(1)}}
 .cr-hint{color:#CBD8E8;font-size:12px;text-align:center}
@@ -1353,6 +1377,17 @@ body.en-mapa main{padding-top:10px}
       <span class="pill-piloto" data-i18n="piloto"></span>
       <p class="rol" data-i18n="gateSub"></p>
       <div id="gsiBtn" class="gsi-wrap"></div>
+      <div class="gate-o"><span data-i18n="gO"></span></div>
+      <button type="button" class="btn btn-2" id="gCodBtn" aria-expanded="false" aria-controls="gCodBox"><i class="ri-lock-line" aria-hidden="true"></i><span data-i18n="gCodBtn"></span></button>
+      <div id="gCodBox" hidden>
+        <label for="gCodIn" data-i18n="gCodLbl"></label>
+        <input type="text" id="gCodIn" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="12" placeholder="XXXX-XXXX">
+        <div class="gcod-row">
+          <button type="button" class="btn btn-2" id="gCodScan" hidden data-aria="gCodScan"><i class="ri-camera-line" aria-hidden="true"></i><span>QR</span></button>
+          <button type="button" class="btn btn-1" id="gCodOk"><span data-i18n="gCodOk"></span></button>
+        </div>
+        <div id="gCodCam" hidden><video id="gCodVideo" playsinline muted></video></div>
+      </div>
       <p class="gate-msg" id="gateMsg"></p>
       <p class="nota" data-i18n="gateNota"></p>
     </div>
@@ -1555,6 +1590,8 @@ body.en-mapa main{padding-top:10px}
     <button type="button" class="btn btn-2" id="cAsistBtn" style="display:none">
       <i class="ri-qr-scan-2-line"></i><span data-i18n="asistencia"></span></button>
     </div>
+    <button type="button" class="btn btn-2 pie-adm" id="cCodBtn" style="display:none">
+      <i class="ri-lock-line"></i><span data-i18n="codTit"></span></button>
     <p class="cmsg" id="cMsg"></p>
   </div>
 </div>
@@ -1656,6 +1693,10 @@ body.en-mapa main{padding-top:10px}
 <div id="offHub" role="dialog" aria-modal="true" aria-labelledby="ohTit" aria-hidden="true">
   <div class="oh-card"><div class="oh-bar"><h3 id="ohTit"></h3><button type="button" id="ohCerrar" aria-label="Cerrar"><i class="ri-close-line"></i></button></div>
   <div id="ohCuerpo"></div></div>
+</div>
+<div id="codHub" role="dialog" aria-modal="true" aria-labelledby="chTit" aria-hidden="true">
+  <div class="oh-card"><div class="oh-bar"><h3 id="chTit" data-i18n="codTit"></h3><button type="button" id="chCerrar" aria-label="Cerrar"><i class="ri-close-line"></i></button></div>
+  <div id="chCuerpo"></div></div>
 </div>
 <div class="mini-modal" id="cfmModal" role="dialog" aria-modal="true" aria-labelledby="cfmTit">
   <div class="mm-card">
@@ -4197,6 +4238,11 @@ const DIC={
  }
 };
 let idioma='es';
+/* v1.14: acceso con codigo de practica, cupos de envio y panel de codigos */
+Object.assign(DIC.es,{gO:'o', gCodBtn:'Entrar con código', gCodLbl:'Código de práctica', gCodOk:'Entrar', gCodScan:'Leer el código QR', gCodMal:'Código no válido. Revísalo e inténtalo otra vez.', gCodPausado:'Este código está en pausa. Consulta al instructor.', gCodVencido:'Este código ya venció. Consulta al instructor.', gCodAunNo:'Este código todavía no está activo.', gCodBusy:'Hay muchas personas entrando. Inténtalo otra vez en unos segundos.', gCodErr:'No se pudo entrar. Revisa la conexión e inténtalo otra vez.', gCodEntrando:'Entrando…', gCodHola:'Bienvenido, {n}', gCodCam:'No se pudo abrir la cámara. Escribe el código.', envCupoDia:'Límite diario alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono; envíalo mañana.', envCupoCuenta:'Límite de tu cuenta alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono.', envCupoTotal:'El espacio de esta práctica está lleno: {ok} de {tot} enviados. Tus registros siguen guardados en el teléfono.', codTit:'Códigos de práctica', codNuevo:'Nuevo código', codNombre:'Nombre de la capacitación', codDias:'Días', codDia:'Por día', codCuenta:'Por cuenta', codTope:'Total', codCrear:'Crear código', codAyuda:'Días: plazo para que entren cuentas nuevas. Por día y Por cuenta: registros que puede enviar cada participante. Total: registros de todo el grupo. 0 = sin límite.', codLista:'Códigos', codNada:'Todavía no hay códigos.', codCargando:'Cargando…', codErr:'No se pudo cargar. Revisa la conexión.', codActivo:'Activo', codPausado:'En pausa', codVencido:'Vencido', codHasta:'Cuentas nuevas hasta el {f}', codUso:'{c} cuentas · {r} registros', codUsoTope:'{c} cuentas · {r} de {t} registros', codLim:'Por participante: {d} al día, {a} en total', codSinLim:'sin límite', codQR:'Ver QR', codPausar:'Pausar', codReanudar:'Reanudar', codCopiar:'Copiar enlace', codCopiado:'Enlace copiado', codGuardar:'Guardar imagen', codOcultar:'Ocultar QR', codCreado:'Código creado', codQRpie:'Escanea para entrar a ClimateGuard', codPausarT:'¿Pausar este código?', codPausarM:'No entrarán cuentas nuevas. Quienes ya entraron siguen usando la app.', codSoloLinea:'Se necesita conexión.'});
+Object.assign(DIC.en,{gO:'or', gCodBtn:'Enter with a code', gCodLbl:'Practice code', gCodOk:'Enter', gCodScan:'Scan the QR code', gCodMal:'Invalid code. Check it and try again.', gCodPausado:'This code is paused. Ask the instructor.', gCodVencido:'This code has expired. Ask the instructor.', gCodAunNo:'This code is not active yet.', gCodBusy:'Many people are entering. Try again in a few seconds.', gCodErr:'Could not enter. Check the connection and try again.', gCodEntrando:'Entering…', gCodHola:'Welcome, {n}', gCodCam:'Could not open the camera. Type the code.', envCupoDia:'Daily limit reached: {ok} of {tot} sent. The rest stays on the phone; send it tomorrow.', envCupoCuenta:'Your account limit was reached: {ok} of {tot} sent. The rest stays on the phone.', envCupoTotal:'The space for this practice is full: {ok} of {tot} sent. Your records stay on the phone.', codTit:'Practice codes', codNuevo:'New code', codNombre:'Training name', codDias:'Days', codDia:'Per day', codCuenta:'Per account', codTope:'Total', codCrear:'Create code', codAyuda:'Days: how long new accounts can enter. Per day and Per account: records each participant can send. Total: records for the whole group. 0 = no limit.', codLista:'Codes', codNada:'No codes yet.', codCargando:'Loading…', codErr:'Could not load. Check the connection.', codActivo:'Active', codPausado:'Paused', codVencido:'Expired', codHasta:'New accounts until {f}', codUso:'{c} accounts · {r} records', codUsoTope:'{c} accounts · {r} of {t} records', codLim:'Per participant: {d} a day, {a} in total', codSinLim:'no limit', codQR:'Show QR', codPausar:'Pause', codReanudar:'Resume', codCopiar:'Copy link', codCopiado:'Link copied', codGuardar:'Save image', codOcultar:'Hide QR', codCreado:'Code created', codQRpie:'Scan to enter ClimateGuard', codPausarT:'Pause this code?', codPausarM:'No new accounts will enter. People who already entered keep using the app.', codSoloLinea:'A connection is needed.'});
+DIC.es.gateNota='Inicia sesión con tu cuenta de Google o con un código de práctica.';
+DIC.en.gateNota='Sign in with your Google account or with a practice code.';
 const t=k=>DIC[idioma][k]??DIC.es[k]??k;
 const ng=k=>DIC[idioma].g[k]??k;              // nombre de grupo (clave o texto libre)
 const nc=k=>DIC[idioma].c[k]??k;
@@ -4691,7 +4737,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.13.10';
+const APP_VER='1.14.0';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -4846,7 +4892,7 @@ function comprobarSesion(){
     if(r.ok){ try{ if(typeof r.puntos==='number') setSrvPts(r.puntos); }catch(_){}
       var st=String(r.status||'active'); if(st==='blocked') _rechazar('gBloq'); else if(st==='pending') _rechazar('gPend'); return; }
     if(r.error==='revoked') sesionRevocada();
-    else if(r.error==='auth') borrarSesionTok();
+    else if(r.error==='auth'){ if(esPractica()) sesionRevocada(); else borrarSesionTok(); }
   }); }
 function _jwtPayload(tok){ try{ var s=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }catch(_){ return null; } }
 function entrarApp(){ document.getElementById('gate').classList.add('oculto'); setTimeout(iniciarGPS,300); try{armarBack();}catch(_){} }
@@ -4984,6 +5030,78 @@ if(cgSession){
   (function waitGIS(n){ if(initGoogle())return; if(!navigator.onLine||n<=0){ var gm=document.getElementById('gateMsg'); if(gm)gm.textContent=t('gOffline'); return; } setTimeout(function(){waitGIS(n-1);},400); })(25);
 }
 if(cgSession){ try{localStorage.setItem('cg_name_rd', cgSession.name||cgSession.email);}catch(_){} }
+/* ── v1.14: acceso con codigo de practica ─────────────────────────────────
+   El instructor comparte un codigo (escrito o en una QR con ?codigo=...). El
+   servidor crea una cuenta de practica (Participante NN) y entrega la misma
+   clave de sesion que usa el acceso con Google; desde ahi todo es igual. El
+   identificador del telefono (cg_dev) sirve para volver a la misma cuenta. */
+const esPractica=em=>/@practica\.cg$/.test(String(em||(cgSession&&cgSession.email)||''));
+function cgDevId(){ try{ let d=localStorage.getItem('cg_dev');
+    if(!d){ d=((window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2))).replace(/[^A-Za-z0-9_-]/g,''); localStorage.setItem('cg_dev',d); }
+    return d; }catch(_){ return ''; } }
+const codNorm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const codBonito=s=>{ const c=codNorm(s); return c.length>4?c.slice(0,4)+'-'+c.slice(4):c; };
+/* Texto de una QR: el enlace de la app con ?codigo=..., o el codigo solo */
+function codDeTexto(raw){ raw=String(raw||'').trim();
+  if(/^https?:/i.test(raw)){ try{ return codNorm(new URL(raw).searchParams.get('codigo')); }catch(_){ return ''; } }
+  return /^[A-Za-z0-9 -]{6,20}$/.test(raw)?codNorm(raw):''; }
+let _codBusy=false;
+function codMsg(k,neutro){ const gm=document.getElementById('gateMsg'); if(gm){ gm.style.color=neutro?'var(--txt-2)':''; gm.textContent=k?t(k):''; } }
+function entrarConCodigo(raw){
+  const cod=codNorm(raw); if(_codBusy) return;
+  if(cod.length<6){ codMsg('gCodMal'); return; }
+  if(!navigator.onLine){ codMsg('gOffline'); return; }
+  const bOk=document.getElementById('gCodOk'); _codBusy=true; if(bOk) bOk.disabled=true; codMsg('gCodEntrando',true);
+  cgJsonp('action=codigo&codigo='+encodeURIComponent(cod)+'&dev='+encodeURIComponent(cgDevId()),30000).then(function(r){
+    _codBusy=false; if(bOk) bOk.disabled=false;
+    if(r&&r.ok&&r.session&&r.email){
+      const em=String(r.email).toLowerCase();
+      try{ if(window.google&&google.accounts&&google.accounts.id&&google.accounts.id.cancel) google.accounts.id.cancel(); }catch(_){}
+      cgIdToken=null; cgTokenExp=0;
+      aplicarSesion({email:em,name:r.name||'',picture:''});
+      guardarSesionTok(r.session,em);
+      codMsg(''); try{ window._cgCodCamOff&&window._cgCodCamOff(); }catch(_){}
+      const inp=document.getElementById('gCodIn'); if(inp) inp.value='';
+      entrarApp();
+      try{ refrescarPuntosServidor(); }catch(_){}
+      try{ reconciliarEnviados(null); }catch(_){}
+      try{ pintar(); }catch(_){} try{ pintarPerfil(); }catch(_){}
+      try{ flash(t('gCodHola').replace('{n}',r.name||'')); }catch(_){}
+      return;
+    }
+    codMsg({codigo:'gCodMal',pausado:'gCodPausado',vencido:'gCodVencido',aun_no:'gCodAunNo',blocked:'gBloq',busy:'gCodBusy'}[r&&r.error]||'gCodErr');
+  });
+}
+(function(){
+  const btn=document.getElementById('gCodBtn'), box=document.getElementById('gCodBox'), inp=document.getElementById('gCodIn');
+  const bOk=document.getElementById('gCodOk'), bScan=document.getElementById('gCodScan'), cam=document.getElementById('gCodCam'), vid=document.getElementById('gCodVideo');
+  if(!btn||!box||!inp) return;
+  const abrir=v=>{ box.hidden=!v; btn.setAttribute('aria-expanded',v?'true':'false'); if(v){ try{inp.focus();}catch(_){} } else parar(); };
+  btn.onclick=()=>abrir(box.hidden);
+  inp.addEventListener('input',()=>{ inp.value=codBonito(codNorm(inp.value).slice(0,8)); if(!_codBusy) codMsg(''); });
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); entrarConCodigo(inp.value); } });
+  bOk.onclick=()=>entrarConCodigo(inp.value);
+  /* Lector de QR dentro de la app (Chrome en Android). En otros navegadores se
+     escribe el codigo o se abre el enlace de la QR con la camara del telefono. */
+  let det=null, stream=null, leyendo=false;
+  try{ if('BarcodeDetector' in window) det=new BarcodeDetector({formats:['qr_code']}); }catch(_){ det=null; }
+  function parar(){ leyendo=false; try{ if(stream) stream.getTracks().forEach(x=>x.stop()); }catch(_){} stream=null; try{vid.srcObject=null;}catch(_){} if(cam) cam.hidden=true; }
+  window._cgCodCamOff=parar;
+  async function tic(){ if(!leyendo) return;
+    try{ if(vid.readyState>=2){ const cs=await det.detect(vid);
+        if(cs&&cs.length){ const c=codDeTexto(cs[0].rawValue); if(c.length>=6){ parar(); inp.value=codBonito(c); entrarConCodigo(c); return; } } } }catch(_){}
+    setTimeout(tic,250); }
+  if(det&&navigator.mediaDevices&&bScan&&cam&&vid){ bScan.hidden=false;
+    bScan.onclick=async()=>{ if(leyendo){ parar(); return; }
+      try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+        vid.srcObject=stream; cam.hidden=false; await vid.play(); leyendo=true; codMsg(''); tic();
+      }catch(_){ parar(); codMsg('gCodCam'); } }; }
+  /* Enlace de la QR: .../?codigo=XXXX-XXXX. Con sesion abierta no se cambia de cuenta. */
+  let c=''; try{ c=codNorm(new URLSearchParams(location.search).get('codigo')); }catch(_){}
+  if(c){ try{ history.replaceState(null,'',location.pathname+location.hash); }catch(_){}
+    if(!cgSession){ abrir(true); inp.value=codBonito(c);
+      if(document.readyState==='complete') setTimeout(()=>entrarConCodigo(c),0); else window.addEventListener('load',()=>entrarConCodigo(c)); } }
+})();
 /* v1.7.4: al recuperar la conexion, (re)cargar Google Identity para poder
    refrescar el token y enviar los datos capturados sin reiniciar la app. */
 window.addEventListener('online', function(){
@@ -5266,6 +5384,7 @@ async function abrirCarnet(){
   $cImg.hidden=true; $cCarga.hidden=false; $cMsg.innerHTML='';
   document.getElementById('cGuardar').disabled=true;
   try{document.getElementById('cAsistBtn').style.display=(window.CG_ADMIN&&window.CG_ADMIN())?'':'none';}catch(_){}
+  try{document.getElementById('cCodBtn').style.display=(window.CG_ADMIN&&window.CG_ADMIN())?'':'none';}catch(_){}
   document.getElementById('cVolver').focus();
   try{
     carnetBlob=await credencialPng();
@@ -5983,6 +6102,7 @@ async function enviarTodo(){
   if(!navigator.onLine){ aviso('a-info','ri-cloud-off-line',t('envOffline')); return; }
   let _cred=null, _conSes=false;
   if(cgSessTok){ _cred={session:cgSessTok}; _conSes=true; }
+  else if(esPractica()){ sesionRevocada(); return; }
   else { const _idt=await tokenFresco(); if(!_idt){ try{reautenticarEnviar();}catch(_){} return; } _cred={idToken:_idt}; }
   aviso('a-info','ri-loader-4-line',t('envEnviando'));
 
@@ -5990,7 +6110,7 @@ async function enviarTodo(){
   for(let i=0;i<nf.length;i+=LOTE) lotes.push({obs:nf.slice(i,i+LOTE),trk:[]});
   if(!lotes.length) lotes.push({obs:[],trk:[]});
   lotes[0].trk=nt;
-  const tot=nf.length+nt.length; let okN=0, recon=0, fallo=null, okObs=0, okTrk=0;
+  const tot=nf.length+nt.length; let okN=0, recon=0, fallo=null, okObs=0, okTrk=0, cupo=null;
 
   for(let li=0; li<lotes.length; li++){
     const LT=lotes[li], fotos=[], feats=[];
@@ -6008,7 +6128,14 @@ async function enviarTodo(){
       observaciones:{type:'FeatureCollection',features:feats},recorridos:rec,fotos:fotos,avatar:(li===0?_avPayload:null)};
     const res=await postServidor(payload,150000);
     if(!res){ fallo='red'; break; }
-    if(!res.ok){ fallo=res.error||'err'; break; }
+    if(!res.ok){
+      /* v1.14: cupo de envio. El servidor rechaza el lote entero y dice cuantos registros
+         nuevos caben (libres): se reintenta una vez con las ediciones y esos nuevos. */
+      if(/^cupo_/.test(res.error||'') && !LT._rec){ cupo=res.error; LT._rec=true;
+        let q=Math.max(0,Number(res.libres)||0);
+        const cab=LT.obs.filter(r=>sentMap['p:'+r.id]!==undefined || (q-->0));
+        if(cab.length && cab.length<LT.obs.length){ LT.obs=cab; li--; continue; } }
+      fallo=res.error||'err'; break; }
     /* servidor v3.8: items por registro. Servidor anterior (sin items): ok = todo el lote guardado. */
     const its=Array.isArray(res.items)?res.items:null;
     const savedOk=(tipo,id)=>{ if(!its)return {saved:true}; const it=its.find(x=>x.tipo===tipo&&String(x.id)===String(id)); return it&&it.saved?it:null; };
@@ -6027,8 +6154,11 @@ async function enviarTodo(){
   }
   try{ await pintar(); }catch(_){}   /* repintar ANTES del aviso final (dibujarMapa reescribe los avisos) */
 
+  if(!fallo && cupo) fallo=cupo;
+  if(/^cupo_/.test(fallo||'')){ const k={cupo_dia:'envCupoDia',cupo_cuenta:'envCupoCuenta',cupo_total:'envCupoTotal'}[fallo]||'envCupoCuenta';
+    aviso('a-av','ri-error-warning-line',t(k).replace('{ok}',okN).replace('{tot}',tot)); return; }
   if(fallo==='revoked'){ sesionRevocada(); return; }
-  if(fallo==='auth'){ if(_conSes) borrarSesionTok(); try{reautenticarEnviar();}catch(_){} return; }
+  if(fallo==='auth'){ if(esPractica()){ sesionRevocada(); return; } if(_conSes) borrarSesionTok(); try{reautenticarEnviar();}catch(_){} return; }
   if(fallo && okN>0){ aviso('a-av','ri-error-warning-line',t('envParcial').replace('{ok}',okN).replace('{tot}',tot)); return; }
   if(fallo){ const m={rate:'envRate',busy:'envBusy',blocked:'envBloq',pending:'envBloq'}[fallo]||'envErr'; aviso('a-er','ri-error-warning-line',t(m)); return; }
   aviso('a-ok','ri-check-line',`${t('envOk')}: ${okObs} ${t('fotos')}, ${okTrk} ${t('recorridosN')}${recon>0?` · ${recon} ${t('ptsRecon')}`:''}`);
@@ -6785,6 +6915,97 @@ const CGOff=(function(){
     if(P.n&&CGOff.enLinea()){ const ok=await cgConfirmar(t('envConfTit'),t('envConfMsg').replace('{reg}',CGOff.regN(P.n)).replace('{mb}',CGOff.mb(P.b)),{si:t('envConfSi'),ic:'ri-information-line'}); if(!ok) return; }
     return orig&&orig.call(this,ev); }; })();
 CGOff.init();
+</script>
+<script>
+/* ══ v1.14: codigos de practica (solo administrador) ══
+   Crear un codigo por capacitacion, mostrar su QR, ver el uso y pausarlo.
+   La QR lleva el enlace de la app con ?codigo=...: se puede leer con la camara
+   del telefono o con el lector de la pantalla de acceso. */
+const CGCod=(function(){
+  const $h=document.getElementById('codHub'), $c=document.getElementById('chCuerpo'), $b=document.getElementById('cCodBtn');
+  if(!$h||!$c) return {};
+  let lista=null, def={dias:15,lim_dia:30,lim_cuenta:100,tope_total:2000}, estado='', qrDe='', ocupado=false;
+  const enlace=cod=>location.origin+location.pathname+'?codigo='+encodeURIComponent(cod);
+  const fecha=f=>{ const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(f||''); return m?(idioma==='es'?m[3]+'/'+m[2]+'/'+m[1]:f):(f||''); };
+  const lim=n=>n?String(n):t('codSinLim');
+  function api(q){ return cgJsonp(q+authQS(),30000); }
+  function cargar(){ estado='carga'; pintarP();
+    if(!navigator.onLine){ estado='err'; pintarP(); return; }
+    api('action=codigos').then(r=>{ if(r&&r.ok){ lista=r.codigos||[]; if(r.def) def=r.def; estado=''; } else estado='err'; pintarP(); }); }
+  function dibujarQR(cv,c){
+    const W=600,H=720,x=cv.getContext('2d'); cv.width=W; cv.height=H; x.fillStyle='#fff'; x.fillRect(0,0,W,H);
+    const qr=qrcode(0,'M'); qr.addData(enlace(c.codigo)); qr.make();
+    const n=qr.getModuleCount(), S=460, cel=S/n, ox=(W-S)/2, oy=96;
+    x.fillStyle='#002D62'; x.textAlign='center'; x.textBaseline='middle';
+    x.font='600 30px Poppins, sans-serif'; x.fillText(String(c.nombre||'ClimateGuard').slice(0,34),W/2,50,W-40);
+    for(let r=0;r<n;r++) for(let k=0;k<n;k++) if(qr.isDark(r,k)) x.fillRect(Math.floor(ox+k*cel),Math.floor(oy+r*cel),Math.ceil(cel),Math.ceil(cel));
+    x.font='600 54px "IBM Plex Mono", monospace'; x.fillText(c.codigo,W/2,oy+S+62);
+    x.fillStyle='#5B6570'; x.font='400 22px "Open Sans", sans-serif'; x.fillText(t('codQRpie'),W/2,oy+S+118,W-40);
+  }
+  function pintarP(){ if(!$h.classList.contains('on')) return;
+    let H='<section style="border-top:0"><h4>'+esc(t('codNuevo'))+'</h4><div class="cod-form">'
+      +'<div class="w4"><label for="cdNom">'+esc(t('codNombre'))+'</label><input type="text" id="cdNom" maxlength="60"></div>'
+      +'<div><label for="cdDias">'+esc(t('codDias'))+'</label><input type="number" id="cdDias" min="1" max="366" value="'+def.dias+'"></div>'
+      +'<div><label for="cdDia">'+esc(t('codDia'))+'</label><input type="number" id="cdDia" min="0" value="'+def.lim_dia+'"></div>'
+      +'<div><label for="cdCta">'+esc(t('codCuenta'))+'</label><input type="number" id="cdCta" min="0" value="'+def.lim_cuenta+'"></div>'
+      +'<div><label for="cdTope">'+esc(t('codTope'))+'</label><input type="number" id="cdTope" min="0" value="'+def.tope_total+'"></div>'
+      +'</div><p class="oh-m" style="margin:8px 0">'+esc(t('codAyuda'))+'</p>'
+      +'<button type="button" class="btn btn-1 oh-b" data-cod="crear">'+esc(t('codCrear'))+'</button></section>';
+    H+='<section><h4>'+esc(t('codLista'))+'</h4>';
+    if(estado==='carga'&&!lista) H+='<p class="oh-m">'+esc(t('codCargando'))+'</p>';
+    else if(estado==='err'&&!lista) H+='<p class="oh-m oh-av">'+esc(t(navigator.onLine?'codErr':'codSoloLinea'))+'</p>';
+    else if(!lista||!lista.length) H+='<p class="oh-m">'+esc(t('codNada'))+'</p>';
+    else lista.forEach(c=>{
+      const ven=c.vencido, pau=c.estado!=='activo';
+      const est=pau?['pau','codPausado']:(ven?['ven','codVencido']:['','codActivo']);
+      const pct=c.tope_total?Math.min(100,Math.round(100*c.registros/c.tope_total)):0;
+      H+='<div class="oh-pack"><div class="oh-ph"><b>'+esc(c.nombre)+'</b><span class="cod-est '+est[0]+'">'+esc(t(est[1]))+'</span></div>'
+        +'<div class="cod-cod">'+esc(c.codigo)+'</div>'
+        +(c.tope_total?'<div class="cod-uso'+(pct>=100?' lleno':'')+'"><i style="width:'+pct+'%"></i></div>':'')
+        +'<p class="oh-m" style="margin:4px 0 2px">'+esc((c.tope_total?t('codUsoTope'):t('codUso')).replace('{c}',c.cuentas).replace('{r}',c.registros).replace('{t}',c.tope_total))+'</p>'
+        +'<p class="oh-m" style="margin:0 0 8px">'+esc(t('codHasta').replace('{f}',fecha(c.fin)))+'. '+esc(t('codLim').replace('{d}',lim(c.lim_dia)).replace('{a}',lim(c.lim_cuenta)))+'</p>'
+        +'<div class="oh-act" style="flex-wrap:wrap">'
+        +'<button type="button" class="btn btn-1 oh-b" data-cod="qr" data-id="'+esc(c.id)+'">'+esc(t(qrDe===c.id?'codOcultar':'codQR'))+'</button>'
+        +'<button type="button" class="btn btn-2 oh-b" data-cod="copiar" data-id="'+esc(c.id)+'">'+esc(t('codCopiar'))+'</button>'
+        +'<button type="button" class="btn btn-2 oh-b" data-cod="'+(pau?'reanudar':'pausar')+'" data-id="'+esc(c.id)+'">'+esc(t(pau?'codReanudar':'codPausar'))+'</button></div>'
+        +(qrDe===c.id?'<div class="cod-qr"><canvas id="cdQR" width="600" height="720"></canvas><div><button type="button" class="btn btn-2 oh-b" data-cod="guardar" data-id="'+esc(c.id)+'">'+esc(t('codGuardar'))+'</button></div></div>':'')
+        +'</div>'; });
+    H+='</section>';
+    const prev={}; ['cdNom','cdDias','cdDia','cdCta','cdTope'].forEach(id=>{ const e=document.getElementById(id); if(e) prev[id]=e.value; });
+    $c.innerHTML=H;
+    Object.keys(prev).forEach(id=>{ const e=document.getElementById(id); if(e) e.value=prev[id]; });
+    if(qrDe&&lista){ const c=lista.find(x=>x.id===qrDe), cv=document.getElementById('cdQR'); if(c&&cv){ try{ dibujarQR(cv,c); }catch(_){} } }
+  }
+  const val=id=>{ const e=document.getElementById(id); return e?String(e.value).trim():''; };
+  async function accion(a,id){
+    const c=lista&&lista.find(x=>x.id===id);
+    if(a==='qr'){ qrDe=(qrDe===id?'':id); pintarP(); if(qrDe){ const cv=document.getElementById('cdQR'); try{ cv&&cv.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){} } return; }
+    if(a==='copiar'&&c){ try{ await navigator.clipboard.writeText(enlace(c.codigo)); flash(t('codCopiado')); }catch(_){ flash(enlace(c.codigo)); } return; }
+    if(a==='guardar'&&c){ const cv=document.getElementById('cdQR'); if(!cv) return;
+      cv.toBlob(b=>{ if(!b) return; const u=URL.createObjectURL(b), l=document.createElement('a'); l.href=u; l.download='ClimateGuard_QR_'+c.codigo+'.png'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); },'image/png'); return; }
+    if(ocupado) return;
+    if(!navigator.onLine){ flash(t('codSoloLinea')); return; }
+    if(a==='crear'){ ocupado=true;
+      const r=await api('action=codigocrear&nombre='+encodeURIComponent(val('cdNom'))+'&dias='+encodeURIComponent(val('cdDias'))+'&lim_dia='+encodeURIComponent(val('cdDia'))+'&lim_cuenta='+encodeURIComponent(val('cdCta'))+'&tope='+encodeURIComponent(val('cdTope')));
+      ocupado=false;
+      if(r&&r.ok){ flash(t('codCreado')); qrDe=r.id; const n=document.getElementById('cdNom'); if(n) n.value=''; cargar(); } else flash(t('codErr'));
+      return; }
+    if((a==='pausar'||a==='reanudar')&&c){
+      if(a==='pausar' && !(await cgConfirmar(t('codPausarT'),t('codPausarM'),{si:t('codPausar'),ic:'ri-information-line'}))) return;
+      ocupado=true; const r=await api('action=codigoestado&id='+encodeURIComponent(id)+'&estado='+(a==='pausar'?'pausado':'activo')); ocupado=false;
+      if(r&&r.ok){ c.estado=r.estado; pintarP(); } else flash(t('codErr')); }
+  }
+  function abrir(){ if(!(window.CG_ADMIN&&window.CG_ADMIN())) return;
+    try{ if(typeof cerrarCarnet==='function') cerrarCarnet(); }catch(_){}
+    $h.classList.add('on'); $h.setAttribute('aria-hidden','false'); document.body.classList.add('oh-open'); cargar(); }
+  function cerrar(){ $h.classList.remove('on'); $h.setAttribute('aria-hidden','true'); document.body.classList.remove('oh-open'); }
+  if($b) $b.onclick=abrir;
+  document.getElementById('chCerrar').onclick=cerrar;
+  $h.addEventListener('click',e=>{ if(e.target===$h){ cerrar(); return; } const b=e.target.closest('[data-cod]'); if(b) accion(b.dataset.cod,b.dataset.id||''); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$h.classList.contains('on')) cerrar(); });
+  ['btnEs','btnEn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(pintarP,0)); });
+  return {abrir,cerrar};
+})();
 </script>
 </body>
 </html>
