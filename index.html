@@ -167,6 +167,8 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .gate-o{display:flex;align-items:center;gap:10px;margin:10px 0 8px;color:var(--txt-2);font-size:11.5px}
 .gate-o:before,.gate-o:after{content:'';flex:1;height:1px;background:var(--borde)}
 .gate #gCodBtn{margin-top:0;display:flex;align-items:center;justify-content:center;gap:7px}
+.gcod-otro[hidden]{display:none}
+.gcod-otro{display:block;margin:8px auto 0;background:none;border:0;padding:4px 6px;color:var(--azul);font:500 12px var(--cpo);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 #gCodBox{margin-top:12px;text-align:left}
 #gCodIn{text-align:center;font:600 20px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;padding:10px 8px}
 .gcod-row{display:flex;gap:8px;margin-top:8px}.gate .gcod-row .btn{margin-top:0;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -1379,6 +1381,7 @@ body.en-mapa main{padding-top:10px}
       <div id="gsiBtn" class="gsi-wrap"></div>
       <div class="gate-o"><span data-i18n="gO"></span></div>
       <button type="button" class="btn btn-2" id="gCodBtn" aria-expanded="false" aria-controls="gCodBox"><i class="ri-lock-line" aria-hidden="true"></i><span data-i18n="gCodBtn"></span></button>
+      <button type="button" class="gcod-otro" id="gCodOtro" hidden data-i18n="gCodOtro"></button>
       <div id="gCodBox" hidden>
         <label for="gCodIn" data-i18n="gCodLbl"></label>
         <input type="text" id="gCodIn" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="12" placeholder="XXXX-XXXX">
@@ -4239,8 +4242,8 @@ const DIC={
 };
 let idioma='es';
 /* v1.14: acceso con codigo de practica, cupos de envio y panel de codigos */
-Object.assign(DIC.es,{gO:'o', gCodBtn:'Entrar con código', gCodLbl:'Código de práctica', gCodOk:'Entrar', gCodScan:'Leer el código QR', gCodMal:'Código no válido. Revísalo e inténtalo otra vez.', gCodPausado:'Este código está en pausa. Consulta al instructor.', gCodVencido:'Este código ya venció. Consulta al instructor.', gCodAunNo:'Este código todavía no está activo.', gCodBusy:'Hay muchas personas entrando. Inténtalo otra vez en unos segundos.', gCodErr:'No se pudo entrar. Revisa la conexión e inténtalo otra vez.', gCodEntrando:'Entrando…', gCodHola:'Bienvenido, {n}', gCodCam:'No se pudo abrir la cámara. Escribe el código.', envCupoDia:'Límite diario alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono; envíalo mañana.', envCupoCuenta:'Límite de tu cuenta alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono.', envCupoTotal:'El espacio de esta práctica está lleno: {ok} de {tot} enviados. Tus registros siguen guardados en el teléfono.', codTit:'Códigos de práctica', codNuevo:'Nuevo código', codNombre:'Nombre de la capacitación', codDias:'Días', codDia:'Por día', codCuenta:'Por cuenta', codTope:'Total', codCrear:'Crear código', codAyuda:'Días: plazo para que entren cuentas nuevas. Por día y Por cuenta: registros que puede enviar cada participante. Total: registros de todo el grupo. 0 = sin límite.', codLista:'Códigos', codNada:'Todavía no hay códigos.', codCargando:'Cargando…', codErr:'No se pudo cargar. Revisa la conexión.', codActivo:'Activo', codPausado:'En pausa', codVencido:'Vencido', codHasta:'Cuentas nuevas hasta el {f}', codUso:'{c} cuentas · {r} registros', codUsoTope:'{c} cuentas · {r} de {t} registros', codLim:'Por participante: {d} al día, {a} en total', codSinLim:'sin límite', codQR:'Ver QR', codPausar:'Pausar', codReanudar:'Reanudar', codCopiar:'Copiar enlace', codCopiado:'Enlace copiado', codGuardar:'Guardar imagen', codOcultar:'Ocultar QR', codCreado:'Código creado', codQRpie:'Escanea para entrar a ClimateGuard', codPausarT:'¿Pausar este código?', codPausarM:'No entrarán cuentas nuevas. Quienes ya entraron siguen usando la app.', codSoloLinea:'Se necesita conexión.'});
-Object.assign(DIC.en,{gO:'or', gCodBtn:'Enter with a code', gCodLbl:'Practice code', gCodOk:'Enter', gCodScan:'Scan the QR code', gCodMal:'Invalid code. Check it and try again.', gCodPausado:'This code is paused. Ask the instructor.', gCodVencido:'This code has expired. Ask the instructor.', gCodAunNo:'This code is not active yet.', gCodBusy:'Many people are entering. Try again in a few seconds.', gCodErr:'Could not enter. Check the connection and try again.', gCodEntrando:'Entering…', gCodHola:'Welcome, {n}', gCodCam:'Could not open the camera. Type the code.', envCupoDia:'Daily limit reached: {ok} of {tot} sent. The rest stays on the phone; send it tomorrow.', envCupoCuenta:'Your account limit was reached: {ok} of {tot} sent. The rest stays on the phone.', envCupoTotal:'The space for this practice is full: {ok} of {tot} sent. Your records stay on the phone.', codTit:'Practice codes', codNuevo:'New code', codNombre:'Training name', codDias:'Days', codDia:'Per day', codCuenta:'Per account', codTope:'Total', codCrear:'Create code', codAyuda:'Days: how long new accounts can enter. Per day and Per account: records each participant can send. Total: records for the whole group. 0 = no limit.', codLista:'Codes', codNada:'No codes yet.', codCargando:'Loading…', codErr:'Could not load. Check the connection.', codActivo:'Active', codPausado:'Paused', codVencido:'Expired', codHasta:'New accounts until {f}', codUso:'{c} accounts · {r} records', codUsoTope:'{c} accounts · {r} of {t} records', codLim:'Per participant: {d} a day, {a} in total', codSinLim:'no limit', codQR:'Show QR', codPausar:'Pause', codReanudar:'Resume', codCopiar:'Copy link', codCopiado:'Link copied', codGuardar:'Save image', codOcultar:'Hide QR', codCreado:'Code created', codQRpie:'Scan to enter ClimateGuard', codPausarT:'Pause this code?', codPausarM:'No new accounts will enter. People who already entered keep using the app.', codSoloLinea:'A connection is needed.'});
+Object.assign(DIC.es,{gO:'o', gCodBtn:'Entrar con código', gCodPart:'Entrar como participante', gCodOtro:'Usar otro código', gCodLbl:'Código de práctica', gCodOk:'Entrar', gCodScan:'Leer el código QR', gCodMal:'Código no válido. Revísalo e inténtalo otra vez.', gCodPausado:'Este código está en pausa. Consulta al instructor.', gCodVencido:'Este código ya venció. Consulta al instructor.', gCodAunNo:'Este código todavía no está activo.', gCodBusy:'Hay muchas personas entrando. Inténtalo otra vez en unos segundos.', gCodErr:'No se pudo entrar. Revisa la conexión e inténtalo otra vez.', gCodEntrando:'Entrando…', gCodHola:'Bienvenido, {n}', gCodCam:'No se pudo abrir la cámara. Escribe el código.', envCupoDia:'Límite diario alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono; envíalo mañana.', envCupoCuenta:'Límite de tu cuenta alcanzado: {ok} de {tot} enviados. Lo demás queda guardado en el teléfono.', envCupoTotal:'El espacio de esta práctica está lleno: {ok} de {tot} enviados. Tus registros siguen guardados en el teléfono.', codTit:'Códigos de práctica', codNuevo:'Nuevo código', codNombre:'Nombre de la capacitación', codDias:'Días', codDia:'Por día', codCuenta:'Por cuenta', codTope:'Total', codCrear:'Crear código', codAyuda:'Días: plazo para que entren cuentas nuevas. Por día y Por cuenta: registros que puede enviar cada participante. Total: registros de todo el grupo. 0 = sin límite.', codLista:'Códigos', codNada:'Todavía no hay códigos.', codCargando:'Cargando…', codErr:'No se pudo cargar. Revisa la conexión.', codActivo:'Activo', codPausado:'En pausa', codVencido:'Vencido', codHasta:'Cuentas nuevas hasta el {f}', codUso:'{c} cuentas · {r} registros', codUsoTope:'{c} cuentas · {r} de {t} registros', codLim:'Por participante: {d} al día, {a} en total', codSinLim:'sin límite', codQR:'Ver QR', codPausar:'Pausar', codReanudar:'Reanudar', codCopiar:'Copiar enlace', codCopiado:'Enlace copiado', codGuardar:'Guardar imagen', codOcultar:'Ocultar QR', codCreado:'Código creado', codQRpie:'Escanea para entrar a ClimateGuard', codPausarT:'¿Pausar este código?', codPausarM:'No entrarán cuentas nuevas. Quienes ya entraron siguen usando la app.', codSoloLinea:'Se necesita conexión.'});
+Object.assign(DIC.en,{gO:'or', gCodBtn:'Enter with a code', gCodPart:'Enter as participant', gCodOtro:'Use another code', gCodLbl:'Practice code', gCodOk:'Enter', gCodScan:'Scan the QR code', gCodMal:'Invalid code. Check it and try again.', gCodPausado:'This code is paused. Ask the instructor.', gCodVencido:'This code has expired. Ask the instructor.', gCodAunNo:'This code is not active yet.', gCodBusy:'Many people are entering. Try again in a few seconds.', gCodErr:'Could not enter. Check the connection and try again.', gCodEntrando:'Entering…', gCodHola:'Welcome, {n}', gCodCam:'Could not open the camera. Type the code.', envCupoDia:'Daily limit reached: {ok} of {tot} sent. The rest stays on the phone; send it tomorrow.', envCupoCuenta:'Your account limit was reached: {ok} of {tot} sent. The rest stays on the phone.', envCupoTotal:'The space for this practice is full: {ok} of {tot} sent. Your records stay on the phone.', codTit:'Practice codes', codNuevo:'New code', codNombre:'Training name', codDias:'Days', codDia:'Per day', codCuenta:'Per account', codTope:'Total', codCrear:'Create code', codAyuda:'Days: how long new accounts can enter. Per day and Per account: records each participant can send. Total: records for the whole group. 0 = no limit.', codLista:'Codes', codNada:'No codes yet.', codCargando:'Loading…', codErr:'Could not load. Check the connection.', codActivo:'Active', codPausado:'Paused', codVencido:'Expired', codHasta:'New accounts until {f}', codUso:'{c} accounts · {r} records', codUsoTope:'{c} accounts · {r} of {t} records', codLim:'Per participant: {d} a day, {a} in total', codSinLim:'no limit', codQR:'Show QR', codPausar:'Pause', codReanudar:'Resume', codCopiar:'Copy link', codCopiado:'Link copied', codGuardar:'Save image', codOcultar:'Hide QR', codCreado:'Code created', codQRpie:'Scan to enter ClimateGuard', codPausarT:'Pause this code?', codPausarM:'No new accounts will enter. People who already entered keep using the app.', codSoloLinea:'A connection is needed.'});
 DIC.es.gateNota='Inicia sesión con tu cuenta de Google o con un código de práctica.';
 DIC.en.gateNota='Sign in with your Google account or with a practice code.';
 const t=k=>DIC[idioma][k]??DIC.es[k]??k;
@@ -4737,7 +4740,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.14.0';
+const APP_VER='1.15.0';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5041,6 +5044,11 @@ function cgDevId(){ try{ let d=localStorage.getItem('cg_dev');
     return d; }catch(_){ return ''; } }
 const codNorm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const codBonito=s=>{ const c=codNorm(s); return c.length>4?c.slice(0,4)+'-'+c.slice(4):c; };
+/* v1.15: el codigo se recuerda en el telefono (llega por la QR, por el icono instalado
+   desde el APK o al escribirlo). Con codigo guardado, el acceso ofrece dos opciones:
+   Google o "Entrar como participante" (un toque, sin escribir). */
+function codGuardado(){ try{ return codNorm(localStorage.getItem('cg_cod')); }catch(_){ return ''; } }
+function codGuardar(c){ try{ c=codNorm(c); if(c) localStorage.setItem('cg_cod',c); else localStorage.removeItem('cg_cod'); }catch(_){} try{ window._cgCodUI&&window._cgCodUI(); }catch(_){} }
 /* Texto de una QR: el enlace de la app con ?codigo=..., o el codigo solo */
 function codDeTexto(raw){ raw=String(raw||'').trim();
   if(/^https?:/i.test(raw)){ try{ return codNorm(new URL(raw).searchParams.get('codigo')); }catch(_){ return ''; } }
@@ -5056,6 +5064,7 @@ function entrarConCodigo(raw){
     _codBusy=false; if(bOk) bOk.disabled=false;
     if(r&&r.ok&&r.session&&r.email){
       const em=String(r.email).toLowerCase();
+      codGuardar(cod);
       try{ if(window.google&&google.accounts&&google.accounts.id&&google.accounts.id.cancel) google.accounts.id.cancel(); }catch(_){}
       cgIdToken=null; cgTokenExp=0;
       aplicarSesion({email:em,name:r.name||'',picture:''});
@@ -5069,15 +5078,26 @@ function entrarConCodigo(raw){
       try{ flash(t('gCodHola').replace('{n}',r.name||'')); }catch(_){}
       return;
     }
-    codMsg({codigo:'gCodMal',pausado:'gCodPausado',vencido:'gCodVencido',aun_no:'gCodAunNo',blocked:'gBloq',busy:'gCodBusy'}[r&&r.error]||'gCodErr');
+    const e=r&&r.error;
+    /* codigo guardado que ya no sirve: se olvida (si no existe) y se ofrece escribir otro */
+    if(e==='codigo' && cod===codGuardado()) codGuardar('');
+    if(e==='codigo'||e==='pausado'||e==='vencido'){ try{ window._cgCodAbrir&&window._cgCodAbrir(true); }catch(_){} }
+    codMsg({codigo:'gCodMal',pausado:'gCodPausado',vencido:'gCodVencido',aun_no:'gCodAunNo',blocked:'gBloq',busy:'gCodBusy'}[e]||'gCodErr');
   });
 }
 (function(){
   const btn=document.getElementById('gCodBtn'), box=document.getElementById('gCodBox'), inp=document.getElementById('gCodIn');
   const bOk=document.getElementById('gCodOk'), bScan=document.getElementById('gCodScan'), cam=document.getElementById('gCodCam'), vid=document.getElementById('gCodVideo');
   if(!btn||!box||!inp) return;
-  const abrir=v=>{ box.hidden=!v; btn.setAttribute('aria-expanded',v?'true':'false'); if(v){ try{inp.focus();}catch(_){} } else parar(); };
-  btn.onclick=()=>abrir(box.hidden);
+  const lbl=btn.querySelector('span'), otro=document.getElementById('gCodOtro');
+  function ui(){ const g=codGuardado();
+    if(lbl){ lbl.dataset.i18n=g?'gCodPart':'gCodBtn'; lbl.textContent=t(lbl.dataset.i18n); }
+    btn.classList.toggle('btn-1',!!g); btn.classList.toggle('btn-2',!g);
+    if(otro) otro.hidden=!g||!box.hidden; }
+  const abrir=v=>{ box.hidden=!v; btn.setAttribute('aria-expanded',v?'true':'false'); if(v){ try{inp.focus();}catch(_){} } else parar(); ui(); };
+  window._cgCodUI=ui; window._cgCodAbrir=abrir;
+  btn.onclick=()=>{ const g=codGuardado(); if(g&&box.hidden) entrarConCodigo(g); else abrir(box.hidden); };
+  if(otro) otro.onclick=()=>abrir(true);
   inp.addEventListener('input',()=>{ inp.value=codBonito(codNorm(inp.value).slice(0,8)); if(!_codBusy) codMsg(''); });
   inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); entrarConCodigo(inp.value); } });
   bOk.onclick=()=>entrarConCodigo(inp.value);
@@ -5096,11 +5116,12 @@ function entrarConCodigo(raw){
       try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
         vid.srcObject=stream; cam.hidden=false; await vid.play(); leyendo=true; codMsg(''); tic();
       }catch(_){ parar(); codMsg('gCodCam'); } }; }
-  /* Enlace de la QR: .../?codigo=XXXX-XXXX. Con sesion abierta no se cambia de cuenta. */
+  /* Enlace de la QR o del icono instalado desde el APK: .../?codigo=XXXX-XXXX.
+     v1.15: el codigo se guarda y la persona elige como entrar (Google o participante).
+     Con sesion abierta no se cambia de cuenta. */
   let c=''; try{ c=codNorm(new URLSearchParams(location.search).get('codigo')); }catch(_){}
-  if(c){ try{ history.replaceState(null,'',location.pathname+location.hash); }catch(_){}
-    if(!cgSession){ abrir(true); inp.value=codBonito(c);
-      if(document.readyState==='complete') setTimeout(()=>entrarConCodigo(c),0); else window.addEventListener('load',()=>entrarConCodigo(c)); } }
+  if(c.length>=6){ try{ history.replaceState(null,'',location.pathname+location.hash); }catch(_){} codGuardar(c); }
+  ui();
 })();
 /* v1.7.4: al recuperar la conexion, (re)cargar Google Identity para poder
    refrescar el token y enviar los datos capturados sin reiniciar la app. */
