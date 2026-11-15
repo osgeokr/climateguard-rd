@@ -1,5 +1,5 @@
 /**
- * ClimateGuard - Sesion propia (servidor v3.9)
+ * ClimateGuard - Sesion propia (servidor v3.9; v3.11: ganchos de Codigos.gs)
  * ===========================================================================
  * Archivo NUEVO en el mismo proyecto de Apps Script que Codigo.gs (comparten
  * funciones y constantes: _json, _esAdmin, _usuarios, _userRow, _touchUser,
@@ -105,6 +105,8 @@ function sesionGet(e, cb) {
 
   // v3.10: amenazas (Amenazas.gs)
   if (a === 'amenazas') return amenazasGet(P, cb);
+  // v3.11: codigos de practica (Codigos.gs)
+  var _cod = codigosGet(P, cb); if (_cod) return _cod;
   if (a === 'resetuser') {
     var rz = verifyIdToken(P.id_token);
     var rem = String(P.email || '').toLowerCase().trim();
@@ -171,6 +173,7 @@ function sesionPost(body) {
     if (!ps.valid) return _json({ ok: false, error: 'revoked' });
     body.idToken = body.session;
   }
+  var _cupo = codigosCupo(body); if (_cupo) return _cupo;   // v3.11 (Codigos.gs): cupos de envio
   guardarAmenazas(body);   // v3.10 (Amenazas.gs): nunca interrumpe el envio
   return null;
 }
