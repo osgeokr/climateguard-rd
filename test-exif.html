@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ClimateGuard EXIF GPS test</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;padding:14px;background:#f4f6f9;color:#1b2430;font-size:15px;line-height:1.45}
+  h1{font-size:18px;margin:0 0 4px}
+  p.sub{margin:0 0 14px;color:#56616f;font-size:13px}
+  .card{background:#fff;border:1px solid #d8dee6;border-radius:10px;padding:12px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 2px}
+  .card code{font-size:12px;color:#56616f;word-break:break-all}
+  label.btn{display:block;margin:10px 0 8px;padding:12px;border-radius:8px;background:#003876;color:#fff;text-align:center;font-weight:600}
+  input[type=file]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+  .res{font-family:ui-monospace,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-all;background:#f4f6f9;border-radius:6px;padding:8px;min-height:20px}
+  .ok{color:#1a7f5a;font-weight:700}.bad{color:#c1440e;font-weight:700}.na{color:#56616f;font-weight:700}
+  #ua{font-size:11px;color:#56616f;word-break:break-all}
+  table{border-collapse:collapse;width:100%;font-size:13px}td,th{border:1px solid #d8dee6;padding:5px 6px;text-align:left}
+</style>
+</head>
+<body>
+<h1>EXIF GPS 시험 페이지</h1>
+<p class="sub">같은 사진을 버튼마다 한 번씩 골라 주세요. 선택창 종류와 읽힌 좌표를 비교합니다. 사진은 어디에도 전송되지 않습니다.</p>
+
+<div id="cards"></div>
+
+<div class="card">
+  <h2>요약</h2>
+  <table id="sum"><tr><th>방식</th><th>결과</th><th>위도, 경도</th></tr></table>
+</div>
+<div id="ua"></div>
+
+<script>
+const VARIANTES=[
+  {id:'A',titulo:'A. 현재 앱 방식',attr:'accept="image/*"',set:el=>{el.accept='image/*'}},
+  {id:'B',titulo:'B. MIME 지정',attr:'accept="image/jpeg,image/png,image/heic"',set:el=>{el.accept='image/jpeg,image/png,image/heic'}},
+  {id:'C',titulo:'C. 확장자 지정',attr:'accept=".jpg,.jpeg,.png,.heic"',set:el=>{el.accept='.jpg,.jpeg,.png,.heic'}},
+  {id:'D',titulo:'D. 이미지 + 다른 형식',attr:'accept="image/*,application/pdf"',set:el=>{el.accept='image/*,application/pdf'}},
+  {id:'E',titulo:'E. 형식 제한 없음',attr:'(accept 없음)',set:el=>{}},
+  {id:'F',titulo:'F. 모든 형식 명시',attr:'accept="*/*"',set:el=>{el.accept='*/*'}},
+  {id:'G',titulo:'G. 이미지 + 여러 장 선택',attr:'accept="image/*" multiple',set:el=>{el.accept='image/*';el.multiple=true}}
+];
+
+/* JPEG 의 APP1/Exif 를 찾아 GPS IFD 를 그대로 보고한다 (앱의 leerTiff 와 같은 읽기 방식 + 원시 값 출력) */
+async function leer(file){
+  const out={jpeg:false,exif:false,gpsIfd:false,latRef:null,lngRef:null,latRaw:null,lngRaw:null,lat:null,lng:null,alt:null,fecha:null,modelo:null,w:null,h:null};
+  const dv=new DataView(await file.slice(0,262144).arrayBuffer());
+  if(dv.byteLength<4||dv.getUint16(0)!==0xFFD8)return out;
+  out.jpeg=true;
+  let o=2,base=-1;
+  while(o+4<dv.byteLength){
+    if(dv.getUint8(o)!==0xFF){o++;continue}
+    const m=dv.getUint8(o+1),l=dv.getUint16(o+2);
+    if(m===0xDA)break;
+    if(m===0xE1&&dv.getUint32(o+4)===0x45786966){base=o+10;break}
+    o+=2+l;
+  }
+  if(base<0)return out;
+  out.exif=true;
+  const le=dv.getUint16(base)===0x4949;
+  const u16=p=>dv.getUint16(p,le),u32=p=>dv.getUint32(p,le);
+  const str=(p,n)=>{let s='';for(let k=0;k<n;k++){const c=dv.getUint8(p+k);if(!c)break;s+=String.fromCharCode(c)}return s};
+  const ifd=base+u32(base+4);let pGps=0,pExif=0;
+  for(let i=0,n=u16(ifd);i<n;i++){const e=ifd+2+i*12,t=u16(e);
+    if(t===0x8825)pGps=base+u32(e+8);
+    if(t===0x8769)pExif=base+u32(e+8);
+    if(t===0x0110)out.modelo=str(base+u32(e+8),Math.min(u32(e+4),40));
+    if(t===0x0100)out.w=u16(e+2)===3?u16(e+8):u32(e+8);
+    if(t===0x0101)out.h=u16(e+2)===3?u16(e+8):u32(e+8);
+  }
+  if(pExif){for(let i=0,n=u16(pExif);i<n;i++){const e=pExif+2+i*12;if(u16(e)===0x9003)out.fecha=str(base+u32(e+8),19)}}
+  if(!pGps)return out;
+  out.gpsIfd=true;
+  const rac=(p,k)=>[u32(p+k*8),u32(p+k*8+4)];
+  for(let i=0,n=u16(pGps);i<n;i++){
+    const e=pGps+2+i*12,tag=u16(e),cnt=u32(e+4);
+    if(tag===1)out.latRef=dv.getUint8(e+8);
+    if(tag===3)out.lngRef=dv.getUint8(e+8);
+    if((tag===2||tag===4)&&cnt===3){const p=base+u32(e+8);const r=[rac(p,0),rac(p,1),rac(p,2)];
+      const v=r[0][0]/(r[0][1]||1)+r[1][0]/(r[1][1]||1)/60+r[2][0]/(r[2][1]||1)/3600;
+      if(tag===2){out.latRaw=r;out.lat=v}else{out.lngRaw=r;out.lng=v}}
+    if(tag===6&&cnt===1){const p=base+u32(e+8);const a=rac(p,0);out.alt=a[1]?a[0]/a[1]:null}
+  }
+  if(out.lat!=null&&out.latRef===0x53)out.lat=-out.lat;
+  if(out.lng!=null&&out.lngRef===0x57)out.lng=-out.lng;
+  return out;
+}
+function veredicto(r){
+  if(!r.jpeg)return{c:'na',t:'JPEG 아님'};
+  if(!r.exif)return{c:'bad',t:'EXIF 없음'};
+  if(!r.gpsIfd)return{c:'bad',t:'GPS 태그 없음 (제거됨)'};
+  const cero=v=>v&&v.every(x=>x[0]===0);
+  if(r.lat==null||r.lng==null)return{c:'bad',t:'GPS 태그는 있으나 좌표 없음'};
+  if((cero(r.latRaw)&&cero(r.lngRaw))||(!r.latRef&&!r.lngRef))return{c:'bad',t:'좌표가 0으로 가려짐'};
+  return{c:'ok',t:'좌표 읽기 성공'};
+}
+const chr=c=>c?`'${String.fromCharCode(c)}'`:'(빈 값)';
+const racs=v=>v?v.map(x=>x[0]+'/'+x[1]).join('  '):'-';
+
+const $cards=document.getElementById('cards'),$sum=document.getElementById('sum');
+VARIANTES.forEach(v=>{
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML=`<h2>${v.titulo}</h2><code>${v.attr.replace(/</g,'&lt;')}</code>
+    <label class="btn" for="in${v.id}">사진 고르기</label><div class="res" id="res${v.id}">아직 선택하지 않음</div>`;
+  const inp=document.createElement('input');inp.type='file';inp.id='in'+v.id;v.set(inp);
+  card.appendChild(inp);$cards.appendChild(card);
+  const fila=$sum.insertRow();fila.id='fila'+v.id;fila.innerHTML=`<td>${v.id}</td><td class="na">-</td><td>-</td>`;
+  inp.addEventListener('change',async e=>{
+    const f=e.target.files&&e.target.files[0];const $r=document.getElementById('res'+v.id);
+    if(!f){$r.textContent='선택 취소됨';return}
+    try{
+      const r=await leer(f),ve=veredicto(r);
+      const coord=(ve.c==='ok')?`${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}`:(r.lat!=null?`${r.lat}, ${r.lng}`:'-');
+      $r.innerHTML=`<span class="${ve.c}">${ve.t}</span>\n`+
+        `파일: ${f.name}\n크기: ${f.size.toLocaleString()} bytes, 형식: ${f.type||'(없음)'}\n`+
+        `EXIF 크기: ${r.w||'?'}x${r.h||'?'}, 기기: ${r.modelo||'-'}\n촬영시각: ${r.fecha||'-'}\n`+
+        `GPS IFD: ${r.gpsIfd?'있음':'없음'}\n`+
+        (r.gpsIfd?`위도 ref ${chr(r.latRef)} 원시값 ${racs(r.latRaw)}\n경도 ref ${chr(r.lngRef)} 원시값 ${racs(r.lngRaw)}\n고도: ${r.alt!=null?r.alt+' m':'-'}\n`:'')+
+        `좌표: ${coord}`;
+      const fila=document.getElementById('fila'+v.id);
+      fila.cells[1].className=ve.c;fila.cells[1].textContent=ve.t;fila.cells[2].textContent=coord;
+    }catch(err){$r.textContent='오류: '+err}
+    e.target.value='';
+  });
+});
+document.getElementById('ua').textContent=navigator.userAgent;
+</script>
+</body>
+</html>
