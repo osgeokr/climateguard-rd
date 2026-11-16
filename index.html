@@ -126,6 +126,9 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 /* v1.15.2: corregir la ubicacion de un registro que ya la tiene */
 .reg .ubicar-btn.reubicar{background:none;border:1px solid var(--azul);color:var(--azul);padding:6px 11px}
 .reg .ubicar-btn.reubicar:hover{background:rgba(0,56,118,.08)}
+/* v1.15.3: resalta el registro recien ubicado al volver a la lista */
+@keyframes regUbi{0%,60%{box-shadow:0 0 0 3px #1B7F5A}100%{box-shadow:0 0 0 3px rgba(27,127,90,0)}}
+.reg.reg-ubicado{animation:regUbi 2.6s ease-out}
 .reg .ubicar-btn:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 .ubic{cursor:pointer}
 .mini-modal{position:fixed;inset:0;z-index:220;background:rgba(0,20,45,.55);display:none;align-items:center;justify-content:center;padding:22px}
@@ -4675,7 +4678,7 @@ async function pintar(anim=false){
   vis.forEach((it,i)=>{
     if(it.k==='p'){
       const r=it.r, n=it.n;
-      const li=document.createElement('li');
+      const li=document.createElement('li');li.dataset.rid=r.id;
       li.className='reg'+(r.lat==null?' sin-ubi':'')+(anim&&i===0?' nuevo-item':'');
       if(r.lat!=null && r.iucn && IUCN_COL[r.iucn]) li.style.borderLeftColor=IUCN_COL[r.iucn];
       if(r.lat!=null) li.style.cursor='pointer';
@@ -4748,7 +4751,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.15.2';
+const APP_VER='1.15.3';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5266,8 +5269,13 @@ function dibujarMapa(){
     mapa.on('click',async ev=>{
       if(!ubicando)return;
       await almacen.patch(ubicando,{lat:ev.latlng.lat,lng:ev.latlng.lng,accuracy:null,alt:null,altAcc:null,origen:'manual'});
+      const hecho=ubicando;
       ubicando=null;document.getElementById('mapa').classList.remove('ubicando');
       await pintar();aviso('a-ok','ri-check-line',t('asignada'));
+      /* v1.15.3: tras ubicar o corregir, volver a Registros y mostrar el registro (antes se quedaba en el mapa) */
+      tab(false);
+      setTimeout(()=>{ try{ const li=[...document.querySelectorAll('#lista li.reg, li.reg')].find(x=>x.dataset.rid===String(hecho));
+        if(li){ li.scrollIntoView({block:'center',behavior:'smooth'}); li.classList.add('reg-ubicado'); setTimeout(()=>li.classList.remove('reg-ubicado'),2600); } }catch(_){} },80);
     });
   }
   document.getElementById('mapa').classList.toggle('ubicando',!!ubicando);
