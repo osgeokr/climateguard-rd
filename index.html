@@ -123,6 +123,9 @@ footer .cg-firma{display:block;text-align:center;font-family:var(--tit);font-siz
 .reg .ubicar-btn{margin-top:8px;background:var(--ambar);border:0;color:#fff;font-family:var(--tit);font-weight:600;font-size:12.5px;
   padding:8px 13px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 .reg .ubicar-btn:hover{background:#A85E00}
+/* v1.15.2: corregir la ubicacion de un registro que ya la tiene */
+.reg .ubicar-btn.reubicar{background:none;border:1px solid var(--azul);color:var(--azul);padding:6px 11px}
+.reg .ubicar-btn.reubicar:hover{background:rgba(0,56,118,.08)}
 .reg .ubicar-btn:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 .ubic{cursor:pointer}
 .mini-modal{position:fixed;inset:0;z-index:220;background:rgba(0,20,45,.55);display:none;align-items:center;justify-content:center;padding:22px}
@@ -4089,7 +4092,7 @@ const DIC={
   denegado:'Permiso denegado', tiempo:'Tiempo agotado', sinsenal:'Sin señal',
   optim:'Optimizando imagen...', errImg:'No se pudo leer la imagen.',
   errImg2:'Intente con otra fotografia.',
-  sinUbi:'Sin ubicación', ubicar:'Ubicar en el mapa', sinNotas:'Sin notas', altit:'Alt.',
+  sinUbi:'Sin ubicación', ubicar:'Ubicar en el mapa', reubicar:'Corregir ubicación', sinNotas:'Sin notas', altit:'Alt.',
   vacioT:'Sin registros', vacioP:'Toca + para registrar una especie o una amenaza.',
   borrarA:'Eliminar registro', fotoA:'Fotografia del registro',
   toque:'Toque el mapa para ubicar el registro',
@@ -4174,7 +4177,7 @@ const DIC={
   denegado:'Permission denied', tiempo:'Timed out', sinsenal:'No signal',
   optim:'Optimising image...', errImg:'The image could not be read.',
   errImg2:'Please try another photo.',
-  sinUbi:'No location', ubicar:'Place on map', sinNotas:'No notes', altit:'Alt.',
+  sinUbi:'No location', ubicar:'Place on map', reubicar:'Edit location', sinNotas:'No notes', altit:'Alt.',
   vacioT:'No records', vacioP:'Tap + to record a species or a threat.',
   borrarA:'Delete record', fotoA:'Photo of record',
   toque:'Tap the map to place record',
@@ -4453,7 +4456,10 @@ function leerTiff(dv,base){
       const r=k=>u32(p+k*8)/(u32(p+k*8+4)||1);
       g[tag]=r(0)+r(1)/60+r(2)/3600}
   }
-  if(g[2]==null||g[4]==null)return fecha?{lat:null,lng:null,accuracy:null,origen:'exif',fecha}:null;
+  /* v1.15.2: Android entrega a Chrome las fotos de la galeria con el GPS borrado (valores en 0 y sin N/S/E/O).
+     Eso no es una ubicacion: se trata como foto sin GPS (antes el registro quedaba en 0, 0). */
+  const refOk=/^[NS]$/.test(g[1]||'')&&/^[EW]$/.test(g[3]||'');
+  if(g[2]==null||g[4]==null||!refOk||(g[2]===0&&g[4]===0)||!(g[2]<=90&&g[4]<=180))return fecha?{lat:null,lng:null,accuracy:null,origen:'exif',fecha}:null;
   return{lat:g[1]==='S'?-g[2]:g[2],lng:g[3]==='W'?-g[4]:g[4],accuracy:null,origen:'exif',fecha};
 }
 
@@ -4599,7 +4605,7 @@ function amItemHTML(r){ const c=amCat(r.amenaza);
           <p>${esc(r.notas||'')}</p>
           <button type="button" class="mini editar-btn">${t('editar')}</button><button type="button" class="mini compartir-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></svg>${t('bCompartir')}</button>
           <small>${r.lat!=null?`<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?', EXIF':''}${r.alt!=null?(', '+ALTIC+' '+Math.round(r.alt)+' m'):''}`:`<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span>`}</small>
-          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
+          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:`<button type="button" class="mini ubicar-btn reubicar"><i class="ri-cursor-line"></i> ${t('reubicar')}</button>`}
         </div>`; }
 /* estado del formulario */
 let modoTipo='bio', amSel={cat:null,sub:null,condicion:null,magnitud:null,accion:null}, tipoFiltro='all';
@@ -4685,13 +4691,15 @@ async function pintar(anim=false){
           <small>${r.lat!=null
             ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
             : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
-          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:''}
+          ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:`<button type="button" class="mini ubicar-btn reubicar"><i class="ri-cursor-line"></i> ${t('reubicar')}</button>`}
         </div>`;
       if(r.lat!=null) li.onclick=()=>focusFoto(r);
       {const ed=li.querySelector('.editar-btn'); if(ed)ed.onclick=(e)=>{e.stopPropagation();abrirEdicion(r);};}
       {const cp=li.querySelector('.compartir-btn'); if(cp)cp.onclick=(e)=>{e.stopPropagation();compartirFoto(r,cp);};}
       const ub=li.querySelector('.ubicar-btn');
       if(ub)ub.onclick=(e)=>{e.stopPropagation();ubicando=r.id;tab(true);
+        /* v1.15.2: al corregir, el mapa se centra en la ubicacion actual del registro */
+        if(r.lat!=null)setTimeout(()=>{ if(!mapa||ubicando!==r.id)return; try{mapa.invalidateSize();mapa.setView([r.lat,r.lng],16);}catch(_){} },350);
         aviso('a-av','ri-cursor-line',`${t('toque')}. <button type="button" class="mini" id="cancelUbic">${t('cancelar')}</button>`)};
       const x=document.createElement('button');
       x.className='borrar';x.type='button';x.innerHTML='<i class="ri-close-line"></i>';
@@ -4740,7 +4748,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.15.1';
+const APP_VER='1.15.2';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de
@@ -5257,7 +5265,7 @@ function dibujarMapa(){
     capa=(typeof L.markerClusterGroup==='function'?L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:45,spiderfyDistanceMultiplier:1.5,iconCreateFunction:function(c){return L.divIcon({html:'<div class="cg-cluster">'+c.getChildCount()+'</div>',className:'',iconSize:[36,36]});}}):L.layerGroup()).addTo(mapa);
     mapa.on('click',async ev=>{
       if(!ubicando)return;
-      await almacen.patch(ubicando,{lat:ev.latlng.lat,lng:ev.latlng.lng,accuracy:null,origen:'manual'});
+      await almacen.patch(ubicando,{lat:ev.latlng.lat,lng:ev.latlng.lng,accuracy:null,alt:null,altAcc:null,origen:'manual'});
       ubicando=null;document.getElementById('mapa').classList.remove('ubicando');
       await pintar();aviso('a-ok','ri-check-line',t('asignada'));
     });
@@ -5273,6 +5281,7 @@ function dibujarMapa(){
        <h4>${r.regTipo==='amenaza'?amTitulo(r):(esc(r.clase||'')+(r.especie?' · <em>'+esc(r.especie)+'</em>':''))}</h4>
        <small>${r.regTipo==='amenaza'?(esc(amMetaTxt(r))+(r.accion==='rep'?' <span class="pill am-rep">'+t('reportar')+'</span>':'')):(r.cant+' '+t('indiv')+' '+(r.iucn?iucnBadge(r.iucn):''))}<br>
        ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.accuracy!=null?(' ±'+Math.round(r.accuracy)+' m'):''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'):''}<br>${new Date(r.fecha).toLocaleString(loc())}</small></div>`,{minWidth:200})
+     .on('click',ev=>{ if(ubicando){ try{mapa.closePopup();}catch(_){} mapa.fire('click',{latlng:ev.latlng}); } })
      .addTo(capa);
   });
   if(heatOn && window.L && L.heatLayer && pts.length){
