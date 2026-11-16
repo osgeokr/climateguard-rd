@@ -4692,8 +4692,8 @@ async function pintar(anim=false){
           <p>${esc(r.notas||'')}</p>
           <button type="button" class="mini editar-btn">${t('editar')}</button><button type="button" class="mini compartir-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></svg>${t('bCompartir')}</button>
           <small>${r.lat!=null
-            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''} · ${r.w}×${r.h} · ${kb(r.foto.size)}`
-            : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span> · ${r.w}×${r.h} · ${kb(r.foto.size)}`}</small>
+            ? `<i class="ri-map-pin-fill"></i> ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}${r.origen==='exif'?' · EXIF':''}${r.alt!=null?(' · '+ALTIC+' '+Math.round(r.alt)+' m'+(r.altAcc!=null?(' ±'+Math.round(r.altAcc)+' m'):'')):''}`
+            : `<span class="no-ubi"><i class="ri-map-pin-off-line"></i> ${t('sinUbi')}</span>`}</small>
           ${r.lat==null?`<button type="button" class="mini ubicar-btn"><i class="ri-cursor-line"></i> ${t('ubicar')}</button>`:`<button type="button" class="mini ubicar-btn reubicar"><i class="ri-cursor-line"></i> ${t('reubicar')}</button>`}
         </div>`;
       if(r.lat!=null) li.onclick=()=>focusFoto(r);
@@ -4751,7 +4751,7 @@ function focusFoto(r){ if(r.lat==null)return; tab(true);
    al eliminar una foto los puntos y el nivel se recalculan solos.
    El nivel depende de los puntos acumulados; los puntos premian la
    calidad del dato (ubicacion verificada y especie identificada). */
-const APP_VER='1.15.3';
+const APP_VER='1.15.4';
 /* v1.12: en el modo de practica la grabacion de recorridos esta apagada (una app web
    no puede seguir el GPS con la pantalla apagada). Los recorridos ya guardados se
    siguen mostrando y enviando. Para volver a activarla: TRACKS_ON=true (y anadir de

@@ -1,4 +1,4 @@
-/* redeploy nonce: v1.15.3 tras ubicar en el mapa vuelve al registro en la lista */
+/* redeploy nonce: v1.15.4 la lista ya no muestra resolucion ni peso de la foto */
 /* ClimateGuard Mobile - Service Worker
    Cachea el shell de la app para uso offline. Casi todo (fuentes, iconos,
    datos IUCN, contorno nacional y areas protegidas WDPA) esta embebido en
@@ -12,7 +12,7 @@
    cache; sin conexion se sirve la copia cacheada. Combinado con
    caches.delete de versiones viejas en 'activate' y reg.update() en la
    app, el usuario siempre recibe la version mas reciente. */
-const CACHE = 'climateguard-v1.15.3';
+const CACHE = 'climateguard-v1.15.4';
 const PACKS = 'cg-packs';   /* v1.13: mapas sin conexión, no se borra al actualizar */
 const ASSETS = [
   './',
